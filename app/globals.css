@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f9fbf9;
+  --surface: #ffffff;
+  --surface-muted: #f3f7f4;
+  --foreground: #154734;
+  --text-muted: #6f837a;
+  --border: #d8e4dd;
+  --brand: #12a15e;
+  --brand-dark: #0f4b2e;
+  --brand-soft: #12a15e33;
+  --danger: #e83c27;
+  --danger-soft: #e83c2733;
+  --warning: #ffb23e;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-soft: var(--brand-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --font-sans: var(--font-sans);
+  --shadow-card: 0 10px 30px -24px rgb(16 63 43 / 0.35);
+  --shadow-panel: 0 20px 45px -35px rgb(16 63 43 / 0.35);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
+}
+
+html,
+body {
+  min-height: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+}
+
+a,
+button {
+  transition-duration: 200ms;
+  transition-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
