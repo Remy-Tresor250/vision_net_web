@@ -1,20 +1,21 @@
 import { cn } from "@/lib/utils";
 
 interface Props {
-  status: "Active" | "Inactive" | "Paid" | "Overdue";
+  status: "Active" | "Inactive" | "Paid" | "Overdue" | "Pending";
   className?: string;
 }
 
 export default function StatusBadge({ status, className }: Props) {
   const isPositive = status === "Active" || status === "Paid";
+  const isPending = status === "Pending";
 
   return (
     <span
       className={cn(
         "inline-flex min-w-20 items-center justify-center rounded-md p-2 text-[12px] font-semibold",
-        isPositive
-          ? "bg-brand-soft text-brand"
-          : "bg-danger-soft text-danger",
+        isPositive && "bg-brand-soft text-brand",
+        isPending && "bg-warning/20 text-[#9A6400]",
+        !isPositive && !isPending && "bg-danger-soft text-danger",
         className
       )}
     >

@@ -68,3 +68,28 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Remove blue focus outlines from Recharts (SVG + wrapper) */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible,
+.recharts-layer:focus,
+svg:focus,
+svg:focus-visible {
+  outline: none !important;
+}
+
+/* Prevent SVG elements from being focusable */
+.recharts-surface {
+  outline: none !important;
+}
+
+/* Remove browser default focus ring (Chrome/Edge) */
+:focus-visible {
+  outline: none !important;
+}
+
+.recharts-wrapper *:focus {
+  outline: none !important;
+}

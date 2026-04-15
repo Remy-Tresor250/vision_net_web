@@ -7,6 +7,7 @@ import {
 } from "@mantine/core";
 
 import { cn } from "@/lib/utils";
+import NoDataCard from "@/components/dashboard/NoDataCard";
 import type { Transaction } from "@/types";
 
 interface Props {
@@ -33,34 +34,42 @@ export default function RecentTransactionsCard({
           <p className="text-[13px]">View all</p>
         </button>
       </div>
-      <TableScrollContainer minWidth={760}>
-        <Table className="min-w-full">
-          <TableTbody>
-            {transactions.map((transaction) => (
-              <TableTr
-                key={transaction.id}
-                className="border-b border-border last:border-b-0"
-              >
-                <TableTd className="px-5 py-3 text-[14px] text-text-muted">
-                  {transaction.date}
-                </TableTd>
-                <TableTd className="px-5 py-3 text-[14px] font-medium text-foreground">
-                  {transaction.clientName}
-                </TableTd>
-                <TableTd className="px-5 py-3 text-[14px] text-text-muted">
-                  {transaction.agentName}
-                </TableTd>
-                <TableTd className="px-5 py-3 text-[14px] text-text-muted">
-                  {transaction.billingCycle}
-                </TableTd>
-                <TableTd className="px-5 py-3 text-right text-[14px] text-text-muted">
-                  {transaction.amount}
-                </TableTd>
-              </TableTr>
-            ))}
-          </TableTbody>
-        </Table>
-      </TableScrollContainer>
+      {transactions.length ? (
+        <TableScrollContainer minWidth={760}>
+          <Table className="min-w-full">
+            <TableTbody>
+              {transactions.map((transaction) => (
+                <TableTr
+                  key={transaction.id}
+                  className="border-b border-border last:border-b-0"
+                >
+                  <TableTd className="px-5 py-3 text-[14px] text-text-muted">
+                    {transaction.date}
+                  </TableTd>
+                  <TableTd className="px-5 py-3 text-[14px] font-medium text-foreground">
+                    {transaction.clientName}
+                  </TableTd>
+                  <TableTd className="px-5 py-3 text-[14px] text-text-muted">
+                    {transaction.agentName}
+                  </TableTd>
+                  <TableTd className="px-5 py-3 text-[14px] text-text-muted">
+                    {transaction.billingCycle}
+                  </TableTd>
+                  <TableTd className="px-5 py-3 text-right text-[14px] text-text-muted">
+                    {transaction.amount}
+                  </TableTd>
+                </TableTr>
+              ))}
+            </TableTbody>
+          </Table>
+        </TableScrollContainer>
+      ) : (
+        <NoDataCard
+          className="min-h-56 border-0"
+          message="Recent payment activity will appear here."
+          title="No transactions"
+        />
+      )}
     </section>
   );
 }

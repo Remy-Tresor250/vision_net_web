@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import Providers from "@/app/providers";
 
 import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
 import "mantine-datatable/styles.css";
 import "./globals.css";
 

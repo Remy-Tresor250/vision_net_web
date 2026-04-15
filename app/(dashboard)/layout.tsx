@@ -1,3 +1,4 @@
+import AuthGate from "@/components/auth/AuthGate";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 interface Props {
@@ -5,5 +6,9 @@ interface Props {
 }
 
 export default function Layout({ children }: Props) {
-  return <DashboardShell>{children}</DashboardShell>;
+  return (
+    <AuthGate>
+      <DashboardShell>{children}</DashboardShell>
+    </AuthGate>
+  );
 }

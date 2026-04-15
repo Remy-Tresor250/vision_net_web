@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import NoDataCard from "@/components/dashboard/NoDataCard";
 
 interface Props {
   agents: Array<{ id: string; name: string; amount: string }>;
@@ -21,19 +22,27 @@ export default function TopAgentsCard({ agents, className }: Props) {
           <p className="text-[13px]">View all</p>
         </button>
       </div>
-      <ul>
-        {agents.map((agent) => (
-          <li
-            key={agent.id}
-            className="flex items-center justify-between border-b border-border px-5 py-3 last:border-b-0"
-          >
-            <span className="text-[14px] text-text-muted">{agent.name}</span>
-            <span className="text-[14px] font-semibold text-foreground">
-              {agent.amount}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {agents.length ? (
+        <ul>
+          {agents.map((agent) => (
+            <li
+              key={agent.id}
+              className="flex items-center justify-between border-b border-border px-5 py-3 last:border-b-0"
+            >
+              <span className="text-[14px] text-text-muted">{agent.name}</span>
+              <span className="text-[14px] font-semibold text-foreground">
+                {agent.amount}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <NoDataCard
+          className="min-h-80 border-0"
+          message="Agent collection rankings will appear after payments are recorded."
+          title="No top agents"
+        />
+      )}
     </section>
   );
 }

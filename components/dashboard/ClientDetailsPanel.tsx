@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   Menu,
   Pagination,
@@ -11,6 +12,7 @@ import {
   TableTh,
   TableThead,
   TableTr,
+  Skeleton,
 } from "@mantine/core";
 import {
   HiEllipsisHorizontal,
@@ -20,28 +22,87 @@ import {
 } from "react-icons/hi2";
 
 import Button from "@/components/ui/Button";
+import ErrorState from "@/components/dashboard/ErrorState";
+import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import StatusBadge from "@/components/ui/StatusBadge";
-import type { Client, Payment } from "@/types";
+import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
+import { getApiErrorMessage } from "@/lib/api/client";
+import { formatCurrency, formatDate, formatMonths } from "@/lib/format";
+import {
+  useAdminClientPaymentsQuery,
+  useAdminClientQuery,
+  useMarkClientPaymentCompleteMutation,
+} from "@/lib/query/hooks";
+import type { AdminPaymentListItem } from "@/lib/api/types";
+import type { Payment } from "@/types";
+import toast from "react-hot-toast";
 
 interface Props {
-  client: Client;
-  payments: Payment[];
+  clientId: string;
 }
 
-function getMonthLabel(payment: Payment) {
-  if (payment.date.endsWith("04-2026")) return "January";
-  if (payment.date.endsWith("03-2026")) return "February";
-  return "January";
+const PAGE_SIZE = 7;
+
+function toReceiptPayment(payment: AdminPaymentListItem): Payment {
+  return {
+    agentId: payment.agentId ?? "admin",
+    agentName: payment.agentName ?? "Admin",
+    amount: formatCurrency(payment.amount),
+    billingMonth: formatMonths(payment.months ?? payment.month),
+    clientId: payment.clientId ?? "",
+    clientName: payment.clientName ?? "-",
+    date: formatDate(payment.paymentDate ?? payment.createdAt),
+    id: payment.paymentId,
+    months: String(payment.months?.length ?? 1),
+    receiptNumber: payment.receiptNumber ?? "-",
+    status: payment.status === "DUE" ? "Overdue" : "Paid",
+  };
 }
 
-export default function ClientDetailsPanel({ client, payments }: Props) {
-  const duePayments = payments.filter(
-    (payment) => payment.status === "Overdue",
-  );
-  const dueAmount = duePayments.reduce(
-    (sum, payment) => sum + Number(payment.amount.replace("$", "")),
-    0,
-  );
+export default function ClientDetailsPanel({ clientId }: Props) {
+  const [page, setPage] = useState(1);
+  const [selectedPayment, setSelectedPayment] =
+    useState<AdminPaymentListItem | null>(null);
+  const clientQuery = useAdminClientQuery(clientId);
+  const paymentsQuery = useAdminClientPaymentsQuery(clientId, {
+    limit: PAGE_SIZE,
+    skip: (page - 1) * PAGE_SIZE,
+    sortDir: "desc",
+  });
+  const markCompleteMutation = useMarkClientPaymentCompleteMutation(clientId);
+  const client = clientQuery.data;
+  const payments = paymentsQuery.data?.data ?? [];
+  const totalPages = Math.max(1, Math.ceil((paymentsQuery.data?.total ?? 0) / PAGE_SIZE));
+
+  function openReceipt(payment: AdminPaymentListItem) {
+    setSelectedPayment(payment);
+  }
+
+  function markComplete(payment: AdminPaymentListItem) {
+    const months = payment.months ?? (payment.month ? [payment.month] : []);
+
+    if (!months.length) {
+      toast.error("No due month found for this payment.");
+      return;
+    }
+
+    markCompleteMutation.mutate(
+      { months },
+      {
+        onError: (error) => toast.error(getApiErrorMessage(error)),
+        onSuccess: () => toast.success("Payment marked complete."),
+      },
+    );
+  }
+
+  if (clientQuery.isError) {
+    return (
+      <ErrorState
+        message="We could not load this client."
+        reset={() => clientQuery.refetch()}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -66,7 +127,7 @@ export default function ClientDetailsPanel({ client, payments }: Props) {
                 Full Names
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {client.name}
+                {clientQuery.isLoading ? "Loading..." : client?.fullNames ?? "-"}
               </p>
             </div>
             <div>
@@ -74,7 +135,7 @@ export default function ClientDetailsPanel({ client, payments }: Props) {
                 Adress
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {client.address}
+                {clientQuery.isLoading ? "Loading..." : client?.address ?? "-"}
               </p>
             </div>
             <div>
@@ -82,7 +143,7 @@ export default function ClientDetailsPanel({ client, payments }: Props) {
                 Phone Number
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {client.phone}
+                {clientQuery.isLoading ? "Loading..." : client?.phone ?? "-"}
               </p>
             </div>
           </div>
@@ -97,7 +158,7 @@ export default function ClientDetailsPanel({ client, payments }: Props) {
                 Due Payments
               </p>
               <p className="mt-7 text-[40px] font-semibold tracking-tight text-danger">
-                ${dueAmount}
+                {formatCurrency(client?.totalDue)}
               </p>
             </div>
             <div className="flex h-10 min-w-18 items-center justify-center rounded-md bg-surface-muted px-4 text-text-muted">
@@ -113,7 +174,7 @@ export default function ClientDetailsPanel({ client, payments }: Props) {
                 Due Months
               </p>
               <p className="mt-7 text-[40px] font-semibold tracking-tight text-foreground">
-                {duePayments.length}
+                {client?.dueMonths ?? 0}
               </p>
             </div>
             <div className="flex h-10 min-w-18 items-center justify-center rounded-md bg-surface-muted px-4 text-text-muted">
@@ -147,43 +208,69 @@ export default function ClientDetailsPanel({ client, payments }: Props) {
               </TableTr>
             </TableThead>
             <TableTbody>
-              {payments.map((payment) => {
-                const isOverdue = payment.status === "Overdue";
+              {paymentsQuery.isLoading
+                ? Array.from({ length: PAGE_SIZE }).map((_, index) => (
+                    <TableTr
+                      key={index}
+                      className="border-b border-border last:border-b-0"
+                    >
+                      {Array.from({ length: 6 }).map((__, cellIndex) => (
+                        <TableTd className="px-7 py-6" key={cellIndex}>
+                          <Skeleton className="h-5 rounded-sm" />
+                        </TableTd>
+                      ))}
+                    </TableTr>
+                  ))
+                : payments.length === 0
+                ? (
+                    <TableEmptyRow
+                      colSpan={6}
+                      message="This client has no payment timeline yet."
+                      title="No payments found"
+                    />
+                  )
+                : payments.map((payment) => {
+                const isOverdue = payment.status === "DUE";
 
                 return (
                   <TableTr
-                    key={payment.id}
+                    key={payment.paymentId}
                     className="border-b border-border last:border-b-0"
                   >
                     <TableTd className="px-7 py-6 text-[14px] font-medium uppercase text-text-muted">
-                      {getMonthLabel(payment)}
+                      {formatMonths(payment.months ?? payment.month)}
                     </TableTd>
                     <TableTd className="px-7 py-6 text-[14px] text-text-muted">
-                      {payment.amount}
+                      {formatCurrency(payment.amount)}
                     </TableTd>
                     <TableTd
                       className={`px-7 py-6 text-[14px] ${isOverdue ? "text-text-muted" : "text-foreground"}`}
                     >
-                      {isOverdue ? "-" : payment.agentName}
+                      {isOverdue ? "-" : payment.agentName ?? "Admin"}
                     </TableTd>
                     <TableTd className="px-7 py-6 text-[14px]">
                       {isOverdue ? (
                         <span className="text-text-muted">-</span>
                       ) : (
-                        <button className="font-medium text-brand underline decoration-brand/40 underline-offset-4">
-                          View
+                        <button
+                          className="font-medium text-brand underline decoration-brand/40 underline-offset-4"
+                          disabled={!payment.receiptId}
+                          onClick={() => openReceipt(payment)}
+                          type="button"
+                        >
+                          {payment.receiptId ? "View" : "Pending"}
                         </button>
                       )}
                     </TableTd>
                     <TableTd className="px-3 py-6">
-                      <StatusBadge status={payment.status} />
+                      <StatusBadge status={isOverdue ? "Overdue" : "Paid"} />
                     </TableTd>
                     <TableTd className="px-3 py-6 flex items-center">
                       {isOverdue ? (
                         <Menu position="bottom-end" shadow="md" width={180}>
                           <Menu.Target>
                             <Button
-                              aria-label={`Open payment actions for ${payment.id}`}
+                              aria-label={`Open payment actions for ${payment.paymentId}`}
                               size="icon"
                               variant="subtle"
                             >
@@ -191,19 +278,31 @@ export default function ClientDetailsPanel({ client, payments }: Props) {
                             </Button>
                           </Menu.Target>
                           <Menu.Dropdown>
-                            <Menu.Item>Mark as paid</Menu.Item>
+                            <Menu.Item onClick={() => markComplete(payment)}>
+                              Mark as paid
+                            </Menu.Item>
                           </Menu.Dropdown>
                         </Menu>
                       ) : (
-                        <Button
-                          aria-label={`No actions for ${payment.id}`}
-                          className="text-foreground"
-                          disabled
-                          size="icon"
-                          variant="subtle"
-                        >
-                          <HiEllipsisHorizontal className="size-6" />
-                        </Button>
+                        <Menu position="bottom-end" shadow="md" width={180}>
+                          <Menu.Target>
+                            <Button
+                              aria-label={`Open receipt actions for ${payment.paymentId}`}
+                              size="icon"
+                              variant="subtle"
+                            >
+                              <HiEllipsisHorizontal className="size-6" />
+                            </Button>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item
+                              disabled={!payment.receiptId}
+                              onClick={() => openReceipt(payment)}
+                            >
+                              View receipt
+                            </Menu.Item>
+                          </Menu.Dropdown>
+                        </Menu>
                       )}
                     </TableTd>
                   </TableTr>
@@ -216,13 +315,19 @@ export default function ClientDetailsPanel({ client, payments }: Props) {
           <Pagination
             boundaries={1}
             color="brand"
+            onChange={setPage}
             radius="xl"
             siblings={2}
-            total={10}
-            value={1}
+            total={totalPages}
+            value={page}
           />
         </div>
       </section>
+      <ReceiptModal
+        onClose={() => setSelectedPayment(null)}
+        opened={selectedPayment !== null}
+        payment={selectedPayment ? toReceiptPayment(selectedPayment) : null}
+      />
     </div>
   );
 }

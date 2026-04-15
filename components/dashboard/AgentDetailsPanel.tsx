@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import {
   Pagination,
+  Skeleton,
   Table,
   TableScrollContainer,
   TableTbody,
@@ -15,19 +19,62 @@ import {
   HiOutlineUser,
 } from "react-icons/hi2";
 
-import type { Agent, Payment } from "@/types";
+import ErrorState from "@/components/dashboard/ErrorState";
+import ReceiptModal from "@/components/dashboard/ReceiptModal";
+import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
+import { formatCurrency, formatDate, formatMonths } from "@/lib/format";
+import {
+  useAdminAgentQuery,
+  useAdminPaymentsQuery,
+} from "@/lib/query/hooks";
+import type { AdminPaymentListItem } from "@/lib/api/types";
+import type { Payment } from "@/types";
 
 interface Props {
-  agent: Agent;
-  payments: Payment[];
+  agentId: string;
 }
 
-export default function AgentDetailsPanel({ agent, payments }: Props) {
-  const paidPayments = payments.filter((payment) => payment.status === "Paid");
-  const totalCollected = paidPayments.reduce(
-    (sum, payment) => sum + Number(payment.amount.replace("$", "")),
-    0,
-  );
+const PAGE_SIZE = 7;
+
+function toReceiptPayment(payment: AdminPaymentListItem): Payment {
+  return {
+    agentId: payment.agentId ?? "admin",
+    agentName: payment.agentName ?? "Admin",
+    amount: formatCurrency(payment.amount),
+    billingMonth: formatMonths(payment.months ?? payment.month),
+    clientId: payment.clientId ?? "",
+    clientName: payment.clientName ?? "-",
+    date: formatDate(payment.paymentDate ?? payment.createdAt),
+    id: payment.paymentId,
+    months: String(payment.months?.length ?? 1),
+    receiptNumber: payment.receiptNumber ?? "-",
+    status: "Paid",
+  };
+}
+
+export default function AgentDetailsPanel({ agentId }: Props) {
+  const [page, setPage] = useState(1);
+  const [selectedPayment, setSelectedPayment] =
+    useState<AdminPaymentListItem | null>(null);
+  const agentQuery = useAdminAgentQuery(agentId);
+  const paymentsQuery = useAdminPaymentsQuery({
+    agentId,
+    limit: PAGE_SIZE,
+    skip: (page - 1) * PAGE_SIZE,
+    sortDir: "desc",
+  });
+  const agent = agentQuery.data;
+  const payments = paymentsQuery.data?.data ?? [];
+  const totalPages = Math.max(1, Math.ceil((paymentsQuery.data?.total ?? 0) / PAGE_SIZE));
+
+  if (agentQuery.isError) {
+    return (
+      <ErrorState
+        message="We could not load this agent."
+        reset={() => agentQuery.refetch()}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -52,7 +99,7 @@ export default function AgentDetailsPanel({ agent, payments }: Props) {
                 Full Names
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {agent.name}
+                {agentQuery.isLoading ? "Loading..." : agent?.fullNames ?? "-"}
               </p>
             </div>
             <div>
@@ -60,7 +107,7 @@ export default function AgentDetailsPanel({ agent, payments }: Props) {
                 Registered Date
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {agent.registeredDate}
+                {formatDate(agent?.createdAt)}
               </p>
             </div>
             <div>
@@ -68,7 +115,7 @@ export default function AgentDetailsPanel({ agent, payments }: Props) {
                 Phone Number
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {agent.phone}
+                {agentQuery.isLoading ? "Loading..." : agent?.phone ?? "-"}
               </p>
             </div>
           </div>
@@ -83,7 +130,9 @@ export default function AgentDetailsPanel({ agent, payments }: Props) {
                 Total Collected (Aug)
               </p>
               <p className="mt-7 text-[40px] font-semibold tracking-tight text-foreground">
-                ${totalCollected}
+                {formatCurrency(
+                  agent?.currentMonthCollected ?? agent?.totalAmountCollected,
+                )}
               </p>
             </div>
             <div className="flex h-10 min-w-18 items-center justify-center rounded-md bg-surface-muted px-4 text-text-muted">
@@ -99,7 +148,7 @@ export default function AgentDetailsPanel({ agent, payments }: Props) {
                 Unique Clients (Aug)
               </p>
               <p className="mt-7 text-[40px] font-semibold tracking-tight text-foreground">
-                {new Set(paidPayments.map((payment) => payment.clientId)).size}
+                {agent?.uniqueClientsCollectedFrom ?? 0}
               </p>
             </div>
             <div className="flex h-10 min-w-18 items-center justify-center rounded-md bg-surface-muted px-4 text-text-muted">
@@ -132,30 +181,56 @@ export default function AgentDetailsPanel({ agent, payments }: Props) {
               </TableTr>
             </TableThead>
             <TableTbody>
-              {paidPayments.map((payment) => (
-                <TableTr
-                  key={payment.id}
-                  className="border-b border-border last:border-b-0"
-                >
-                  <TableTd className="px-7 py-6 text-[14px] font-medium text-foreground">
-                    {payment.clientName}
-                  </TableTd>
-                  <TableTd className="px-7 py-6 text-[14px] text-text-muted">
-                    23-04-2026
-                  </TableTd>
-                  <TableTd className="px-7 py-6 text-[14px] text-text-muted">
-                    2
-                  </TableTd>
-                  <TableTd className="px-7 py-6 text-[14px] text-text-muted">
-                    {payment.amount}
-                  </TableTd>
-                  <TableTd className="px-7 py-6 text-[14px]">
-                    <button className="font-medium text-brand underline decoration-brand/40 underline-offset-4">
-                      View
-                    </button>
-                  </TableTd>
-                </TableTr>
-              ))}
+              {paymentsQuery.isLoading
+                ? Array.from({ length: PAGE_SIZE }).map((_, index) => (
+                    <TableTr
+                      key={index}
+                      className="border-b border-border last:border-b-0"
+                    >
+                      {Array.from({ length: 5 }).map((__, cellIndex) => (
+                        <TableTd className="px-7 py-6" key={cellIndex}>
+                          <Skeleton className="h-5 rounded-sm" />
+                        </TableTd>
+                      ))}
+                    </TableTr>
+                  ))
+                : payments.length === 0
+                ? (
+                    <TableEmptyRow
+                      colSpan={5}
+                      message="Payments collected by this agent will appear here."
+                      title="No collections found"
+                    />
+                  )
+                : payments.map((payment) => (
+                    <TableTr
+                      key={payment.paymentId}
+                      className="border-b border-border last:border-b-0"
+                    >
+                      <TableTd className="px-7 py-6 text-[14px] font-medium text-foreground">
+                        {payment.clientName ?? "-"}
+                      </TableTd>
+                      <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                        {formatDate(payment.paymentDate ?? payment.createdAt)}
+                      </TableTd>
+                      <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                        {formatMonths(payment.months ?? payment.month)}
+                      </TableTd>
+                      <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                        {formatCurrency(payment.amount)}
+                      </TableTd>
+                      <TableTd className="px-7 py-6 text-[14px]">
+                        <button
+                          className="font-medium text-brand underline decoration-brand/40 underline-offset-4 disabled:text-text-muted disabled:no-underline"
+                          disabled={!payment.receiptId}
+                          onClick={() => setSelectedPayment(payment)}
+                          type="button"
+                        >
+                          {payment.receiptId ? "View" : "Pending"}
+                        </button>
+                      </TableTd>
+                    </TableTr>
+                  ))}
             </TableTbody>
           </Table>
         </TableScrollContainer>
@@ -163,13 +238,19 @@ export default function AgentDetailsPanel({ agent, payments }: Props) {
           <Pagination
             boundaries={1}
             color="brand"
+            onChange={setPage}
             radius="xl"
             siblings={2}
-            total={10}
-            value={1}
+            total={totalPages}
+            value={page}
           />
         </div>
       </section>
+      <ReceiptModal
+        onClose={() => setSelectedPayment(null)}
+        opened={selectedPayment !== null}
+        payment={selectedPayment ? toReceiptPayment(selectedPayment) : null}
+      />
     </div>
   );
 }

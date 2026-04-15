@@ -13,11 +13,13 @@ interface Props {
   query: string;
   onQueryChange: (value: string) => void;
   addLabel?: string;
+  onAdd?: () => void;
   className?: string;
 }
 
 export default function FilterToolbar({
   addLabel,
+  onAdd,
   onQueryChange,
   placeholder,
   query,
@@ -63,7 +65,9 @@ export default function FilterToolbar({
           {addLabel ? (
             <button
               className="px-[12px] py-[8px] bg-[#12A15E] rounded-[6px] text-white"
+              onClick={onAdd}
               style={{ fontSize: 13 }}
+              type="button"
             >
               {addLabel}
             </button>

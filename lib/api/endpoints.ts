@@ -1,0 +1,61 @@
+export const API_PREFIX = "/api/v1";
+
+export const endpoints = {
+  root: "/",
+  health: "/health",
+  metrics: "/metrics",
+  auth: {
+    firstLoginStart: "/auth/first-login/start",
+    firstLoginVerify: "/auth/first-login/verify",
+    firstLoginSetPassword: "/auth/first-login/set-password",
+    passwordLogin: "/auth/login/password",
+    otpLoginStart: "/auth/login/otp/start",
+    otpLoginVerify: "/auth/login/otp/verify",
+    forgotPasswordStart: "/auth/password/forgot/start",
+    forgotPasswordVerify: "/auth/password/forgot/verify",
+    forgotPasswordReset: "/auth/password/forgot/reset",
+    changePasswordStart: "/auth/password/change/start",
+    changePassword: "/auth/password/change",
+    pushToken: "/auth/push-token",
+  },
+  me: {
+    detail: "/me",
+    phoneChangeStart: "/me/phone-change/start",
+    phoneChangeVerify: "/me/phone-change/verify",
+  },
+  admin: {
+    dashboard: "/admin/dashboard",
+    admins: "/admin/users/admins",
+    agents: "/admin/agents",
+    agent: (agentId: string) => `/admin/agents/${agentId}`,
+    agentStatus: (agentId: string) => `/admin/agents/${agentId}/status`,
+    createAgent: "/admin/users/agents",
+    legacyDeactivateAgent: "/admin/agents/deactivate",
+    clients: "/admin/clients",
+    client: (clientId: string) => `/admin/clients/${clientId}`,
+    clientStatus: (clientId: string) => `/admin/clients/${clientId}/status`,
+    clientPayments: (clientId: string) => `/admin/clients/${clientId}/payments`,
+    markClientPaymentComplete: (clientId: string) =>
+      `/admin/clients/${clientId}/payments/mark-complete`,
+    createClient: "/admin/users/clients",
+    payments: "/admin/payments",
+    payment: (paymentId: string) => `/admin/payments/${paymentId}`,
+    importAgentTemplateCsv: "/admin/imports/templates/agents.csv",
+    importAgentTemplateXlsx: "/admin/imports/templates/agents.xlsx",
+    importClientTemplateCsv: "/admin/imports/templates/clients.csv",
+    importClientTemplateXlsx: "/admin/imports/templates/clients.xlsx",
+    importAgents: "/admin/imports/agents",
+    importClients: "/admin/imports/clients",
+  },
+  billing: {
+    runDaily: "/billing/run-daily",
+  },
+  payments: {
+    mine: "/payments/mine",
+    receiptDownload: (receiptId: string) =>
+      `/payments/receipts/${receiptId}/download`,
+  },
+  publicReceipts: {
+    verify: (receiptId: string) => `/public/receipts/${receiptId}/verify`,
+  },
+} as const;

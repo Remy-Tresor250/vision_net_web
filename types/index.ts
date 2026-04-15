@@ -16,6 +16,7 @@ export interface RevenuePoint {
 export interface Transaction {
   id: string;
   date: string;
+  clientId?: string;
   clientName: string;
   agentName: string;
   billingCycle: string;
@@ -51,6 +52,8 @@ export interface Payment {
   agentId: string;
   agentName: string;
   months: string;
+  billingMonth: string;
+  receiptNumber: string;
   date: string;
   amount: string;
   status: "Paid" | "Overdue";
