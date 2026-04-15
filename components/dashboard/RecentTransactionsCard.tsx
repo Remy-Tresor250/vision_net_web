@@ -6,15 +6,22 @@ import {
   TableTr,
 } from "@mantine/core";
 
+import { cn } from "@/lib/utils";
 import type { Transaction } from "@/types";
 
 interface Props {
   transactions: Transaction[];
+  className?: string;
 }
 
-export default function RecentTransactionsCard({ transactions }: Props) {
+export default function RecentTransactionsCard({ className, transactions }: Props) {
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
+    <section
+      className={cn(
+        "overflow-hidden rounded-xl border border-border bg-surface shadow-card",
+        className
+      )}
+    >
       <div className="flex items-center justify-between border-b border-border bg-surface-muted px-5 py-4">
         <h2 className="text-lg font-semibold uppercase tracking-wider text-foreground">
           Recent Transactions

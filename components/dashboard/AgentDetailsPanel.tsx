@@ -1,8 +1,20 @@
 import Link from "next/link";
-import { HiOutlineArrowLeft } from "react-icons/hi2";
+import {
+  Pagination,
+  Table,
+  TableScrollContainer,
+  TableTbody,
+  TableTd,
+  TableTh,
+  TableThead,
+  TableTr,
+} from "@mantine/core";
+import {
+  HiOutlineArrowLeft,
+  HiOutlineBanknotes,
+  HiOutlineUser,
+} from "react-icons/hi2";
 
-import Button from "@/components/ui/Button";
-import StatusBadge from "@/components/ui/StatusBadge";
 import type { Agent, Payment } from "@/types";
 
 interface Props {
@@ -11,93 +23,152 @@ interface Props {
 }
 
 export default function AgentDetailsPanel({ agent, payments }: Props) {
-  const totalCollected = payments
-    .filter((payment) => payment.status === "Paid")
-    .reduce((sum, payment) => sum + Number(payment.amount.replace("$", "")), 0);
+  const paidPayments = payments.filter((payment) => payment.status === "Paid");
+  const totalCollected = paidPayments.reduce(
+    (sum, payment) => sum + Number(payment.amount.replace("$", "")),
+    0,
+  );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/agents">
-          <Button variant="outline">
-            <HiOutlineArrowLeft className="size-5" />
-            Back to agents
-          </Button>
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 text-text-muted">
+        <HiOutlineArrowLeft className="size-5" />
+        <Link
+          className="text-[16px] font-medium transition-colors duration-200 ease-out hover:text-foreground"
+          href="/agents"
+        >
+          Back to Agents
         </Link>
       </div>
-      <section className="grid gap-5 lg:grid-cols-3">
-        <article className="rounded-xl border border-border bg-surface p-6 shadow-card lg:col-span-1">
-          <p className="text-sm font-semibold uppercase tracking-widest text-text-muted">
-            Agent Profile
-          </p>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-foreground">
-            {agent.name}
-          </h1>
-          <div className="mt-6 grid gap-4">
-            <div className="rounded-lg bg-surface-muted p-4">
-              <p className="text-sm uppercase tracking-wide text-text-muted">Phone</p>
-              <p className="mt-2 text-lg font-medium text-foreground">{agent.phone}</p>
+
+      <section className="rounded-sm border border-border bg-surface px-7 py-6 shadow-card">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+          <div className="flex size-16 items-center justify-center rounded-md bg-brand text-white">
+            <HiOutlineUser className="size-6" />
+          </div>
+          <div className="flex flex-1 gap-[5vw] flex-row items-center">
+            <div>
+              <p className="text-[16px] font-medium uppercase tracking-wider text-text-muted">
+                Full Names
+              </p>
+              <p className="text-[18px] font-medium tracking-tight text-foreground">
+                {agent.name}
+              </p>
             </div>
-            <div className="rounded-lg bg-surface-muted p-4">
-              <p className="text-sm uppercase tracking-wide text-text-muted">Region</p>
-              <p className="mt-2 text-lg font-medium text-foreground">{agent.region}</p>
+            <div>
+              <p className="text-[16px] font-medium uppercase tracking-wider text-text-muted">
+                Registered Date
+              </p>
+              <p className="text-[18px] font-medium tracking-tight text-foreground">
+                {agent.registeredDate}
+              </p>
             </div>
-            <div className="rounded-lg bg-surface-muted p-4">
-              <p className="text-sm uppercase tracking-wide text-text-muted">Status</p>
-              <div className="mt-3">
-                <StatusBadge status={agent.status} />
-              </div>
+            <div>
+              <p className="text-[16px] font-medium uppercase tracking-wider text-text-muted">
+                Phone Number
+              </p>
+              <p className="text-[18px] font-medium tracking-tight text-foreground">
+                {agent.phone}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid max-w-3xl gap-6 md:grid-cols-2">
+        <article className="rounded-xl border border-border bg-surface p-5 shadow-card">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wider text-text-muted">
+                Total Collected (Aug)
+              </p>
+              <p className="mt-7 text-[40px] font-semibold tracking-tight text-foreground">
+                ${totalCollected}
+              </p>
+            </div>
+            <div className="flex h-10 min-w-18 items-center justify-center rounded-md bg-surface-muted px-4 text-text-muted">
+              <HiOutlineBanknotes className="size-5" />
             </div>
           </div>
         </article>
-        <section className="grid gap-5 lg:col-span-2 md:grid-cols-3">
-          <article className="rounded-xl border border-border bg-surface p-6 shadow-card">
-            <p className="text-sm font-semibold uppercase tracking-widest text-text-muted">
-              Clients Served
-            </p>
-            <p className="mt-4 text-4xl font-semibold tracking-tight text-foreground">
-              {agent.clientsServed}
-            </p>
-          </article>
-          <article className="rounded-xl border border-border bg-surface p-6 shadow-card">
-            <p className="text-sm font-semibold uppercase tracking-widest text-text-muted">
-              This Month
-            </p>
-            <p className="mt-4 text-4xl font-semibold tracking-tight text-brand">
-              {agent.performance}
-            </p>
-          </article>
-          <article className="rounded-xl border border-border bg-surface p-6 shadow-card">
-            <p className="text-sm font-semibold uppercase tracking-widest text-text-muted">
-              Collected
-            </p>
-            <p className="mt-4 text-4xl font-semibold tracking-tight text-foreground">
-              ${totalCollected}
-            </p>
-          </article>
-          <article className="rounded-xl border border-border bg-surface p-6 shadow-card md:col-span-3">
-            <h2 className="text-lg font-semibold uppercase tracking-wider text-foreground">
-              Recent Collections
-            </h2>
-            <ul className="mt-5 space-y-4">
-              {payments.slice(0, 5).map((payment) => (
-                <li
+
+        <article className="rounded-xl border border-border bg-surface p-5 shadow-card">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wider text-text-muted">
+                Unique Clients (Aug)
+              </p>
+              <p className="mt-7 text-[40px] font-semibold tracking-tight text-foreground">
+                {new Set(paidPayments.map((payment) => payment.clientId)).size}
+              </p>
+            </div>
+            <div className="flex h-10 min-w-18 items-center justify-center rounded-md bg-surface-muted px-4 text-text-muted">
+              <HiOutlineBanknotes className="size-5" />
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
+        <TableScrollContainer minWidth={1080}>
+          <Table className="min-w-full">
+            <TableThead className="bg-surface-muted">
+              <TableTr>
+                {[
+                  "Client Name",
+                  "Date Collected",
+                  "Month",
+                  "Amount",
+                  "Receipt",
+                ].map((header) => (
+                  <TableTh
+                    key={header}
+                    className="px-7 py-5 text-sm font-semibold uppercase tracking-wider text-text-muted"
+                    styles={{ th: { padding: 12 } }}
+                  >
+                    {header}
+                  </TableTh>
+                ))}
+              </TableTr>
+            </TableThead>
+            <TableTbody>
+              {paidPayments.map((payment) => (
+                <TableTr
                   key={payment.id}
-                  className="flex items-center justify-between rounded-lg border border-border px-4 py-4"
+                  className="border-b border-border last:border-b-0"
                 >
-                  <div>
-                    <p className="text-lg font-medium text-foreground">{payment.clientName}</p>
-                    <p className="text-sm text-text-muted">{payment.date}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-medium text-foreground">{payment.amount}</p>
-                    <p className="text-sm text-text-muted">{payment.status}</p>
-                  </div>
-                </li>
+                  <TableTd className="px-7 py-6 text-[14px] font-medium text-foreground">
+                    {payment.clientName}
+                  </TableTd>
+                  <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                    23-04-2026
+                  </TableTd>
+                  <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                    2
+                  </TableTd>
+                  <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                    {payment.amount}
+                  </TableTd>
+                  <TableTd className="px-7 py-6 text-[14px]">
+                    <button className="font-medium text-brand underline decoration-brand/40 underline-offset-4">
+                      View
+                    </button>
+                  </TableTd>
+                </TableTr>
               ))}
-            </ul>
-          </article>
-        </section>
+            </TableTbody>
+          </Table>
+        </TableScrollContainer>
+        <div className="flex justify-center px-6 py-7">
+          <Pagination
+            boundaries={1}
+            color="brand"
+            radius="xl"
+            siblings={2}
+            total={10}
+            value={1}
+          />
+        </div>
       </section>
     </div>
   );

@@ -1,10 +1,18 @@
+import { cn } from "@/lib/utils";
+
 interface Props {
   agents: Array<{ id: string; name: string; amount: string }>;
+  className?: string;
 }
 
-export default function TopAgentsCard({ agents }: Props) {
+export default function TopAgentsCard({ agents, className }: Props) {
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
+    <section
+      className={cn(
+        "overflow-hidden rounded-xl border border-border bg-surface shadow-card",
+        className
+      )}
+    >
       <div className="flex items-center justify-between border-b border-border bg-surface-muted px-5 py-4">
         <h2 className="text-lg font-semibold uppercase tracking-wider text-foreground">
           Top Agents

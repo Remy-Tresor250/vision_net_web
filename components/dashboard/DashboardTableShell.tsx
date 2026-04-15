@@ -30,7 +30,7 @@ export default function DashboardTableShell({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-sm border border-border bg-surface shadow-card h-[75vh]",
+        "overflow-hidden rounded-sm border border-border bg-surface shadow-card h-[75vh] flex flex-col justify-between",
         className,
       )}
     >
