@@ -124,11 +124,11 @@ export default function DashboardShell({ children }: Props) {
         <SidebarContent pathname={pathname} />
       </Drawer>
       <div className="flex min-h-screen">
-        <aside className="hidden w-[25vw] shrink-0 xl:block">
+        <aside className="hidden w-[23vw] shrink-0 xl:block fixed h-screen">
           <SidebarContent pathname={pathname} />
         </aside>
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-          <header className="border-b border-border bg-surface px-5 py-2 md:px-6 xl:px-8">
+          <header className="xl:w-[77vw] xl:self-end border-b border-border bg-surface px-5 py-2 md:px-6 xl:px-8">
             <div className="flex items-start justify-between gap-5">
               <div className="flex items-start gap-4">
                 <Button className="xl:hidden" onClick={open} size="icon" variant="outline">
@@ -158,7 +158,7 @@ export default function DashboardShell({ children }: Props) {
               </div>
             </div>
           </header>
-          <main className="flex-1 px-5 py-7 md:px-8 xl:px-8 xl:py-8">{children}</main>
+          <main className="xl:w-[77vw] xl:self-end flex-1 px-2 py-7 md:px-4 xl:px-6 xl:py-4">{children}</main>
         </div>
       </div>
     </div>

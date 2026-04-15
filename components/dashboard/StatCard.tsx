@@ -15,7 +15,7 @@ export default function StatCard({ card, className }: Props) {
   return (
     <article
       className={cn(
-        "rounded-xl border border-border bg-surface p-5 shadow-card",
+        "rounded-sm border border-border bg-surface p-5 shadow-card",
         className
       )}
     >
@@ -34,7 +34,7 @@ export default function StatCard({ card, className }: Props) {
             {card.value}
           </p>
         </div>
-        <div className="flex h-9 min-w-16 items-center justify-center rounded-md bg-surface-muted px-3 text-text-muted">
+        <div className="flex h-9 items-center justify-center rounded-md bg-surface-muted px-3 text-text-muted">
           {card.id === "clients" || card.id === "agents" ? (
             <HiOutlineUsers className="size-5" />
           ) : (
@@ -45,7 +45,7 @@ export default function StatCard({ card, className }: Props) {
       <div className="mt-3 flex items-end justify-between gap-4">
         <p
           className={cn(
-            "text-sm",
+            "text-[12px] leading-[12px]",
             isDanger ? "text-danger" : "text-text-muted",
             isBrand && "text-text-muted"
           )}
@@ -53,7 +53,7 @@ export default function StatCard({ card, className }: Props) {
           {card.caption}
         </p>
         {card.trend ? (
-          <p className="text-right text-xs font-semibold text-brand">{card.trend}</p>
+          <p className="text-right text-[12px] font-semibold text-brand leading-[12px]">{card.trend}</p>
         ) : null}
       </div>
     </article>
