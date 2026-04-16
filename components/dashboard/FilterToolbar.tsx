@@ -1,6 +1,8 @@
 "use client";
 
 import { TextInput } from "@mantine/core";
+import { useDebouncedValue } from "@mantine/hooks";
+import { useEffect, useEffectEvent, useState } from "react";
 import {
   HiOutlineMagnifyingGlass,
   HiOutlineAdjustmentsHorizontal,
@@ -27,6 +29,19 @@ export default function FilterToolbar({
   title
 }: Props) {
   const { t } = useTranslation();
+  const [searchValue, setSearchValue] = useState(query);
+  const [debouncedQuery] = useDebouncedValue(searchValue, 400);
+  const emitQueryChange = useEffectEvent(onQueryChange);
+
+  useEffect(() => {
+    setSearchValue(query);
+  }, [query]);
+
+  useEffect(() => {
+    if (debouncedQuery === query) return;
+
+    emitQueryChange(debouncedQuery);
+  }, [debouncedQuery, query]);
 
   return (
     <div className="w-full flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -51,9 +66,9 @@ export default function FilterToolbar({
               },
             }}
             leftSection={<HiOutlineMagnifyingGlass className="size-5" />}
-            onChange={(event) => onQueryChange(event.currentTarget.value)}
+            onChange={(event) => setSearchValue(event.currentTarget.value)}
             placeholder={placeholder}
-            value={query}
+            value={searchValue}
           />
         </div>
 

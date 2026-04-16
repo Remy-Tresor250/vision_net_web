@@ -35,6 +35,10 @@ export interface DashboardParams {
   topAgentsLimit?: number;
 }
 
+interface RequestConfig {
+  signal?: AbortSignal;
+}
+
 function downloadFile(path: string) {
   return api.get<Blob>(path, { responseType: "blob" }).then((res) => res.data);
 }
@@ -51,20 +55,32 @@ function uploadFile(path: string, file: File) {
 }
 
 export const adminApi = {
-  dashboard: (params?: DashboardParams) =>
-    api.get<DashboardResponse>(endpoints.admin.dashboard, { params }).then((res) => res.data),
+  dashboard: (params?: DashboardParams, config?: RequestConfig) =>
+    api
+      .get<DashboardResponse>(endpoints.admin.dashboard, {
+        params,
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
   createAdmin: (payload: CreateAdminUserPayload) =>
     api.post<UserSummary>(endpoints.admin.admins, payload).then((res) => res.data),
   createAgent: (payload: CreateAgentPayload) =>
     api.post<UserSummary>(endpoints.admin.createAgent, payload).then((res) => res.data),
   createClient: (payload: CreateClientPayload) =>
     api.post<UserSummary>(endpoints.admin.createClient, payload).then((res) => res.data),
-  clients: (params?: AdminClientsParams) =>
+  clients: (params?: AdminClientsParams, config?: RequestConfig) =>
     api
-      .get<PageResponse<AdminClientListItem>>(endpoints.admin.clients, { params })
+      .get<PageResponse<AdminClientListItem>>(endpoints.admin.clients, {
+        params,
+        signal: config?.signal,
+      })
       .then((res) => res.data),
-  client: (clientId: string) =>
-    api.get<AdminClientDetail>(endpoints.admin.client(clientId)).then((res) => res.data),
+  client: (clientId: string, config?: RequestConfig) =>
+    api
+      .get<AdminClientDetail>(endpoints.admin.client(clientId), {
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
   updateClient: (clientId: string, payload: UpdateClientPayload) =>
     api
       .patch<AdminClientDetail>(endpoints.admin.client(clientId), payload)
@@ -73,22 +89,34 @@ export const adminApi = {
     api
       .patch<ApiSuccess>(endpoints.admin.clientStatus(clientId), payload)
       .then((res) => res.data),
-  clientPayments: (clientId: string, params?: AdminClientPaymentsParams) =>
+  clientPayments: (
+    clientId: string,
+    params?: AdminClientPaymentsParams,
+    config?: RequestConfig,
+  ) =>
     api
       .get<PageResponse<AdminPaymentListItem>>(endpoints.admin.clientPayments(clientId), {
         params,
+        signal: config?.signal,
       })
       .then((res) => res.data),
   markClientPaymentComplete: (clientId: string, payload: MarkPaymentCompletePayload) =>
     api
       .post<PaymentResponse>(endpoints.admin.markClientPaymentComplete(clientId), payload)
       .then((res) => res.data),
-  agents: (params?: AdminAgentsParams) =>
+  agents: (params?: AdminAgentsParams, config?: RequestConfig) =>
     api
-      .get<PageResponse<AdminAgentListItem>>(endpoints.admin.agents, { params })
+      .get<PageResponse<AdminAgentListItem>>(endpoints.admin.agents, {
+        params,
+        signal: config?.signal,
+      })
       .then((res) => res.data),
-  agent: (agentId: string) =>
-    api.get<AdminAgentDetail>(endpoints.admin.agent(agentId)).then((res) => res.data),
+  agent: (agentId: string, config?: RequestConfig) =>
+    api
+      .get<AdminAgentDetail>(endpoints.admin.agent(agentId), {
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
   updateAgent: (agentId: string, payload: UpdateAgentPayload) =>
     api
       .patch<AdminAgentDetail>(endpoints.admin.agent(agentId), payload)
@@ -101,21 +129,34 @@ export const adminApi = {
     api
       .post<ApiSuccess>(endpoints.admin.legacyDeactivateAgent, { userId })
       .then((res) => res.data),
-  payments: (params?: AdminPaymentsParams) =>
+  payments: (params?: AdminPaymentsParams, config?: RequestConfig) =>
     api
-      .get<PageResponse<AdminPaymentListItem>>(endpoints.admin.payments, { params })
+      .get<PageResponse<AdminPaymentListItem>>(endpoints.admin.payments, {
+        params,
+        signal: config?.signal,
+      })
       .then((res) => res.data),
-  payment: (paymentId: string) =>
-    api.get<AdminPaymentDetail>(endpoints.admin.payment(paymentId)).then((res) => res.data),
-  paymentReceiptData: (paymentId: string) =>
-    api.get<ReceiptData>(endpoints.payments.receiptData(paymentId)).then((res) => res.data),
+  payment: (paymentId: string, config?: RequestConfig) =>
+    api
+      .get<AdminPaymentDetail>(endpoints.admin.payment(paymentId), {
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  paymentReceiptData: (paymentId: string, config?: RequestConfig) =>
+    api
+      .get<ReceiptData>(endpoints.payments.receiptData(paymentId), {
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
   runBillingDaily: () =>
     api.post<ApiSuccess>(endpoints.billing.runDaily).then((res) => res.data),
   downloadReceipt: (receiptId: string) =>
     downloadFile(endpoints.payments.receiptDownload(receiptId)),
-  verifyReceipt: (receiptId: string) =>
+  verifyReceipt: (receiptId: string, config?: RequestConfig) =>
     api
-      .get<ReceiptVerification>(endpoints.publicReceipts.verify(receiptId))
+      .get<ReceiptVerification>(endpoints.publicReceipts.verify(receiptId), {
+        signal: config?.signal,
+      })
       .then((res) => res.data),
   downloadAgentTemplateCsv: () => downloadFile(endpoints.admin.importAgentTemplateCsv),
   downloadAgentTemplateXlsx: () => downloadFile(endpoints.admin.importAgentTemplateXlsx),

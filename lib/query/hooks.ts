@@ -34,6 +34,10 @@ import {
 import { queryKeys } from "@/lib/query/keys";
 import { useAuthStore } from "@/stores/auth-store";
 
+interface QueryConfig {
+  enabled?: boolean;
+}
+
 export function usePasswordLoginMutation() {
   const setSession = useAuthStore((state) => state.setSession);
 
@@ -95,14 +99,18 @@ export function useUpdateMeMutation() {
 export function useAdminDashboardQuery(params?: DashboardParams) {
   return useQuery({
     queryKey: queryKeys.admin.dashboard(params),
-    queryFn: () => adminApi.dashboard(params),
+    queryFn: ({ signal }) => adminApi.dashboard(params, { signal }),
   });
 }
 
-export function useAdminClientsQuery(params?: AdminClientsParams) {
+export function useAdminClientsQuery(
+  params?: AdminClientsParams,
+  config?: QueryConfig,
+) {
   return useQuery({
+    enabled: config?.enabled,
     queryKey: queryKeys.admin.clients.list(params),
-    queryFn: () => adminApi.clients(params),
+    queryFn: ({ signal }) => adminApi.clients(params, { signal }),
     placeholderData: (previousData) => previousData,
   });
 }
@@ -111,7 +119,7 @@ export function useAdminClientQuery(clientId: string) {
   return useQuery({
     enabled: Boolean(clientId),
     queryKey: queryKeys.admin.clients.detail(clientId),
-    queryFn: () => adminApi.client(clientId),
+    queryFn: ({ signal }) => adminApi.client(clientId, { signal }),
   });
 }
 
@@ -122,15 +130,19 @@ export function useAdminClientPaymentsQuery(
   return useQuery({
     enabled: Boolean(clientId),
     queryKey: queryKeys.admin.clients.payments(clientId, params),
-    queryFn: () => adminApi.clientPayments(clientId, params),
+    queryFn: ({ signal }) => adminApi.clientPayments(clientId, params, { signal }),
     placeholderData: (previousData) => previousData,
   });
 }
 
-export function useAdminAgentsQuery(params?: AdminAgentsParams) {
+export function useAdminAgentsQuery(
+  params?: AdminAgentsParams,
+  config?: QueryConfig,
+) {
   return useQuery({
+    enabled: config?.enabled,
     queryKey: queryKeys.admin.agents.list(params),
-    queryFn: () => adminApi.agents(params),
+    queryFn: ({ signal }) => adminApi.agents(params, { signal }),
     placeholderData: (previousData) => previousData,
   });
 }
@@ -139,14 +151,18 @@ export function useAdminAgentQuery(agentId: string) {
   return useQuery({
     enabled: Boolean(agentId),
     queryKey: queryKeys.admin.agents.detail(agentId),
-    queryFn: () => adminApi.agent(agentId),
+    queryFn: ({ signal }) => adminApi.agent(agentId, { signal }),
   });
 }
 
-export function useAdminPaymentsQuery(params?: AdminPaymentsParams) {
+export function useAdminPaymentsQuery(
+  params?: AdminPaymentsParams,
+  config?: QueryConfig,
+) {
   return useQuery({
+    enabled: config?.enabled,
     queryKey: queryKeys.admin.payments.list(params),
-    queryFn: () => adminApi.payments(params),
+    queryFn: ({ signal }) => adminApi.payments(params, { signal }),
     placeholderData: (previousData) => previousData,
   });
 }
@@ -155,7 +171,7 @@ export function useAdminPaymentQuery(paymentId: string) {
   return useQuery({
     enabled: Boolean(paymentId),
     queryKey: queryKeys.admin.payments.detail(paymentId),
-    queryFn: () => adminApi.payment(paymentId),
+    queryFn: ({ signal }) => adminApi.payment(paymentId, { signal }),
   });
 }
 
@@ -163,7 +179,7 @@ export function useAdminPaymentReceiptDataQuery(paymentId: string) {
   return useQuery({
     enabled: Boolean(paymentId),
     queryKey: queryKeys.admin.payments.receiptData(paymentId),
-    queryFn: () => adminApi.paymentReceiptData(paymentId),
+    queryFn: ({ signal }) => adminApi.paymentReceiptData(paymentId, { signal }),
   });
 }
 
@@ -171,7 +187,7 @@ export function useReceiptVerificationQuery(receiptId: string) {
   return useQuery({
     enabled: Boolean(receiptId),
     queryKey: queryKeys.admin.receipt.verification(receiptId),
-    queryFn: () => adminApi.verifyReceipt(receiptId),
+    queryFn: ({ signal }) => adminApi.verifyReceipt(receiptId, { signal }),
   });
 }
 

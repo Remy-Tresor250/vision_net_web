@@ -18,8 +18,6 @@ import StatCard from "@/components/dashboard/StatCard";
 import TopAgentsCard from "@/components/dashboard/TopAgentsCard";
 import { formatCurrency, formatDate, formatMonths } from "@/lib/format";
 import {
-  useAdminAgentsQuery,
-  useAdminClientsQuery,
   useAdminDashboardQuery,
   useAdminPaymentsQuery,
 } from "@/lib/query/hooks";
@@ -213,8 +211,6 @@ export default function DashboardContent() {
     topAgentsLimit: 10,
     year: new Date().getFullYear(),
   });
-  const clientsQuery = useAdminClientsQuery({ limit: 1, skip: 0 });
-  const agentsQuery = useAdminAgentsQuery({ limit: 1, skip: 0 });
   const paymentsQuery = useAdminPaymentsQuery({
     limit: 6,
     skip: 0,
@@ -238,8 +234,8 @@ export default function DashboardContent() {
   const metricCards = buildMetricCards(
     dashboardQuery.data?.kpis,
     {
-      agents: agentsQuery.data?.total ?? 0,
-      clients: clientsQuery.data?.total ?? 0,
+      agents: 0,
+      clients: 0,
     },
     t,
   );

@@ -124,9 +124,21 @@ export default function DashboardShell({ children }: Props) {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const hydrateLanguage = useLanguageStore((state) => state.hydrate);
-  const clientsQuery = useAdminClientsQuery({ limit: 1, skip: 0 });
-  const agentsQuery = useAdminAgentsQuery({ limit: 1, skip: 0 });
-  const paymentsQuery = useAdminPaymentsQuery({ limit: 1, skip: 0 });
+  const isClientsRoute = pathname === "/clients";
+  const isAgentsRoute = pathname === "/agents";
+  const isPaymentsRoute = pathname === "/payments";
+  const clientsQuery = useAdminClientsQuery(
+    { limit: 1, skip: 0 },
+    { enabled: isClientsRoute },
+  );
+  const agentsQuery = useAdminAgentsQuery(
+    { limit: 1, skip: 0 },
+    { enabled: isAgentsRoute },
+  );
+  const paymentsQuery = useAdminPaymentsQuery(
+    { limit: 1, skip: 0 },
+    { enabled: isPaymentsRoute },
+  );
 
   useEffect(() => {
     hydrateLanguage();
