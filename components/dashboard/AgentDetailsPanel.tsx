@@ -22,11 +22,13 @@ import ErrorState from "@/components/dashboard/ErrorState";
 import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
-import { formatCurrency, formatDate, formatMonths, getPageCount } from "@/lib/format";
 import {
-  useAdminAgentQuery,
-  useAdminPaymentsQuery,
-} from "@/lib/query/hooks";
+  formatCurrency,
+  formatDate,
+  formatMonths,
+  getPageCount,
+} from "@/lib/format";
+import { useAdminAgentQuery, useAdminPaymentsQuery } from "@/lib/query/hooks";
 import type { AdminPaymentListItem } from "@/lib/api/types";
 import type { Payment } from "@/types";
 import { useTranslation } from "react-i18next";
@@ -80,15 +82,12 @@ export default function AgentDetailsPanel({ agentId }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3 text-text-muted">
+      <Link className="flex items-center gap-3 text-text-muted" href="/agents">
         <HiOutlineArrowLeft className="size-5" />
-        <Link
-          className="text-[16px] font-medium transition-colors duration-200 ease-out hover:text-foreground"
-          href="/agents"
-        >
+        <div className="text-[16px] font-medium transition-colors duration-200 ease-out hover:text-foreground">
           {t("common.backToAgents")}
-        </Link>
-      </div>
+        </div>
+      </Link>
 
       <section className="rounded-sm border border-border bg-surface px-7 py-6 shadow-card">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
@@ -101,7 +100,9 @@ export default function AgentDetailsPanel({ agentId }: Props) {
                 {t("common.fullNames")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {agentQuery.isLoading ? t("common.loading") : agent?.fullNames ?? "-"}
+                {agentQuery.isLoading
+                  ? t("common.loading")
+                  : (agent?.fullNames ?? "-")}
               </p>
             </div>
             <div>
@@ -117,7 +118,9 @@ export default function AgentDetailsPanel({ agentId }: Props) {
                 {t("common.phoneNumber")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {agentQuery.isLoading ? t("common.loading") : agent?.phone ?? "-"}
+                {agentQuery.isLoading
+                  ? t("common.loading")
+                  : (agent?.phone ?? "-")}
               </p>
             </div>
           </div>
@@ -183,45 +186,44 @@ export default function AgentDetailsPanel({ agentId }: Props) {
               </TableTr>
             </TableThead>
             <TableTbody>
-              {paymentsQuery.isLoading || paymentsQuery.isFetching
-                ? <TableSkeletonRows columns={5} rows={PAGE_SIZE} />
-                : payments.length === 0
-                ? (
-                    <TableEmptyRow
-                      colSpan={5}
-                      message={t("tables.collectionsEmpty")}
-                      title={t("tables.noCollectionsFound")}
-                    />
-                  )
-                : payments.map((payment) => (
-                    <TableTr
-                      key={payment.paymentId}
-                      className="border-b border-border last:border-b-0"
-                    >
-                      <TableTd className="px-7 py-6 text-[14px] font-medium text-foreground">
-                        {payment.clientName ?? "-"}
-                      </TableTd>
-                      <TableTd className="px-7 py-6 text-[14px] text-text-muted">
-                        {formatDate(payment.paymentDate ?? payment.createdAt)}
-                      </TableTd>
-                      <TableTd className="px-7 py-6 text-[14px] text-text-muted">
-                        {formatMonths(payment.months ?? payment.month)}
-                      </TableTd>
-                      <TableTd className="px-7 py-6 text-[14px] text-text-muted">
-                        {formatCurrency(payment.amount)}
-                      </TableTd>
-                      <TableTd className="px-7 py-6 text-[14px]">
-                        <button
-                          className="font-medium text-brand underline decoration-brand/40 underline-offset-4 disabled:text-text-muted disabled:no-underline"
-                          disabled={!payment.receiptId}
-                          onClick={() => setSelectedPayment(payment)}
-                          type="button"
-                        >
-                          {payment.receiptId ? t("common.view") : t("tables.receiptPending")}
-                        </button>
-                      </TableTd>
-                    </TableTr>
-                  ))}
+              {paymentsQuery.isLoading || paymentsQuery.isFetching ? (
+                <TableSkeletonRows columns={5} rows={PAGE_SIZE} />
+              ) : payments.length === 0 ? (
+                <TableEmptyRow
+                  colSpan={5}
+                  message={t("tables.collectionsEmpty")}
+                  title={t("tables.noCollectionsFound")}
+                />
+              ) : (
+                payments.map((payment) => (
+                  <TableTr
+                    key={payment.paymentId}
+                    className="border-b border-border last:border-b-0"
+                  >
+                    <TableTd className="px-7 py-6 text-[14px] font-medium text-foreground">
+                      {payment.clientName ?? "-"}
+                    </TableTd>
+                    <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                      {formatDate(payment.paymentDate ?? payment.createdAt)}
+                    </TableTd>
+                    <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                      {formatMonths(payment.months ?? payment.month)}
+                    </TableTd>
+                    <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                      {formatCurrency(payment.amount)}
+                    </TableTd>
+                    <TableTd className="px-7 py-6 text-[14px]">
+                      <button
+                        className="font-medium text-brand underline decoration-brand/40 underline-offset-4 disabled:text-text-muted disabled:no-underline"
+                        onClick={() => setSelectedPayment(payment)}
+                        type="button"
+                      >
+                        {t("common.view")}
+                      </button>
+                    </TableTd>
+                  </TableTr>
+                ))
+              )}
             </TableTbody>
           </Table>
         </TableScrollContainer>

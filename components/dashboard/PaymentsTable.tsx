@@ -6,14 +6,17 @@ import { HiEllipsisHorizontal } from "react-icons/hi2";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import DashboardTableShell from "@/components/dashboard/DashboardTableShell";
 import FilterToolbar from "@/components/dashboard/FilterToolbar";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
+import type { AdminPaymentListItem } from "@/lib/api/types";
 import { formatCurrency, formatDate, formatMonths, getPageCount } from "@/lib/format";
 import { useAdminPaymentsQuery } from "@/lib/query/hooks";
+import type { Payment } from "@/types";
 
 const PAGE_SIZE = 8;
 
@@ -21,6 +24,7 @@ export default function PaymentsTable() {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
+  const [selectedPayment, setSelectedPayment] = useState<AdminPaymentListItem | null>(null);
   const paymentsQuery = useAdminPaymentsQuery({
     limit: PAGE_SIZE,
     search: query || undefined,
@@ -45,6 +49,24 @@ export default function PaymentsTable() {
   function handleQueryChange(value: string) {
     setQuery(value);
     setPage(1);
+  }
+
+  function toReceiptPayment(payment: AdminPaymentListItem): Payment {
+    return {
+      agentId: payment.agentId ?? "admin",
+      agentName: payment.agentName ?? "Admin",
+      amount: formatCurrency(payment.amount),
+      billingMonth: formatMonths(payment.months ?? payment.month),
+      clientId: payment.clientId ?? "",
+      clientName: payment.clientName ?? "-",
+      date: formatDate(payment.paymentDate ?? payment.createdAt),
+      id: payment.paymentId,
+      receiptId: payment.receiptId ?? undefined,
+      receiptNumber: payment.receiptNumber ?? "-",
+      clientPhone: payment.clientPhone ?? undefined,
+      months: String(payment.months?.length ?? 1),
+      status: payment.status === "DUE" ? "Overdue" : "Paid",
+    };
   }
 
   return (
@@ -124,12 +146,22 @@ export default function PaymentsTable() {
                           {t("tables.viewAgent")}
                         </Menu.Item>
                       ) : null}
+                      {payment.status !== "DUE" ? (
+                        <Menu.Item onClick={() => setSelectedPayment(payment)}>
+                          {t("tables.viewReceipt")}
+                        </Menu.Item>
+                      ) : null}
                     </Menu.Dropdown>
                   </Menu>
                 </TableTd>
               </TableTr>
             ))}
       </DashboardTableShell>
+      <ReceiptModal
+        onClose={() => setSelectedPayment(null)}
+        opened={selectedPayment !== null}
+        payment={selectedPayment ? toReceiptPayment(selectedPayment) : null}
+      />
     </div>
   );
 }

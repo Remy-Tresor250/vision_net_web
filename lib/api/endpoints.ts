@@ -52,6 +52,7 @@ export const endpoints = {
   },
   payments: {
     mine: "/payments/mine",
+    receiptData: (paymentId: string) => `/payments/${paymentId}/receipt/data`,
     receiptDownload: (receiptId: string) =>
       `/payments/receipts/${receiptId}/download`,
   },

@@ -22,6 +22,7 @@ import type {
   MarkPaymentCompletePayload,
   PageResponse,
   PaymentResponse,
+  ReceiptData,
   ReceiptVerification,
   UpdateStatusPayload,
   UpdateAgentPayload,
@@ -106,6 +107,8 @@ export const adminApi = {
       .then((res) => res.data),
   payment: (paymentId: string) =>
     api.get<AdminPaymentDetail>(endpoints.admin.payment(paymentId)).then((res) => res.data),
+  paymentReceiptData: (paymentId: string) =>
+    api.get<ReceiptData>(endpoints.payments.receiptData(paymentId)).then((res) => res.data),
   runBillingDaily: () =>
     api.post<ApiSuccess>(endpoints.billing.runDaily).then((res) => res.data),
   downloadReceipt: (receiptId: string) =>

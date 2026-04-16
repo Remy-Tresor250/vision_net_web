@@ -172,6 +172,20 @@ export interface ReceiptVerification {
   paymentId: string | null;
 }
 
+export interface ReceiptData {
+  paymentId: string;
+  receiptId: string | null;
+  receiptNumber: string | null;
+  clientName: string;
+  clientPhone?: string;
+  agentName?: string | null;
+  months: string[];
+  amount: string;
+  paymentDate: string;
+  verificationUrl?: string;
+  qrCodeUrl?: string;
+}
+
 export interface CreateAdminUserPayload {
   fullNames: string;
   phone: string;

@@ -47,7 +47,11 @@ export default function PhoneNumberInput({
         disabled={disabled}
         inputClass="app-phone-control"
         inputProps={{ required }}
-        onlyCountries={["rw", "cd"]}
+        localization={{
+          cd: "DRC",
+          rw: "RWA",
+        }}
+        onlyCountries={["cd", "rw"]}
         onChange={(nextValue) => onChange(nextValue ? `+${nextValue}` : "")}
         placeholder={placeholder}
         preferredCountries={["cd"]}

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import {
   Modal,
+  Skeleton,
   Table,
   TableTbody,
   TableTd,
@@ -10,9 +11,12 @@ import {
   TableThead,
   TableTr,
 } from "@mantine/core";
+import QRCode from "react-qr-code";
 import { useTranslation } from "react-i18next";
 
 import leafLogo from "@/assets/svgs/leaf_logo.svg";
+import { formatDate, formatMonths } from "@/lib/format";
+import { useAdminPaymentReceiptDataQuery } from "@/lib/query/hooks";
 import type { Payment } from "@/types";
 
 interface Props {
@@ -36,6 +40,29 @@ function formatReceiptTotal(payment: Payment) {
 
 export default function ReceiptModal({ opened, onClose, payment }: Props) {
   const { t } = useTranslation();
+  const receiptDataQuery = useAdminPaymentReceiptDataQuery(opened ? (payment?.id ?? "") : "");
+  const receiptData = receiptDataQuery.data;
+  const clientIdentity = payment?.clientId?.trim() || receiptData?.clientPhone || payment?.clientPhone || null;
+  const resolvedPayment = payment
+    ? {
+        ...payment,
+        agentName: receiptData?.agentName ?? payment.agentName,
+        amount: receiptData?.amount ? `$${receiptData.amount}` : payment.amount,
+        billingMonth: receiptData?.months?.length
+          ? formatMonths(receiptData.months)
+          : payment.billingMonth,
+        clientName: receiptData?.clientName ?? payment.clientName,
+        date: receiptData?.paymentDate
+          ? formatDate(receiptData.paymentDate)
+          : payment.date,
+        qrCodeUrl: receiptData?.qrCodeUrl ?? payment.qrCodeUrl,
+        receiptNumber: receiptData?.receiptNumber ?? payment.receiptNumber,
+        verificationUrl: receiptData?.verificationUrl ?? payment.verificationUrl,
+      }
+    : null;
+  const qrValue =
+    resolvedPayment?.qrCodeUrl ??
+    (resolvedPayment ? `https://svn-api.aurumdev.cfd/api/v1/payments/${resolvedPayment.id}/receipt/data` : "");
 
   return (
     <Modal
@@ -54,7 +81,7 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
       trapFocus
       withCloseButton={false}
     >
-      {payment ? (
+      {resolvedPayment ? (
         <div className="bg-surface px-8 py-8 text-foreground md:px-12 md:py-10">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-3">
@@ -68,8 +95,8 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
                 {t("modals.receipt")}
               </p>
               <div className="mt-7 text-[12px] leading-5 text-text-muted">
-                <p>{t("modals.receiptNo")}: {payment.receiptNumber}</p>
-                <p>{payment.date}</p>
+                <p>{t("modals.receiptNo")}: {resolvedPayment.receiptNumber}</p>
+                <p>{resolvedPayment.date}</p>
               </div>
             </div>
           </div>
@@ -79,8 +106,8 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
               {t("modals.billedTo")}
             </p>
             <div className="mt-2 text-[12px] leading-6 text-text-muted">
-              <p className="text-foreground">{payment.clientName}</p>
-              <p>{payment.clientId.replaceAll("-", " ")}</p>
+              <p className="text-foreground">{resolvedPayment.clientName}</p>
+              {clientIdentity ? <p>{clientIdentity.replaceAll("-", " ")}</p> : null}
               <p>{t("modals.clientPaymentRecord")}</p>
             </div>
           </div>
@@ -107,16 +134,16 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
               <TableTbody>
                 <TableTr className="border-b border-border">
                   <TableTd className="px-1 py-4 text-[12px] uppercase text-text-muted">
-                    {payment.billingMonth}
+                    {resolvedPayment.billingMonth}
                   </TableTd>
                   <TableTd className="px-1 py-4 text-[14px] font-semibold text-foreground">
-                    {payment.amount}
+                    {resolvedPayment.amount}
                   </TableTd>
                   <TableTd className="px-1 py-4 text-[12px] text-text-muted">
-                    {payment.agentName}
+                    {resolvedPayment.agentName}
                   </TableTd>
                   <TableTd className="px-1 py-4 text-[12px] text-text-muted">
-                    {payment.date}
+                    {resolvedPayment.date}
                   </TableTd>
                 </TableTr>
               </TableTbody>
@@ -127,21 +154,16 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
             <div>
               <div className="grid grid-cols-[120px_1fr] items-baseline gap-4">
                 <p className="text-[22px] font-semibold">{t("modals.total")}</p>
-                <p className="text-[22px] font-semibold">{formatReceiptTotal(payment)}</p>
+                <p className="text-[22px] font-semibold">{formatReceiptTotal(resolvedPayment)}</p>
               </div>
               <div className="mt-12">
                 <p className="text-[9px] text-text-muted">{t("modals.verificationQrCode")}</p>
-                <div className="mt-2 grid size-20 grid-cols-5 gap-1 bg-brand-dark p-1">
-                  {Array.from({ length: 25 }, (_, index) => (
-                    <span
-                      className={
-                        index % 2 === 0 || [3, 7, 11, 17, 23].includes(index)
-                          ? "bg-surface"
-                          : "bg-brand-dark"
-                      }
-                      key={index}
-                    />
-                  ))}
+                <div className="mt-2 flex size-24 items-center justify-center rounded-md border border-border bg-white p-2">
+                  {receiptDataQuery.isLoading && !receiptData ? (
+                    <Skeleton className="size-full rounded-sm" />
+                  ) : (
+                    <QRCode size={80} value={qrValue} />
+                  )}
                 </div>
               </div>
             </div>

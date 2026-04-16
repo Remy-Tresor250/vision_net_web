@@ -25,6 +25,9 @@ export const resources = {
         showLatestMonths: "Show latest 6 months",
       },
       auth: {
+        adminPanel: "Admin panel",
+        adminWorkspace:
+          "Manage clients, agents, collections, receipts, imports, and daily billing operations from one secure workspace.",
         adminOnly: "This dashboard is only available to administrators.",
         forgotPassword: "Forgot password?",
         passwordPlaceholder: "Enter password",
@@ -228,6 +231,9 @@ export const resources = {
         showLatestMonths: "Afficher les 6 derniers mois",
       },
       auth: {
+        adminPanel: "Panneau admin",
+        adminWorkspace:
+          "Gerez les clients, agents, encaissements, recus, imports et la facturation quotidienne depuis un espace securise.",
         adminOnly: "Ce tableau de bord est reserve aux administrateurs.",
         forgotPassword: "Mot de passe oublie ?",
         passwordPlaceholder: "Entrez le mot de passe",

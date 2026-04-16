@@ -49,12 +49,16 @@ export interface Payment {
   id: string;
   clientId: string;
   clientName: string;
+  clientPhone?: string;
   agentId: string;
   agentName: string;
   months: string;
   billingMonth: string;
+  receiptId?: string;
   receiptNumber: string;
   date: string;
   amount: string;
   status: string;
+  qrCodeUrl?: string;
+  verificationUrl?: string;
 }

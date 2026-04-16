@@ -159,6 +159,14 @@ export function useAdminPaymentQuery(paymentId: string) {
   });
 }
 
+export function useAdminPaymentReceiptDataQuery(paymentId: string) {
+  return useQuery({
+    enabled: Boolean(paymentId),
+    queryKey: queryKeys.admin.payments.receiptData(paymentId),
+    queryFn: () => adminApi.paymentReceiptData(paymentId),
+  });
+}
+
 export function useReceiptVerificationQuery(receiptId: string) {
   return useQuery({
     enabled: Boolean(receiptId),

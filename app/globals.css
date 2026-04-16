@@ -177,6 +177,38 @@ svg:focus-visible {
   margin: 1px 0 1px 1px;
 }
 
+.app-phone-input .flag {
+  background-image: none !important;
+  width: auto !important;
+  height: auto !important;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #3c4a43;
+}
+
+.app-phone-input .selected-flag .flag {
+  display: inline-flex;
+  min-width: 2rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-phone-input .country-list .country .flag {
+  display: inline-flex;
+  min-width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-phone-input .flag.rw::after {
+  content: "RWA";
+}
+
+.app-phone-input .flag.cd::after {
+  content: "DRC";
+}
+
 .app-phone-input .selected-flag:hover,
 .app-phone-input .selected-flag:focus,
 .app-phone-input .flag-dropdown.open .selected-flag {

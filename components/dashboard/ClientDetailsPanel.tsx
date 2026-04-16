@@ -109,15 +109,12 @@ export default function ClientDetailsPanel({ clientId }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3 text-text-muted">
+      <Link className="flex items-center gap-3 text-text-muted" href="/clients">
         <HiOutlineArrowLeft className="size-5" />
-        <Link
-          className="text-[16px] font-medium transition-colors duration-200 ease-out hover:text-foreground"
-          href="/clients"
-        >
+        <div className="text-[16px] font-medium transition-colors duration-200 ease-out hover:text-foreground">
           {t("common.backToClients")}
-        </Link>
-      </div>
+        </div>
+      </Link>
 
       <section className="rounded-sm border border-border bg-surface px-4 py-4 shadow-card">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
@@ -130,7 +127,9 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                 {t("common.fullNames")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {clientQuery.isLoading ? t("common.loading") : client?.fullNames ?? "-"}
+                {clientQuery.isLoading
+                  ? t("common.loading")
+                  : (client?.fullNames ?? "-")}
               </p>
             </div>
             <div>
@@ -138,7 +137,9 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                 {t("common.address")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {clientQuery.isLoading ? t("common.loading") : client?.address ?? "-"}
+                {clientQuery.isLoading
+                  ? t("common.loading")
+                  : (client?.address ?? "-")}
               </p>
             </div>
             <div>
@@ -146,7 +147,9 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                 {t("common.phoneNumber")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {clientQuery.isLoading ? t("common.loading") : client?.phone ?? "-"}
+                {clientQuery.isLoading
+                  ? t("common.loading")
+                  : (client?.phone ?? "-")}
               </p>
             </div>
           </div>
@@ -211,97 +214,97 @@ export default function ClientDetailsPanel({ clientId }: Props) {
               </TableTr>
             </TableThead>
             <TableTbody>
-              {paymentsQuery.isLoading || paymentsQuery.isFetching
-                ? <TableSkeletonRows columns={6} rows={PAGE_SIZE} />
-                : payments.length === 0
-                ? (
-                    <TableEmptyRow
-                      colSpan={6}
-                      message={t("tables.paymentTimelineEmpty")}
-                      title={t("tables.noPaymentsFound")}
-                    />
-                  )
-                : payments.map((payment) => {
-                const isOverdue = payment.status === "DUE";
+              {paymentsQuery.isLoading || paymentsQuery.isFetching ? (
+                <TableSkeletonRows columns={6} rows={PAGE_SIZE} />
+              ) : payments.length === 0 ? (
+                <TableEmptyRow
+                  colSpan={6}
+                  message={t("tables.paymentTimelineEmpty")}
+                  title={t("tables.noPaymentsFound")}
+                />
+              ) : (
+                payments.map((payment) => {
+                  const isOverdue = payment.status === "DUE";
 
-                return (
-                  <TableTr
-                    key={payment.paymentId}
-                    className="border-b border-border last:border-b-0"
-                  >
-                    <TableTd className="px-7 py-6 text-[14px] font-medium uppercase text-text-muted">
-                      {formatMonths(payment.months ?? payment.month)}
-                    </TableTd>
-                    <TableTd className="px-7 py-6 text-[14px] text-text-muted">
-                      {formatCurrency(payment.amount)}
-                    </TableTd>
-                    <TableTd
-                      className={`px-7 py-6 text-[14px] ${isOverdue ? "text-text-muted" : "text-foreground"}`}
+                  return (
+                    <TableTr
+                      key={payment.paymentId}
+                      className="border-b border-border last:border-b-0"
                     >
-                      {isOverdue ? "-" : payment.agentName ?? "Admin"}
-                    </TableTd>
-                    <TableTd className="px-7 py-6 text-[14px]">
-                      {isOverdue ? (
-                        <span className="text-text-muted">-</span>
-                      ) : (
-                        <button
-                          className="font-medium text-brand underline decoration-brand/40 underline-offset-4"
-                          disabled={!payment.receiptId}
-                          onClick={() => openReceipt(payment)}
-                          type="button"
-                        >
-                          {payment.receiptId ? t("common.view") : t("tables.receiptPending")}
-                        </button>
-                      )}
-                    </TableTd>
-                    <TableTd className="px-3 py-6">
-                      <StatusBadge
-                        status={isOverdue ? t("common.overdue") : t("common.paid")}
-                      />
-                    </TableTd>
-                    <TableTd className="px-3 py-6 flex items-center">
-                      {isOverdue ? (
-                        <Menu position="bottom-end" shadow="md" width={180}>
-                          <Menu.Target>
-                            <Button
-                              aria-label={`Open payment actions for ${payment.paymentId}`}
-                              size="icon"
-                              variant="subtle"
-                            >
-                              <HiEllipsisHorizontal className="size-6" />
-                            </Button>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            <Menu.Item onClick={() => markComplete(payment)}>
-                              {t("tables.markAsPaid")}
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-                      ) : (
-                        <Menu position="bottom-end" shadow="md" width={180}>
-                          <Menu.Target>
-                            <Button
-                              aria-label={`Open receipt actions for ${payment.paymentId}`}
-                              size="icon"
-                              variant="subtle"
-                            >
-                              <HiEllipsisHorizontal className="size-6" />
-                            </Button>
-                          </Menu.Target>
-                          <Menu.Dropdown>
-                            <Menu.Item
-                              disabled={!payment.receiptId}
-                              onClick={() => openReceipt(payment)}
-                            >
-                              {t("tables.viewReceipt")}
-                            </Menu.Item>
-                          </Menu.Dropdown>
-                        </Menu>
-                      )}
-                    </TableTd>
-                  </TableTr>
-                );
-              })}
+                      <TableTd className="px-7 py-6 text-[14px] font-medium uppercase text-text-muted">
+                        {formatMonths(payment.months ?? payment.month)}
+                      </TableTd>
+                      <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                        {formatCurrency(payment.amount)}
+                      </TableTd>
+                      <TableTd
+                        className={`px-7 py-6 text-[14px] ${isOverdue ? "text-text-muted" : "text-foreground"}`}
+                      >
+                        {isOverdue ? "-" : (payment.agentName ?? "Admin")}
+                      </TableTd>
+                      <TableTd className="px-7 py-6 text-[14px]">
+                        {isOverdue ? (
+                          <span className="text-text-muted">-</span>
+                        ) : (
+                          <button
+                            className="font-medium text-brand underline decoration-brand/40 underline-offset-4"
+                            onClick={() => openReceipt(payment)}
+                            type="button"
+                          >
+                            {t("common.view")}
+                          </button>
+                        )}
+                      </TableTd>
+                      <TableTd className="px-3 py-6">
+                        <StatusBadge
+                          status={
+                            isOverdue ? t("common.overdue") : t("common.paid")
+                          }
+                        />
+                      </TableTd>
+                      <TableTd className="px-3 py-6 flex items-center">
+                        {isOverdue ? (
+                          <Menu position="bottom-end" shadow="md" width={180}>
+                            <Menu.Target>
+                              <Button
+                                aria-label={`Open payment actions for ${payment.paymentId}`}
+                                size="icon"
+                                variant="subtle"
+                              >
+                                <HiEllipsisHorizontal className="size-6" />
+                              </Button>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item onClick={() => markComplete(payment)}>
+                                {t("tables.markAsPaid")}
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
+                        ) : (
+                          <Menu position="bottom-end" shadow="md" width={180}>
+                            <Menu.Target>
+                              <Button
+                                aria-label={`Open receipt actions for ${payment.paymentId}`}
+                                size="icon"
+                                variant="subtle"
+                              >
+                                <HiEllipsisHorizontal className="size-6" />
+                              </Button>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item
+                                onClick={() => openReceipt(payment)}
+                              >
+                                {t("tables.viewReceipt")}
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
+                        )}
+                      </TableTd>
+                    </TableTr>
+                  );
+                })
+              )}
             </TableTbody>
           </Table>
         </TableScrollContainer>

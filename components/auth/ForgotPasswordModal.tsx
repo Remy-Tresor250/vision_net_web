@@ -118,6 +118,7 @@ export default function ForgotPasswordModal({ onClose, opened }: Props) {
               label={t("auth.phone")}
               onChange={field.onChange}
               value={field.value}
+              
             />
           )}
         />

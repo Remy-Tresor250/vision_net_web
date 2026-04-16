@@ -33,6 +33,8 @@ export const queryKeys = {
         [...queryKeys.admin.payments.all(), "list", params ?? {}] as const,
       detail: (paymentId: string) =>
         [...queryKeys.admin.payments.all(), "detail", paymentId] as const,
+      receiptData: (paymentId: string) =>
+        [...queryKeys.admin.payments.all(), "receipt-data", paymentId] as const,
     },
     receipt: {
       verification: (receiptId: string) =>
