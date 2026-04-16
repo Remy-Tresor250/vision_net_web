@@ -21,7 +21,7 @@ export interface Transaction {
   agentName: string;
   billingCycle: string;
   amount: string;
-  status: "Paid" | "Overdue";
+  status: string;
 }
 
 export interface Client {
@@ -56,5 +56,5 @@ export interface Payment {
   receiptNumber: string;
   date: string;
   amount: string;
-  status: "Paid" | "Overdue";
+  status: string;
 }

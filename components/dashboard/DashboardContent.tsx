@@ -7,18 +7,27 @@ import { useTranslation } from "react-i18next";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 
 import ErrorState from "@/components/dashboard/ErrorState";
+import {
+  RecentTransactionsSkeleton,
+  RevenueChartSkeleton,
+  TopAgentsSkeleton,
+} from "@/components/dashboard/DashboardPanelSkeleton";
 import RecentTransactionsCard from "@/components/dashboard/RecentTransactionsCard";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import StatCard from "@/components/dashboard/StatCard";
 import TopAgentsCard from "@/components/dashboard/TopAgentsCard";
 import { formatCurrency, formatDate, formatMonths } from "@/lib/format";
 import {
+  useAdminAgentsQuery,
+  useAdminClientsQuery,
   useAdminDashboardQuery,
   useAdminPaymentsQuery,
 } from "@/lib/query/hooks";
 import type { MetricCard, RevenuePoint } from "@/types";
 
 function readNumber(source: Record<string, unknown>, keys: string[]): number {
+  const normalizedKeys = keys.map((key) => key.toLowerCase());
+
   for (const key of keys) {
     const value = source[key];
 
@@ -30,7 +39,31 @@ function readNumber(source: Record<string, unknown>, keys: string[]): number {
 
     if (value && typeof value === "object") {
       const objectValue = value as Record<string, unknown>;
-      const nested = readNumber(objectValue, ["value", "amount", "total", "count"]);
+      const nested = readNumber(objectValue, [
+        "value",
+        "amount",
+        "total",
+        "count",
+      ]);
+      if (nested) return nested;
+    }
+  }
+
+  for (const [key, value] of Object.entries(source)) {
+    if (
+      normalizedKeys.some((candidate) =>
+        key.toLowerCase().includes(candidate.toLowerCase()),
+      )
+    ) {
+      if (typeof value === "number") return value;
+      if (typeof value === "string") {
+        const parsed = Number(value.replace(/[^0-9.-]/g, ""));
+        if (!Number.isNaN(parsed)) return parsed;
+      }
+    }
+
+    if (value && typeof value === "object") {
+      const nested = readNumber(value as Record<string, unknown>, keys);
       if (nested) return nested;
     }
   }
@@ -38,7 +71,14 @@ function readNumber(source: Record<string, unknown>, keys: string[]): number {
   return 0;
 }
 
-function buildMetricCards(kpis: Record<string, unknown> | undefined): MetricCard[] {
+function buildMetricCards(
+  kpis: Record<string, unknown> | undefined,
+  totals: {
+    agents: number;
+    clients: number;
+  },
+  t: (key: string) => string,
+): MetricCard[] {
   const source = kpis ?? {};
   const revenue = readNumber(source, [
     "monthlyRevenue",
@@ -52,42 +92,48 @@ function buildMetricCards(kpis: Record<string, unknown> | undefined): MetricCard
     "totalDue",
     "overdueAmount",
   ]);
-  const clients = readNumber(source, ["totalClients", "clients", "clientCount"]);
-  const agents = readNumber(source, ["totalAgents", "agents", "agentCount"]);
+  const clients =
+    totals.clients ||
+    readNumber(source, ["totalClients", "clients", "clientCount"]);
+  const agents =
+    totals.agents ||
+    readNumber(source, ["totalAgents", "agents", "agentCount"]);
 
   return [
     {
       id: "revenue",
-      label: "This month's revenue",
+      label: t("dashboard.thisMonthsRevenue"),
       value: formatCurrency(revenue),
-      caption: "Collected this month",
+      caption: t("dashboard.collectedThisMonth"),
       tone: "brand",
     },
     {
       id: "pending",
-      label: "Pending payments",
+      label: t("dashboard.pendingPayments"),
       value: formatCurrency(pending),
-      caption: "Outstanding client balance",
+      caption: t("dashboard.outstandingClientBalance"),
       tone: "danger",
     },
     {
       id: "clients",
-      label: "Total clients",
+      label: t("dashboard.totalClients"),
       value: clients.toLocaleString("en-US"),
-      caption: "Registered clients",
+      caption: t("dashboard.registeredClients"),
       tone: "default",
     },
     {
       id: "agents",
-      label: "Total agents",
+      label: t("dashboard.totalAgents"),
       value: agents.toLocaleString("en-US"),
-      caption: "Registered agents",
+      caption: t("dashboard.registeredAgents"),
       tone: "default",
     },
   ];
 }
 
-function buildRevenueSeries(data: Array<{ month: string; amount: string; value?: number }> = []) {
+function buildRevenueSeries(
+  data: Array<{ month: string; amount: string; value?: number }> = [],
+) {
   const palette = [
     "var(--color-brand-dark)",
     "var(--color-warning)",
@@ -117,7 +163,31 @@ function getMonthIndex(month: string) {
   return parsedYear * 12 + parsedMonth;
 }
 
-function toMonthKey(date: Date) {
+function normalizeMonthDate(value: Date | string | null | undefined) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : startOfMonth(value);
+  }
+
+  if (typeof value === "string") {
+    const [year, month] = value.split("-");
+    const parsedYear = Number(year);
+    const parsedMonth = Number(month);
+
+    if (Number.isNaN(parsedYear) || Number.isNaN(parsedMonth)) return null;
+
+    return new Date(parsedYear, parsedMonth - 1, 1);
+  }
+
+  return null;
+}
+
+function toMonthKey(value: Date | string) {
+  const date = normalizeMonthDate(value);
+
+  if (!date) return "";
+
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
@@ -135,13 +205,16 @@ export default function DashboardContent() {
   const maxMonth = startOfMonth(now);
   const minMonth = addMonths(maxMonth, -5);
   const [monthRange, setMonthRange] = useState<[Date | null, Date | null]>([
-    null,
-    null,
+    minMonth,
+    maxMonth,
   ]);
+  const [popoverOpened, setPopoverOpened] = useState(false);
   const dashboardQuery = useAdminDashboardQuery({
     topAgentsLimit: 10,
     year: new Date().getFullYear(),
   });
+  const clientsQuery = useAdminClientsQuery({ limit: 1, skip: 0 });
+  const agentsQuery = useAdminAgentsQuery({ limit: 1, skip: 0 });
   const paymentsQuery = useAdminPaymentsQuery({
     limit: 6,
     skip: 0,
@@ -156,13 +229,20 @@ export default function DashboardContent() {
   if (dashboardQuery.isError) {
     return (
       <ErrorState
-        message="We could not load the dashboard metrics."
+        message={t("dashboard.couldNotLoad")}
         reset={() => dashboardQuery.refetch()}
       />
     );
   }
 
-  const metricCards = buildMetricCards(dashboardQuery.data?.kpis);
+  const metricCards = buildMetricCards(
+    dashboardQuery.data?.kpis,
+    {
+      agents: agentsQuery.data?.total ?? 0,
+      clients: clientsQuery.data?.total ?? 0,
+    },
+    t,
+  );
   const currentWindowStart = getMonthIndex(toMonthKey(minMonth));
   const currentWindowEnd = getMonthIndex(toMonthKey(maxMonth));
   const latestSixRevenueSeries = allRevenueSeries.filter((point) => {
@@ -170,17 +250,13 @@ export default function DashboardContent() {
     return index >= currentWindowStart && index <= currentWindowEnd;
   });
   const [rangeStart, rangeEnd] = monthRange;
-  const normalizedEnd =
-    rangeStart && rangeEnd && getMonthIndex(toMonthKey(rangeEnd)) - getMonthIndex(toMonthKey(rangeStart)) > 1
-      ? addMonths(rangeStart, 1)
-      : rangeEnd;
   const revenueSeries =
-    rangeStart && normalizedEnd
+    rangeStart && rangeEnd
       ? latestSixRevenueSeries.filter((point) => {
           const index = getMonthIndex(point.month);
           return (
             index >= getMonthIndex(toMonthKey(rangeStart)) &&
-            index <= getMonthIndex(toMonthKey(normalizedEnd))
+            index <= getMonthIndex(toMonthKey(rangeEnd))
           );
         })
       : latestSixRevenueSeries;
@@ -199,13 +275,16 @@ export default function DashboardContent() {
       clientName: payment.clientName ?? "-",
       date: formatDate(payment.paymentDate ?? payment.createdAt),
       id: payment.paymentId,
-      status: payment.status === "DUE" ? "Overdue" as const : "Paid" as const,
+      status:
+        payment.status === "DUE"
+          ? (t("common.overdue") as "Overdue")
+          : (t("common.paid") as "Paid"),
     })) ?? [];
 
   return (
     <div className="space-y-4">
       <section className="grid gap-3 xl:grid-cols-4">
-        {dashboardQuery.isLoading
+        {dashboardQuery.isLoading && !dashboardQuery.data
           ? Array.from({ length: 4 }).map((_, index) => (
               <Skeleton
                 className="h-36 rounded-sm border border-border bg-surface"
@@ -223,9 +302,19 @@ export default function DashboardContent() {
                   {t("dashboard.monthlyRevenue")}
                 </h2>
               </div>
-              <Popover position="bottom-end" shadow="md" width={320}>
+              <Popover
+                position="bottom-end"
+                shadow="md"
+                width={320}
+                opened={popoverOpened}
+                onChange={setPopoverOpened}
+                closeOnClickOutside={false}
+              >
                 <Popover.Target>
-                  <button className="flex flex-row items-center gap-[3px] rounded-[6px] border-[1px] border-solid border-[#E2E8E4] bg-[#F8FAF9] px-[10px] py-[8px]">
+                  <button
+                    onClick={() => setPopoverOpened((prev) => !prev)}
+                    className="flex flex-row items-center gap-[3px] rounded-[6px] border-[1px] border-solid border-[#E2E8E4] bg-[#F8FAF9] px-[10px] py-[8px]"
+                  >
                     <HiOutlineAdjustmentsHorizontal
                       className="size-5"
                       color="#6B7C72"
@@ -244,53 +333,69 @@ export default function DashboardContent() {
                       maxDate={maxMonth}
                       minDate={minMonth}
                       onChange={(value) => {
-                        const next = value as [Date | null, Date | null];
+                        const [startValue, endValue] = (value ??
+                          []) as [Date | string | null, Date | string | null];
+                        const nextStart = normalizeMonthDate(startValue);
+                        const nextEnd = normalizeMonthDate(endValue);
 
-                        if (next[0] && next[1]) {
-                          const distance =
-                            getMonthIndex(toMonthKey(next[1])) -
-                            getMonthIndex(toMonthKey(next[0]));
-
-                          setMonthRange([
-                            next[0],
-                            distance > 1 ? addMonths(next[0], 1) : next[1],
-                          ]);
+                        if (nextStart && !nextEnd) {
+                          setMonthRange([nextStart, null]);
                           return;
                         }
 
-                        setMonthRange(next);
+                        if (nextStart && nextEnd) {
+                          const normalizedRange: [Date, Date] =
+                            getMonthIndex(toMonthKey(nextStart)) <=
+                              getMonthIndex(toMonthKey(nextEnd))
+                              ? [nextStart, nextEnd]
+                              : [nextEnd, nextStart];
+
+                          setMonthRange(normalizedRange);
+                          setPopoverOpened(false);
+                          return;
+                        }
+
+                        setMonthRange([null, null]);
+                      }}
+                      styles={{
+                        input: {
+                          color: "#000",
+                        },
                       }}
                       type="range"
                       value={monthRange}
                       valueFormat="MMM YYYY"
                     />
                     <button
-                      className="text-[13px] font-medium text-brand"
+                      className="px-[10px] py-[8px] bg-transparent border-gray-500 border-[1px] border-solid rounded-[6px]"
                       onClick={() => {
-                        setMonthRange([null, null]);
+                        setMonthRange([minMonth, maxMonth]);
                       }}
                       type="button"
                     >
-                      {t("actions.showLatestMonths")}
+                      <p className="text-[13px] text-brand font-medium">
+                        {" "}
+                        {t("actions.showLatestMonths")}
+                      </p>
                     </button>
                   </div>
                 </Popover.Dropdown>
               </Popover>
             </div>
             {dashboardQuery.isLoading ? (
-              <Skeleton className="mt-4 h-64 rounded-sm" />
+              <RevenueChartSkeleton />
             ) : (
               <RevenueChart data={revenueSeries} />
             )}
           </article>
           {paymentsQuery.isLoading ? (
-            <Skeleton className="h-72 rounded-sm border border-border bg-surface" />
+            <RecentTransactionsSkeleton />
           ) : (
             <RecentTransactionsCard transactions={recentTransactions} />
           )}
         </div>
         {dashboardQuery.isLoading ? (
-          <Skeleton className="h-96 rounded-sm border border-border bg-surface xl:col-span-4" />
+          <TopAgentsSkeleton className="xl:col-span-4" />
         ) : (
           <TopAgentsCard agents={topAgents} className="xl:col-span-4" />
         )}

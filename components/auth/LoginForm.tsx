@@ -10,6 +10,8 @@ import { HiOutlineArrowRightOnRectangle } from "react-icons/hi2";
 import { useTranslation } from "react-i18next";
 
 import ForgotPasswordModal from "@/components/auth/ForgotPasswordModal";
+import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
+import PhoneNumberInput from "@/components/ui/PhoneNumberInput";
 import Button from "@/components/ui/Button";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { usePasswordLoginMutation } from "@/lib/query/hooks";
@@ -56,7 +58,7 @@ export default function LoginForm() {
       onSuccess: (session) => {
         if (session.user.role !== "ADMIN") {
           logout();
-          toast.error("This dashboard is only available to administrators.");
+          toast.error(t("auth.adminOnly"));
           return;
         }
 
@@ -72,17 +74,12 @@ export default function LoginForm() {
         control={control}
         name="phone"
         render={({ field }) => (
-          <TextInput
-            {...field}
-            classNames={{
-              error: "mt-2 text-danger",
-              input:
-                "h-12 rounded-md border-border bg-surface text-base text-foreground placeholder:text-text-muted focus:border-brand",
-              label: "mb-2 text-[13px] font-semibold uppercase tracking-wider text-text-muted",
-            }}
+          <PhoneNumberInput
             error={errors.phone?.message}
             label={t("auth.phone")}
-            placeholder="0780000000"
+            onChange={field.onChange}
+            placeholder="780000000"
+            value={field.value}
           />
         )}
       />
@@ -92,16 +89,11 @@ export default function LoginForm() {
         render={({ field }) => (
           <PasswordInput
             {...field}
-            classNames={{
-              error: "mt-2 text-danger",
-              input:
-                "h-12 rounded-md border-border bg-surface text-base text-foreground placeholder:text-text-muted focus:border-brand",
-              innerInput: "text-foreground placeholder:text-text-muted",
-              label: "mb-2 text-[13px] font-semibold uppercase tracking-wider text-text-muted",
-            }}
+            classNames={appFieldClassNames}
             error={errors.password?.message}
             label={t("auth.password")}
-            placeholder="Enter password"
+            placeholder={t("auth.passwordPlaceholder")}
+            styles={appFieldStyles}
           />
         )}
       />

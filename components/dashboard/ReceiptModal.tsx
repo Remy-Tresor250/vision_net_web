@@ -10,6 +10,7 @@ import {
   TableThead,
   TableTr,
 } from "@mantine/core";
+import { useTranslation } from "react-i18next";
 
 import leafLogo from "@/assets/svgs/leaf_logo.svg";
 import type { Payment } from "@/types";
@@ -34,6 +35,8 @@ function formatReceiptTotal(payment: Payment) {
 }
 
 export default function ReceiptModal({ opened, onClose, payment }: Props) {
+  const { t } = useTranslation();
+
   return (
     <Modal
       centered
@@ -62,10 +65,10 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
             </div>
             <div className="sm:text-right">
               <p className="text-[42px] font-semibold leading-none text-foreground">
-                Receipt
+                {t("modals.receipt")}
               </p>
               <div className="mt-7 text-[12px] leading-5 text-text-muted">
-                <p>Receipt No: {payment.receiptNumber}</p>
+                <p>{t("modals.receiptNo")}: {payment.receiptNumber}</p>
                 <p>{payment.date}</p>
               </div>
             </div>
@@ -73,12 +76,12 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
 
           <div className="mt-10">
             <p className="text-[17px] font-semibold uppercase text-foreground">
-              Billed To
+              {t("modals.billedTo")}
             </p>
             <div className="mt-2 text-[12px] leading-6 text-text-muted">
               <p className="text-foreground">{payment.clientName}</p>
               <p>{payment.clientId.replaceAll("-", " ")}</p>
-              <p>Client payment record</p>
+              <p>{t("modals.clientPaymentRecord")}</p>
             </div>
           </div>
 
@@ -86,7 +89,12 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
             <Table className="min-w-full">
               <TableThead>
                 <TableTr className="border-b border-border">
-                  {["Month", "Amount", "Agent", "Date"].map((header) => (
+                  {[
+                    t("common.month"),
+                    t("common.amount"),
+                    t("common.agent"),
+                    t("common.date"),
+                  ].map((header) => (
                     <TableTh
                       className="px-1 py-3 text-[11px] font-semibold uppercase tracking-wider text-text-muted"
                       key={header}
@@ -118,11 +126,11 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
           <div className="mt-5 grid gap-8 sm:grid-cols-[1fr_180px] sm:items-start">
             <div>
               <div className="grid grid-cols-[120px_1fr] items-baseline gap-4">
-                <p className="text-[22px] font-semibold">Total</p>
+                <p className="text-[22px] font-semibold">{t("modals.total")}</p>
                 <p className="text-[22px] font-semibold">{formatReceiptTotal(payment)}</p>
               </div>
               <div className="mt-12">
-                <p className="text-[9px] text-text-muted">Verification QR-code</p>
+                <p className="text-[9px] text-text-muted">{t("modals.verificationQrCode")}</p>
                 <div className="mt-2 grid size-20 grid-cols-5 gap-1 bg-brand-dark p-1">
                   {Array.from({ length: 25 }, (_, index) => (
                     <span
@@ -142,7 +150,7 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
               onClick={onClose}
               type="button"
             >
-              Done
+              {t("modals.done")}
             </button>
           </div>
         </div>

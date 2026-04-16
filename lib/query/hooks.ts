@@ -21,6 +21,8 @@ import type {
   CreateAgentPayload,
   CreateClientPayload,
   MarkPaymentCompletePayload,
+  UpdateAgentPayload,
+  UpdateClientPayload,
   UpdateStatusPayload,
 } from "@/lib/api/types";
 import {
@@ -212,6 +214,29 @@ export function useUpdateClientStatusMutation(clientId?: string) {
   });
 }
 
+export function useUpdateClientMutation(clientId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (
+      payload: UpdateClientPayload & {
+        clientId?: string;
+      },
+    ) => {
+      const targetClientId = payload.clientId ?? clientId;
+
+      if (!targetClientId) {
+        throw new Error("Missing client id.");
+      }
+
+      const { clientId: _clientId, ...body } = payload;
+      return adminApi.updateClient(targetClientId, body);
+    },
+    onSuccess: (_, payload) =>
+      invalidateClients(queryClient, payload.clientId ?? clientId),
+  });
+}
+
 export function useUpdateAgentStatusMutation(agentId?: string) {
   const queryClient = useQueryClient();
 
@@ -226,6 +251,29 @@ export function useUpdateAgentStatusMutation(agentId?: string) {
       return adminApi.updateAgentStatus(targetAgentId, {
         isActive: payload.isActive,
       });
+    },
+    onSuccess: (_, payload) =>
+      invalidateAgents(queryClient, payload.agentId ?? agentId),
+  });
+}
+
+export function useUpdateAgentMutation(agentId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (
+      payload: UpdateAgentPayload & {
+        agentId?: string;
+      },
+    ) => {
+      const targetAgentId = payload.agentId ?? agentId;
+
+      if (!targetAgentId) {
+        throw new Error("Missing agent id.");
+      }
+
+      const { agentId: _agentId, ...body } = payload;
+      return adminApi.updateAgent(targetAgentId, body);
     },
     onSuccess: (_, payload) =>
       invalidateAgents(queryClient, payload.agentId ?? agentId),

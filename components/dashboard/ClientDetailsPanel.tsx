@@ -12,7 +12,6 @@ import {
   TableTh,
   TableThead,
   TableTr,
-  Skeleton,
 } from "@mantine/core";
 import {
   HiEllipsisHorizontal,
@@ -26,6 +25,7 @@ import ErrorState from "@/components/dashboard/ErrorState";
 import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
+import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { formatCurrency, formatDate, formatMonths } from "@/lib/format";
 import {
@@ -34,8 +34,10 @@ import {
   useMarkClientPaymentCompleteMutation,
 } from "@/lib/query/hooks";
 import type { AdminPaymentListItem } from "@/lib/api/types";
+import { getPageCount } from "@/lib/format";
 import type { Payment } from "@/types";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   clientId: string;
@@ -60,6 +62,7 @@ function toReceiptPayment(payment: AdminPaymentListItem): Payment {
 }
 
 export default function ClientDetailsPanel({ clientId }: Props) {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [selectedPayment, setSelectedPayment] =
     useState<AdminPaymentListItem | null>(null);
@@ -72,7 +75,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
   const markCompleteMutation = useMarkClientPaymentCompleteMutation(clientId);
   const client = clientQuery.data;
   const payments = paymentsQuery.data?.data ?? [];
-  const totalPages = Math.max(1, Math.ceil((paymentsQuery.data?.total ?? 0) / PAGE_SIZE));
+  const totalPages = getPageCount(paymentsQuery.data?.total ?? 0, PAGE_SIZE);
 
   function openReceipt(payment: AdminPaymentListItem) {
     setSelectedPayment(payment);
@@ -82,7 +85,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
     const months = payment.months ?? (payment.month ? [payment.month] : []);
 
     if (!months.length) {
-      toast.error("No due month found for this payment.");
+      toast.error(t("tables.paymentTimelineMissingMonth"));
       return;
     }
 
@@ -90,7 +93,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
       { months },
       {
         onError: (error) => toast.error(getApiErrorMessage(error)),
-        onSuccess: () => toast.success("Payment marked complete."),
+        onSuccess: () => toast.success(t("tables.paymentMarkedComplete")),
       },
     );
   }
@@ -98,7 +101,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
   if (clientQuery.isError) {
     return (
       <ErrorState
-        message="We could not load this client."
+        message={t("dashboard.couldNotLoad")}
         reset={() => clientQuery.refetch()}
       />
     );
@@ -112,7 +115,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
           className="text-[16px] font-medium transition-colors duration-200 ease-out hover:text-foreground"
           href="/clients"
         >
-          Back to Clients
+          {t("common.backToClients")}
         </Link>
       </div>
 
@@ -124,26 +127,26 @@ export default function ClientDetailsPanel({ clientId }: Props) {
           <div className="flex flex-1 gap-[5vw] flex-row items-center">
             <div>
               <p className="text-[16px] font-medium uppercase text-text-muted">
-                Full Names
+                {t("common.fullNames")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {clientQuery.isLoading ? "Loading..." : client?.fullNames ?? "-"}
+                {clientQuery.isLoading ? t("common.loading") : client?.fullNames ?? "-"}
               </p>
             </div>
             <div>
               <p className="text-[16px] font-medium uppercase text-text-muted">
-                Adress
+                {t("common.address")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {clientQuery.isLoading ? "Loading..." : client?.address ?? "-"}
+                {clientQuery.isLoading ? t("common.loading") : client?.address ?? "-"}
               </p>
             </div>
             <div>
               <p className="text-[16px] font-medium uppercase text-text-muted">
-                Phone Number
+                {t("common.phoneNumber")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {clientQuery.isLoading ? "Loading..." : client?.phone ?? "-"}
+                {clientQuery.isLoading ? t("common.loading") : client?.phone ?? "-"}
               </p>
             </div>
           </div>
@@ -155,7 +158,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wider text-text-muted">
-                Due Payments
+                {t("tables.duePayments")}
               </p>
               <p className="mt-7 text-[40px] font-semibold tracking-tight text-danger">
                 {formatCurrency(client?.totalDue)}
@@ -171,7 +174,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wider text-text-muted">
-                Due Months
+                {t("tables.dueMonths")}
               </p>
               <p className="mt-7 text-[40px] font-semibold tracking-tight text-foreground">
                 {client?.dueMonths ?? 0}
@@ -190,12 +193,12 @@ export default function ClientDetailsPanel({ clientId }: Props) {
             <TableThead className="bg-surface-muted">
               <TableTr>
                 {[
-                  "Month",
-                  "Amount",
-                  "Agent",
-                  "Receipt",
-                  "Status",
-                  "Action",
+                  t("common.month"),
+                  t("common.amount"),
+                  t("common.agent"),
+                  t("common.receipt"),
+                  t("common.status"),
+                  t("tables.action"),
                 ].map((header) => (
                   <TableTh
                     key={header}
@@ -208,25 +211,14 @@ export default function ClientDetailsPanel({ clientId }: Props) {
               </TableTr>
             </TableThead>
             <TableTbody>
-              {paymentsQuery.isLoading
-                ? Array.from({ length: PAGE_SIZE }).map((_, index) => (
-                    <TableTr
-                      key={index}
-                      className="border-b border-border last:border-b-0"
-                    >
-                      {Array.from({ length: 6 }).map((__, cellIndex) => (
-                        <TableTd className="px-7 py-6" key={cellIndex}>
-                          <Skeleton className="h-5 rounded-sm" />
-                        </TableTd>
-                      ))}
-                    </TableTr>
-                  ))
+              {paymentsQuery.isLoading || paymentsQuery.isFetching
+                ? <TableSkeletonRows columns={6} rows={PAGE_SIZE} />
                 : payments.length === 0
                 ? (
                     <TableEmptyRow
                       colSpan={6}
-                      message="This client has no payment timeline yet."
-                      title="No payments found"
+                      message={t("tables.paymentTimelineEmpty")}
+                      title={t("tables.noPaymentsFound")}
                     />
                   )
                 : payments.map((payment) => {
@@ -258,12 +250,14 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                           onClick={() => openReceipt(payment)}
                           type="button"
                         >
-                          {payment.receiptId ? "View" : "Pending"}
+                          {payment.receiptId ? t("common.view") : t("tables.receiptPending")}
                         </button>
                       )}
                     </TableTd>
                     <TableTd className="px-3 py-6">
-                      <StatusBadge status={isOverdue ? "Overdue" : "Paid"} />
+                      <StatusBadge
+                        status={isOverdue ? t("common.overdue") : t("common.paid")}
+                      />
                     </TableTd>
                     <TableTd className="px-3 py-6 flex items-center">
                       {isOverdue ? (
@@ -279,7 +273,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                           </Menu.Target>
                           <Menu.Dropdown>
                             <Menu.Item onClick={() => markComplete(payment)}>
-                              Mark as paid
+                              {t("tables.markAsPaid")}
                             </Menu.Item>
                           </Menu.Dropdown>
                         </Menu>
@@ -299,7 +293,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                               disabled={!payment.receiptId}
                               onClick={() => openReceipt(payment)}
                             >
-                              View receipt
+                              {t("tables.viewReceipt")}
                             </Menu.Item>
                           </Menu.Dropdown>
                         </Menu>

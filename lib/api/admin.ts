@@ -24,6 +24,8 @@ import type {
   PaymentResponse,
   ReceiptVerification,
   UpdateStatusPayload,
+  UpdateAgentPayload,
+  UpdateClientPayload,
   UserSummary,
 } from "@/lib/api/types";
 
@@ -62,6 +64,10 @@ export const adminApi = {
       .then((res) => res.data),
   client: (clientId: string) =>
     api.get<AdminClientDetail>(endpoints.admin.client(clientId)).then((res) => res.data),
+  updateClient: (clientId: string, payload: UpdateClientPayload) =>
+    api
+      .patch<AdminClientDetail>(endpoints.admin.client(clientId), payload)
+      .then((res) => res.data),
   updateClientStatus: (clientId: string, payload: UpdateStatusPayload) =>
     api
       .patch<ApiSuccess>(endpoints.admin.clientStatus(clientId), payload)
@@ -82,6 +88,10 @@ export const adminApi = {
       .then((res) => res.data),
   agent: (agentId: string) =>
     api.get<AdminAgentDetail>(endpoints.admin.agent(agentId)).then((res) => res.data),
+  updateAgent: (agentId: string, payload: UpdateAgentPayload) =>
+    api
+      .patch<AdminAgentDetail>(endpoints.admin.agent(agentId), payload)
+      .then((res) => res.data),
   updateAgentStatus: (agentId: string, payload: UpdateStatusPayload) =>
     api
       .patch<ApiSuccess>(endpoints.admin.agentStatus(agentId), payload)

@@ -5,6 +5,7 @@ import { Menu, TableTd, TableTr } from "@mantine/core";
 import { HiEllipsisHorizontal } from "react-icons/hi2";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 import DashboardTableShell from "@/components/dashboard/DashboardTableShell";
 import FilterToolbar from "@/components/dashboard/FilterToolbar";
@@ -23,9 +24,11 @@ import {
 const PAGE_SIZE = 8;
 
 export default function AgentsTable() {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [addOpened, setAddOpened] = useState(false);
+  const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
   const skip = (page - 1) * PAGE_SIZE;
   const agentsQuery = useAdminAgentsQuery({
     limit: PAGE_SIZE,
@@ -37,6 +40,8 @@ export default function AgentsTable() {
 
   const agents = agentsQuery.data?.data ?? [];
   const totalPages = getPageCount(agentsQuery.data?.total ?? 0, PAGE_SIZE);
+  const editingAgent =
+    agents.find((agent) => agent.agentId === editingAgentId) ?? null;
 
   function handleQueryChange(value: string) {
     setQuery(value);
@@ -48,7 +53,10 @@ export default function AgentsTable() {
       { agentId, isActive },
       {
         onError: (error) => toast.error(getApiErrorMessage(error)),
-        onSuccess: () => toast.success(isActive ? "Agent activated." : "Agent deactivated."),
+        onSuccess: () =>
+          toast.success(
+            isActive ? t("tables.agentActivated") : t("tables.agentDeactivated"),
+          ),
       },
     );
   }
@@ -56,21 +64,21 @@ export default function AgentsTable() {
   return (
     <div className="space-y-6">
       <FilterToolbar
-        title="All Agents"
-        addLabel="+ Add Agent"
+        title={t("tables.allAgents")}
+        addLabel={t("actions.addAgent")}
         onAdd={() => setAddOpened(true)}
         onQueryChange={handleQueryChange}
-        placeholder="Search agent...."
+        placeholder={t("tables.searchAgents")}
         query={query}
       />
       <DashboardTableShell
         headers={[
-          "Full Names",
-          "Phone Number",
-          "Registered Date",
-          "Status",
-          "This Month’s Performance",
-          "Action",
+          t("common.fullNames"),
+          t("common.phoneNumber"),
+          t("common.registeredDate"),
+          t("common.status"),
+          t("tables.thisMonthPerformance"),
+          t("tables.action"),
         ]}
         onPageChange={setPage}
         page={page}
@@ -82,8 +90,8 @@ export default function AgentsTable() {
           ? (
               <TableEmptyRow
                 colSpan={6}
-                message="Create one agent or import a CSV/XLSX file to populate this table."
-                title="No agents found"
+                message={t("tables.createAgentEmpty")}
+                title={t("tables.noAgentsFound")}
               />
             )
           : agents.map((agent) => (
@@ -101,7 +109,9 @@ export default function AgentsTable() {
                   {formatDate(agent.createdAt)}
                 </TableTd>
                 <TableTd className="px-8 py-6">
-                  <StatusBadge status={agent.isActive ? "Active" : "Inactive"} />
+                  <StatusBadge
+                    status={agent.isActive ? t("common.active") : t("common.inactive")}
+                  />
                 </TableTd>
                 <TableTd className="px-8 py-6 text-center text-[14px] text-text-muted">
                   {formatCurrency(agent.currentMonthCollected)}
@@ -119,13 +129,16 @@ export default function AgentsTable() {
                     </Menu.Target>
                     <Menu.Dropdown>
                       <Menu.Item component={Link} href={`/agents/${agent.agentId}`}>
-                        View
+                        {t("common.view")}
+                      </Menu.Item>
+                      <Menu.Item onClick={() => setEditingAgentId(agent.agentId)}>
+                        {t("forms.editAgentTitle")}
                       </Menu.Item>
                       <Menu.Item
                         color={agent.isActive ? "red" : "green"}
                         onClick={() => updateStatus(agent.agentId, !agent.isActive)}
                       >
-                        {agent.isActive ? "Deactivate" : "Activate"}
+                        {agent.isActive ? t("tables.deactivate") : t("tables.activate")}
                       </Menu.Item>
                     </Menu.Dropdown>
                   </Menu>
@@ -134,6 +147,11 @@ export default function AgentsTable() {
             ))}
       </DashboardTableShell>
       <AddAgentModal onClose={() => setAddOpened(false)} opened={addOpened} />
+      <AddAgentModal
+        agent={editingAgent}
+        onClose={() => setEditingAgentId(null)}
+        opened={editingAgent !== null}
+      />
     </div>
   );
 }

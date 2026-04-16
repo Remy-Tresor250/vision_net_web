@@ -180,10 +180,24 @@ export interface CreateAdminUserPayload {
 
 export type CreateAgentPayload = CreateAdminUserPayload;
 
+export interface UpdateAgentPayload {
+  fullNames?: string;
+  phone?: string;
+  language?: Language;
+  isActive?: boolean;
+}
+
 export interface CreateClientPayload extends CreateAdminUserPayload {
   address: string;
   type: ClientType;
   subscriptionAmount: string;
+  registeredDate?: string;
+}
+
+export interface UpdateClientPayload extends UpdateAgentPayload {
+  address?: string;
+  type?: ClientType;
+  subscriptionAmount?: string;
   registeredDate?: string;
 }
 

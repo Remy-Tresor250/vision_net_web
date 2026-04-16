@@ -8,6 +8,8 @@ import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
 import Button from "@/components/ui/Button";
+import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
+import PhoneNumberInput from "@/components/ui/PhoneNumberInput";
 import { getApiErrorMessage } from "@/lib/api/client";
 import {
   useForgotPasswordResetMutation,
@@ -57,7 +59,11 @@ export default function ForgotPasswordModal({ onClose, opened }: Props) {
       {
         onError: (error) => toast.error(getApiErrorMessage(error)),
         onSuccess: (response) => {
-          toast.success(response.developmentOtp ? `OTP: ${response.developmentOtp}` : response.message ?? "OTP sent.");
+          toast.success(
+            response.developmentOtp
+              ? `OTP: ${response.developmentOtp}`
+              : response.message ?? t("settings.otpSent"),
+          );
           setStep("code");
         },
       },
@@ -79,7 +85,7 @@ export default function ForgotPasswordModal({ onClose, opened }: Props) {
 
   function reset(values: ForgotPasswordFormValues) {
     if (!values.otpSessionId) {
-      toast.error("Verify OTP first.");
+      toast.error(t("settings.verifyOtpFirst"));
       return;
     }
 
@@ -92,7 +98,7 @@ export default function ForgotPasswordModal({ onClose, opened }: Props) {
       {
         onError: (error) => toast.error(getApiErrorMessage(error)),
         onSuccess: () => {
-          toast.success("Password updated.");
+          toast.success(t("settings.passwordUpdated"));
           close();
         },
       },
@@ -106,7 +112,13 @@ export default function ForgotPasswordModal({ onClose, opened }: Props) {
           control={control}
           name="phone"
           render={({ field }) => (
-            <TextInput {...field} disabled={step !== "phone"} error={errors.phone?.message} label={t("auth.phone")} />
+            <PhoneNumberInput
+              disabled={step !== "phone"}
+              error={errors.phone?.message}
+              label={t("auth.phone")}
+              onChange={field.onChange}
+              value={field.value}
+            />
           )}
         />
         {step !== "phone" ? (
@@ -114,7 +126,14 @@ export default function ForgotPasswordModal({ onClose, opened }: Props) {
             control={control}
             name="code"
             render={({ field }) => (
-              <TextInput {...field} disabled={step === "password"} error={errors.code?.message} label={t("settings.otpCode")} />
+              <TextInput
+                {...field}
+                classNames={appFieldClassNames}
+                disabled={step === "password"}
+                error={errors.code?.message}
+                label={t("settings.otpCode")}
+                styles={appFieldStyles}
+              />
             )}
           />
         ) : null}
@@ -123,7 +142,13 @@ export default function ForgotPasswordModal({ onClose, opened }: Props) {
             control={control}
             name="password"
             render={({ field }) => (
-              <PasswordInput {...field} error={errors.password?.message} label={t("settings.newPassword")} />
+              <PasswordInput
+                {...field}
+                classNames={appFieldClassNames}
+                error={errors.password?.message}
+                label={t("settings.newPassword")}
+                styles={appFieldStyles}
+              />
             )}
           />
         ) : null}
@@ -133,7 +158,7 @@ export default function ForgotPasswordModal({ onClose, opened }: Props) {
           </Button>
         ) : step === "code" ? (
           <Button disabled={verifyMutation.isPending} onClick={verify} type="button">
-            Verify OTP
+            {t("settings.verifyOtp")}
           </Button>
         ) : (
           <Button disabled={resetMutation.isPending} type="submit">

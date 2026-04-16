@@ -6,6 +6,7 @@ import Providers from "@/app/providers";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "mantine-datatable/styles.css";
+import "react-phone-input-2/lib/style.css";
 import "./globals.css";
 
 const poppins = localFont({

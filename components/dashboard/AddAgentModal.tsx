@@ -1,26 +1,41 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Modal, Select, TextInput } from "@mantine/core";
+import { Modal, TextInput } from "@mantine/core";
+import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { HiOutlineXMark } from "react-icons/hi2";
+import { useTranslation } from "react-i18next";
 
 import ImportUsersModal from "@/components/dashboard/ImportUsersModal";
+import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
+import PhoneNumberInput from "@/components/ui/PhoneNumberInput";
 import { getApiErrorMessage } from "@/lib/api/client";
-import { useCreateAgentMutation } from "@/lib/query/hooks";
+import {
+  useCreateAgentMutation,
+  useUpdateAgentMutation,
+} from "@/lib/query/hooks";
 import {
   agentFormSchema,
   type AgentFormValues,
 } from "@/lib/validation/admin-users";
+import type { AdminAgentDetail, AdminAgentListItem } from "@/lib/api/types";
 
 interface Props {
   opened: boolean;
   onClose: () => void;
+  agent?: Pick<
+    AdminAgentListItem | AdminAgentDetail,
+    "agentId" | "fullNames" | "isActive" | "phone"
+  > | null;
 }
 
-export default function AddAgentModal({ onClose, opened }: Props) {
-  const mutation = useCreateAgentMutation();
+export default function AddAgentModal({ agent, onClose, opened }: Props) {
+  const { t } = useTranslation();
+  const createMutation = useCreateAgentMutation();
+  const updateMutation = useUpdateAgentMutation(agent?.agentId);
+  const isEditing = Boolean(agent);
   const {
     control,
     formState: { errors },
@@ -29,21 +44,48 @@ export default function AddAgentModal({ onClose, opened }: Props) {
   } = useForm<AgentFormValues>({
     defaultValues: {
       fullNames: "",
-      language: "fr",
       phone: "",
     },
     resolver: zodResolver(agentFormSchema),
   });
 
-  function submit(values: AgentFormValues) {
-    mutation.mutate(values, {
-      onError: (error) => toast.error(getApiErrorMessage(error)),
-      onSuccess: () => {
-        toast.success("Agent created.");
-        reset();
-        onClose();
-      },
+  useEffect(() => {
+    if (!opened) return;
+
+    reset({
+      fullNames: agent?.fullNames ?? "",
+      phone: agent?.phone ?? "",
     });
+  }, [agent, opened, reset]);
+
+  function submit(values: AgentFormValues) {
+    if (isEditing) {
+      updateMutation.mutate(values, {
+        onError: (error) => toast.error(getApiErrorMessage(error)),
+        onSuccess: () => {
+          toast.success(t("forms.agentUpdated"));
+          reset();
+          onClose();
+        },
+      });
+
+      return;
+    }
+
+    createMutation.mutate(
+      {
+        ...values,
+        language: "fr",
+      },
+      {
+        onError: (error) => toast.error(getApiErrorMessage(error)),
+        onSuccess: () => {
+          toast.success(t("forms.agentCreated"));
+          reset();
+          onClose();
+        },
+      },
+    );
   }
 
   return (
@@ -64,100 +106,72 @@ export default function AddAgentModal({ onClose, opened }: Props) {
       size="xl"
       title={
         <span className="text-[28px] font-semibold text-foreground">
-          Enregistrer Agent(s)
+          {isEditing ? t("forms.editAgentTitle") : t("modals.registerAgents")}
         </span>
       }
     >
-      <div className="space-y-4">
-        <ImportUsersModal kind="agents" onImported={onClose} />
-        <div className="flex items-center gap-5">
-          <div className="h-px flex-1 bg-border" />
-          <span className="text-[13px] text-text-muted">Ou</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-        <form className="space-y-4" onSubmit={handleSubmit(submit)}>
-          <Controller
-            control={control}
-            name="fullNames"
-            render={({ field }) => (
-              <TextInput
-                {...field}
-                error={errors.fullNames?.message}
-                label="Noms complets"
-                placeholder="Ex: Jean bosco ..."
-                styles={{
-                  input: {
-                    height: 40,
-                    paddingRight: 12,
-                    paddingLeft: 12,
-                    paddingTop: 8,
-                    paddingBottom: 8,
-                  },
-                }}
-              />
-            )}
-          />
+      <div className="space-y-4 lg:px-6">
+        {!isEditing ? (
+          <>
+            <ImportUsersModal kind="agents" onImported={onClose} />
+            <div className="flex items-center gap-5">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[13px] text-text-muted">
+                {t("common.or")}
+              </span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          </>
+        ) : null}
+        <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(submit)}>
+            <Controller
+              control={control}
+              name="fullNames"
+              render={({ field }) => (
+                <TextInput
+                  {...field}
+                  classNames={appFieldClassNames}
+                  error={errors.fullNames?.message}
+                  label={t("common.fullNames")}
+                  placeholder={t("forms.fullNamesPlaceholder")}
+                  styles={appFieldStyles}
+                />
+              )}
+            />
           <Controller
             control={control}
             name="phone"
             render={({ field }) => (
-              <TextInput
-                {...field}
-                placeholder="Ex: +2507xxxx"
-                styles={{
-                  input: {
-                    height: 40,
-                    paddingRight: 12,
-                    paddingLeft: 12,
-                    paddingTop: 8,
-                    paddingBottom: 8,
-                  },
-                }}
+              <PhoneNumberInput
                 error={errors.phone?.message}
-                label="Telephone"
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="language"
-            render={({ field }) => (
-              <Select
-                data={[
-                  { label: "English", value: "en" },
-                  { label: "French", value: "fr" },
-                ]}
-                styles={{
-                  input: {
-                    height: 40,
-                    paddingRight: 12,
-                    paddingLeft: 12,
-                    paddingTop: 8,
-                    paddingBottom: 8,
-                  },
-                }}
-                error={errors.language?.message}
-                label="Langue"
-                onChange={(value) => field.onChange(value ?? "en")}
+                label={t("common.phone")}
+                onChange={field.onChange}
+                placeholder="788000000"
                 value={field.value}
               />
             )}
           />
-
-          <div className="flex justify-end gap-3 py-4">
+          <div className="flex justify-end gap-3 py-4 md:col-span-2">
             <button
               onClick={onClose}
               className="flex flex-row items-center gap-[4px] px-[12px] py-[6px] bg-transparent border-gray-500 border-[1px] border-solid rounded-[6px]"
+              type="button"
             >
-              <p className="text-[14px] text-black">Annuler</p>
+              <p className="text-[14px] text-black">{t("actions.cancel")}</p>
             </button>
             <button
-              disabled={mutation.isPending}
+              disabled={createMutation.isPending || updateMutation.isPending}
               type="submit"
               className="flex flex-row items-center gap-[4px] px-[12px] py-[6px] bg-brand rounded-[6px]"
             >
               <p className="text-[14px] text-white">
-                {mutation.isPending ? "Creation..." : "Enregistrer agent"}
+                {createMutation.isPending || updateMutation.isPending
+                  ? isEditing
+                    ? t("forms.saving")
+                    : t("actions.creating")
+                  : isEditing
+                    ? t("forms.saveChanges")
+                    : t("actions.createAgent")}
               </p>
             </button>
           </div>

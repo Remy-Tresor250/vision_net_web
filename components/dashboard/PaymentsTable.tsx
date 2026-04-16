@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Menu, TableTd, TableTr } from "@mantine/core";
 import { HiEllipsisHorizontal } from "react-icons/hi2";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import DashboardTableShell from "@/components/dashboard/DashboardTableShell";
 import FilterToolbar from "@/components/dashboard/FilterToolbar";
@@ -17,6 +18,7 @@ import { useAdminPaymentsQuery } from "@/lib/query/hooks";
 const PAGE_SIZE = 8;
 
 export default function PaymentsTable() {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const paymentsQuery = useAdminPaymentsQuery({
@@ -25,7 +27,19 @@ export default function PaymentsTable() {
     skip: (page - 1) * PAGE_SIZE,
     sortDir: "desc",
   });
-  const payments = paymentsQuery.data?.data ?? [];
+  const payments = [...(paymentsQuery.data?.data ?? [])].sort((left, right) => {
+    const leftIsOverdue = left.status === "DUE" ? 1 : 0;
+    const rightIsOverdue = right.status === "DUE" ? 1 : 0;
+
+    if (leftIsOverdue !== rightIsOverdue) {
+      return rightIsOverdue - leftIsOverdue;
+    }
+
+    const leftDate = new Date(left.dueDate ?? left.paymentDate ?? left.createdAt ?? 0).getTime();
+    const rightDate = new Date(right.dueDate ?? right.paymentDate ?? right.createdAt ?? 0).getTime();
+
+    return rightDate - leftDate;
+  });
   const totalPages = getPageCount(paymentsQuery.data?.total ?? 0, PAGE_SIZE);
 
   function handleQueryChange(value: string) {
@@ -36,20 +50,20 @@ export default function PaymentsTable() {
   return (
     <div className="space-y-6">
       <FilterToolbar
-        title="All Payments"
+        title={t("dashboard.allPayments")}
         onQueryChange={handleQueryChange}
-        placeholder="Search Client, Agent ...."
+        placeholder={t("tables.searchPayments")}
         query={query}
       />
       <DashboardTableShell
         headers={[
-          "Client Names",
-          "Agent Name",
-          "Month(s)",
-          "Date",
-          "Amount",
-          "Status",
-          "Details",
+          t("common.clientName"),
+          t("common.agentName"),
+          t("common.months"),
+          t("common.date"),
+          t("common.amount"),
+          t("common.status"),
+          t("common.details"),
         ]}
         onPageChange={setPage}
         page={page}
@@ -61,8 +75,8 @@ export default function PaymentsTable() {
           ? (
               <TableEmptyRow
                 colSpan={7}
-                message="Payment records will appear here after agents or admins confirm collections."
-                title="No payments found"
+                message={t("tables.paymentsEmpty")}
+                title={t("tables.noPaymentsFound")}
               />
             )
           : payments.map((payment) => (
@@ -86,7 +100,7 @@ export default function PaymentsTable() {
                   {formatCurrency(payment.amount)}
                 </TableTd>
                 <TableTd className="px-8 py-6">
-                  <StatusBadge status={payment.status === "DUE" ? "Overdue" : "Paid"} />
+                  <StatusBadge status={payment.status === "DUE" ? t("common.overdue") : t("common.paid")} />
                 </TableTd>
                 <TableTd className="px-8 py-6 text-center">
                   <Menu position="bottom-end" shadow="md" width={190}>
@@ -102,12 +116,12 @@ export default function PaymentsTable() {
                     <Menu.Dropdown>
                       {payment.clientId ? (
                         <Menu.Item component={Link} href={`/clients/${payment.clientId}`}>
-                          View client
+                          {t("tables.viewClient")}
                         </Menu.Item>
                       ) : null}
                       {payment.agentId ? (
                         <Menu.Item component={Link} href={`/agents/${payment.agentId}`}>
-                          View agent
+                          {t("tables.viewAgent")}
                         </Menu.Item>
                       ) : null}
                     </Menu.Dropdown>

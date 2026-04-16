@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   Pagination,
-  Skeleton,
   Table,
   TableScrollContainer,
   TableTbody,
@@ -22,13 +21,15 @@ import {
 import ErrorState from "@/components/dashboard/ErrorState";
 import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
-import { formatCurrency, formatDate, formatMonths } from "@/lib/format";
+import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
+import { formatCurrency, formatDate, formatMonths, getPageCount } from "@/lib/format";
 import {
   useAdminAgentQuery,
   useAdminPaymentsQuery,
 } from "@/lib/query/hooks";
 import type { AdminPaymentListItem } from "@/lib/api/types";
 import type { Payment } from "@/types";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   agentId: string;
@@ -53,6 +54,7 @@ function toReceiptPayment(payment: AdminPaymentListItem): Payment {
 }
 
 export default function AgentDetailsPanel({ agentId }: Props) {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [selectedPayment, setSelectedPayment] =
     useState<AdminPaymentListItem | null>(null);
@@ -65,12 +67,12 @@ export default function AgentDetailsPanel({ agentId }: Props) {
   });
   const agent = agentQuery.data;
   const payments = paymentsQuery.data?.data ?? [];
-  const totalPages = Math.max(1, Math.ceil((paymentsQuery.data?.total ?? 0) / PAGE_SIZE));
+  const totalPages = getPageCount(paymentsQuery.data?.total ?? 0, PAGE_SIZE);
 
   if (agentQuery.isError) {
     return (
       <ErrorState
-        message="We could not load this agent."
+        message={t("dashboard.couldNotLoad")}
         reset={() => agentQuery.refetch()}
       />
     );
@@ -84,7 +86,7 @@ export default function AgentDetailsPanel({ agentId }: Props) {
           className="text-[16px] font-medium transition-colors duration-200 ease-out hover:text-foreground"
           href="/agents"
         >
-          Back to Agents
+          {t("common.backToAgents")}
         </Link>
       </div>
 
@@ -96,15 +98,15 @@ export default function AgentDetailsPanel({ agentId }: Props) {
           <div className="flex flex-1 gap-[5vw] flex-row items-center">
             <div>
               <p className="text-[16px] font-medium uppercase tracking-wider text-text-muted">
-                Full Names
+                {t("common.fullNames")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {agentQuery.isLoading ? "Loading..." : agent?.fullNames ?? "-"}
+                {agentQuery.isLoading ? t("common.loading") : agent?.fullNames ?? "-"}
               </p>
             </div>
             <div>
               <p className="text-[16px] font-medium uppercase tracking-wider text-text-muted">
-                Registered Date
+                {t("common.registeredDate")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
                 {formatDate(agent?.createdAt)}
@@ -112,10 +114,10 @@ export default function AgentDetailsPanel({ agentId }: Props) {
             </div>
             <div>
               <p className="text-[16px] font-medium uppercase tracking-wider text-text-muted">
-                Phone Number
+                {t("common.phoneNumber")}
               </p>
               <p className="text-[18px] font-medium tracking-tight text-foreground">
-                {agentQuery.isLoading ? "Loading..." : agent?.phone ?? "-"}
+                {agentQuery.isLoading ? t("common.loading") : agent?.phone ?? "-"}
               </p>
             </div>
           </div>
@@ -127,7 +129,7 @@ export default function AgentDetailsPanel({ agentId }: Props) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wider text-text-muted">
-                Total Collected (Aug)
+                {t("tables.totalCollected")}
               </p>
               <p className="mt-7 text-[40px] font-semibold tracking-tight text-foreground">
                 {formatCurrency(
@@ -145,7 +147,7 @@ export default function AgentDetailsPanel({ agentId }: Props) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wider text-text-muted">
-                Unique Clients (Aug)
+                {t("tables.uniqueClients")}
               </p>
               <p className="mt-7 text-[40px] font-semibold tracking-tight text-foreground">
                 {agent?.uniqueClientsCollectedFrom ?? 0}
@@ -164,11 +166,11 @@ export default function AgentDetailsPanel({ agentId }: Props) {
             <TableThead className="bg-surface-muted">
               <TableTr>
                 {[
-                  "Client Name",
-                  "Date Collected",
-                  "Month",
-                  "Amount",
-                  "Receipt",
+                  t("common.clientName"),
+                  t("tables.dateCollected"),
+                  t("common.month"),
+                  t("common.amount"),
+                  t("common.receipt"),
                 ].map((header) => (
                   <TableTh
                     key={header}
@@ -181,25 +183,14 @@ export default function AgentDetailsPanel({ agentId }: Props) {
               </TableTr>
             </TableThead>
             <TableTbody>
-              {paymentsQuery.isLoading
-                ? Array.from({ length: PAGE_SIZE }).map((_, index) => (
-                    <TableTr
-                      key={index}
-                      className="border-b border-border last:border-b-0"
-                    >
-                      {Array.from({ length: 5 }).map((__, cellIndex) => (
-                        <TableTd className="px-7 py-6" key={cellIndex}>
-                          <Skeleton className="h-5 rounded-sm" />
-                        </TableTd>
-                      ))}
-                    </TableTr>
-                  ))
+              {paymentsQuery.isLoading || paymentsQuery.isFetching
+                ? <TableSkeletonRows columns={5} rows={PAGE_SIZE} />
                 : payments.length === 0
                 ? (
                     <TableEmptyRow
                       colSpan={5}
-                      message="Payments collected by this agent will appear here."
-                      title="No collections found"
+                      message={t("tables.collectionsEmpty")}
+                      title={t("tables.noCollectionsFound")}
                     />
                   )
                 : payments.map((payment) => (
@@ -226,7 +217,7 @@ export default function AgentDetailsPanel({ agentId }: Props) {
                           onClick={() => setSelectedPayment(payment)}
                           type="button"
                         >
-                          {payment.receiptId ? "View" : "Pending"}
+                          {payment.receiptId ? t("common.view") : t("tables.receiptPending")}
                         </button>
                       </TableTd>
                     </TableTr>

@@ -17,6 +17,11 @@ import {
 
 import AppLogo from "@/components/dashboard/AppLogo";
 import Button from "@/components/ui/Button";
+import {
+  useAdminAgentsQuery,
+  useAdminClientsQuery,
+  useAdminPaymentsQuery,
+} from "@/lib/query/hooks";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useLanguageStore } from "@/stores/language-store";
@@ -53,29 +58,6 @@ const navigationItems = [
     icon: HiOutlineCog6Tooth,
   },
 ] as const;
-
-const pageMeta: Record<string, { title: string; subtitle: string }> = {
-  "/dashboard": {
-    title: "Dashboard",
-    subtitle: "",
-  },
-  "/clients": {
-    title: "Clients",
-    subtitle: "73,434 registered clients",
-  },
-  "/agents": {
-    title: "Agents",
-    subtitle: "8 registered agents",
-  },
-  "/payments": {
-    title: "Payments",
-    subtitle: "8000 Transactions for AUG",
-  },
-  "/settings": {
-    title: "Settings",
-    subtitle: "",
-  },
-};
 
 function SidebarContent({ pathname }: { pathname: string }) {
   const { t } = useTranslation();
@@ -142,6 +124,9 @@ export default function DashboardShell({ children }: Props) {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const hydrateLanguage = useLanguageStore((state) => state.hydrate);
+  const clientsQuery = useAdminClientsQuery({ limit: 1, skip: 0 });
+  const agentsQuery = useAdminAgentsQuery({ limit: 1, skip: 0 });
+  const paymentsQuery = useAdminPaymentsQuery({ limit: 1, skip: 0 });
 
   useEffect(() => {
     hydrateLanguage();
@@ -153,13 +138,43 @@ export default function DashboardShell({ children }: Props) {
         (item) =>
           pathname === item.href || pathname.startsWith(`${item.href}/`),
       );
-  const currentPage =
-    currentNavigationItem?.href && pageMeta[currentNavigationItem.href]
-      ? {
-          ...pageMeta[currentNavigationItem.href],
-          title: t(`nav.${currentNavigationItem.labelKey}`),
-        }
-      : pageMeta["/dashboard"];
+  const currentPage = (() => {
+    const title = currentNavigationItem
+      ? t(`nav.${currentNavigationItem.labelKey}`)
+      : t("nav.dashboard");
+
+    if (pathname === "/clients") {
+      return {
+        title,
+        subtitle: t("dashboard.clientsCount", {
+          count: clientsQuery.data?.total ?? 0,
+        }),
+      };
+    }
+
+    if (pathname === "/agents") {
+      return {
+        title,
+        subtitle: t("dashboard.agentsCount", {
+          count: agentsQuery.data?.total ?? 0,
+        }),
+      };
+    }
+
+    if (pathname === "/payments") {
+      return {
+        title,
+        subtitle: t("dashboard.allPaymentsCount", {
+          count: paymentsQuery.data?.total ?? 0,
+        }),
+      };
+    }
+
+    return {
+      title,
+      subtitle: "",
+    };
+  })();
 
   function handleLogout() {
     logout();

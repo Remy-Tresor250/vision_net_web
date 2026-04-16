@@ -2,7 +2,6 @@ import { z } from "zod";
 
 export const agentFormSchema = z.object({
   fullNames: z.string().min(2, "Enter the full name"),
-  language: z.enum(["en", "fr"]),
   phone: z.string().min(7, "Enter a valid phone number").max(32),
 });
 

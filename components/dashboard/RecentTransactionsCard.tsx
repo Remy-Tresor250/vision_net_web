@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Table,
   TableScrollContainer,
@@ -5,6 +7,8 @@ import {
   TableTd,
   TableTr,
 } from "@mantine/core";
+
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 import NoDataCard from "@/components/dashboard/NoDataCard";
@@ -19,6 +23,8 @@ export default function RecentTransactionsCard({
   className,
   transactions,
 }: Props) {
+  const { t } = useTranslation();
+
   return (
     <section
       className={cn(
@@ -28,10 +34,10 @@ export default function RecentTransactionsCard({
     >
       <div className="flex items-center justify-between border-b border-border bg-surface-muted px-5 py-2">
         <h2 className="text-[14px] font-semibold uppercase tracking-wider text-foreground">
-          Recent Transactions
+          {t("dashboard.recentTransactions")}
         </h2>
         <button className="text-base font-semibold text-brand">
-          <p className="text-[13px]">View all</p>
+          <p className="text-[13px]">{t("dashboard.viewAll")}</p>
         </button>
       </div>
       {transactions.length ? (
@@ -66,8 +72,8 @@ export default function RecentTransactionsCard({
       ) : (
         <NoDataCard
           className="min-h-56 border-0"
-          message="Recent payment activity will appear here."
-          title="No transactions"
+          message={t("dashboard.transactionsEmpty")}
+          title={t("dashboard.noTransactions")}
         />
       )}
     </section>

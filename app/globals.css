@@ -93,3 +93,103 @@ svg:focus-visible {
 .recharts-wrapper *:focus {
   outline: none !important;
 }
+
+.app-field-label {
+  margin-bottom: 0.425rem;
+  color: #3c4a43;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.app-field-input,
+.app-phone-input .form-control,
+.app-phone-input .selected-flag {
+  border: 1px solid #e8ecea !important;
+  border-radius: 0.75rem !important;
+  background: #f6f7f6 !important;
+  box-shadow: none !important;
+  color: #21352b !important;
+  font-size: 0.85rem !important;
+}
+
+.app-field-input {
+  padding-inline: 0.95rem !important;
+}
+
+.app-field-input::placeholder,
+.app-phone-input .form-control::placeholder {
+  color: #b0b9b4 !important;
+}
+
+.app-field-input:focus,
+.app-phone-input .form-control:focus,
+.app-phone-input .selected-flag:focus {
+  border-color: #d8e4dd !important;
+}
+
+.app-field-section {
+  color: #9aa8a1;
+}
+
+.app-field-dropdown {
+  border: 1px solid #e8ecea;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.app-field-error {
+  margin-top: 0.4rem;
+  color: var(--danger);
+  font-size: 0.8rem;
+}
+
+.app-phone-field {
+  width: 100%;
+}
+
+.app-phone-field .special-label {
+  position: static !important;
+  margin: 0 0 0.625rem !important;
+  padding: 0 !important;
+  color: #3c4a43 !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+}
+
+.app-phone-input {
+  width: 100%;
+}
+
+.app-phone-input .form-control {
+  width: 100% !important;
+  height: 48px !important;
+  padding-left: 4.5rem !important;
+}
+
+.app-phone-input .flag-dropdown {
+  border: none !important;
+  background: transparent !important;
+}
+
+.app-phone-input .selected-flag {
+  width: 3.75rem !important;
+  margin: 1px 0 1px 1px;
+}
+
+.app-phone-input .selected-flag:hover,
+.app-phone-input .selected-flag:focus,
+.app-phone-input .flag-dropdown.open .selected-flag {
+  background: #eef2ef !important;
+}
+
+.app-phone-input .country-list {
+  margin-top: 0.5rem !important;
+  border: 1px solid #e8ecea !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 20px 45px -35px rgb(16 63 43 / 0.35) !important;
+}
+
+.app-phone-input .country-list .country {
+  padding-block: 0.55rem !important;
+}

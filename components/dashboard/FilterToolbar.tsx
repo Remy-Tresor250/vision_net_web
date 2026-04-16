@@ -5,6 +5,7 @@ import {
   HiOutlineMagnifyingGlass,
   HiOutlineAdjustmentsHorizontal,
 } from "react-icons/hi2";
+import { useTranslation } from "react-i18next";
 
 
 interface Props {
@@ -25,6 +26,8 @@ export default function FilterToolbar({
   query,
   title
 }: Props) {
+  const { t } = useTranslation();
+
   return (
     <div className="w-full flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <h2 className="text-[27px] font-medium text-[#0A3B24]">{title}</h2>
@@ -60,7 +63,7 @@ export default function FilterToolbar({
               className="size-5"
               color="#6B7C72"
             />
-            Filter
+            {t("actions.filter")}
           </button>
           {addLabel ? (
             <button

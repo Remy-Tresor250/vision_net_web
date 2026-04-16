@@ -16,15 +16,12 @@ import {
   HiOutlineArrowDownTray,
   HiOutlineDocumentArrowUp,
 } from "react-icons/hi2";
+import { useTranslation } from "react-i18next";
 
+import { adminApi } from "@/lib/api/admin";
 import { getApiErrorMessage } from "@/lib/api/client";
-import {
-  agentExampleCsv,
-  clientExampleCsv,
-  previewCsvFile,
-  type CsvPreview,
-} from "@/lib/csv";
-import {  downloadText } from "@/lib/download";
+import { previewCsvFile, type CsvPreview } from "@/lib/csv";
+import { downloadBlob } from "@/lib/download";
 import {
   useImportAgentsMutation,
   useImportClientsMutation,
@@ -36,8 +33,10 @@ interface Props {
 }
 
 export default function ImportUsersModal({ kind, onImported }: Props) {
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<CsvPreview | null>(null);
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const importAgents = useImportAgentsMutation();
   const importClients = useImportClientsMutation();
   const mutation = kind === "agents" ? importAgents : importClients;
@@ -68,11 +67,20 @@ export default function ImportUsersModal({ kind, onImported }: Props) {
     setPreview(null);
   }
 
-  function downloadExample() {
-    downloadText(
-      isClients ? clientExampleCsv : agentExampleCsv,
-      `${kind}-example.csv`,
-    );
+  async function downloadExample() {
+    setIsDownloadingTemplate(true);
+
+    try {
+      const blob = isClients
+        ? await adminApi.downloadClientTemplateCsv()
+        : await adminApi.downloadAgentTemplateCsv();
+
+      downloadBlob(blob, `${kind}-template.csv`);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+    } finally {
+      setIsDownloadingTemplate(false);
+    }
   }
 
   function upload() {
@@ -97,20 +105,23 @@ export default function ImportUsersModal({ kind, onImported }: Props) {
     <div className="space-y-5">
       <div>
         <p className="text-[15px] font-semibold text-foreground">
-          Import en masse
+          {t("imports.bulk")}
         </p>
         <p className="mt-1 text-[13px] text-text-muted">
-          Ajoutez plusieurs {isClients ? "clients" : "agents"} avec un fichier
-          CSV ou Excel.
+          {isClients ? t("tables.createClientEmpty") : t("tables.createAgentEmpty")}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
         <button
+          disabled={isDownloadingTemplate}
           onClick={downloadExample}
+          type="button"
           className="flex flex-row items-center gap-[4px] px-[12px] py-[6px] bg-brand rounded-[6px]"
         >
           <HiOutlineArrowDownTray className="size-4" color="white" />
-          <p className="text-white text-[13px]">Exemple CSV</p>
+          <p className="text-white text-[13px]">
+            {isDownloadingTemplate ? t("actions.importing") : t("imports.exampleCsv")}
+          </p>
         </button>
       </div>
 
@@ -123,11 +134,10 @@ export default function ImportUsersModal({ kind, onImported }: Props) {
           <HiOutlineDocumentArrowUp className="size-6" />
         </div>
         <p className="mt-4 text-[15px] font-semibold text-foreground">
-          {file ? file.name : "Importer"}
+          {file ? file.name : t("imports.drop")}
         </p>
         <p className="mt-2 max-w-md text-[13px] leading-6 text-text-muted">
-          CSV et XLSX uniquement. Les fichiers CSV peuvent etre verifies avant
-          l&apos;envoi.
+          {t("imports.csvOnly")}
         </p>
       </div>
 
@@ -135,7 +145,10 @@ export default function ImportUsersModal({ kind, onImported }: Props) {
         <div className="rounded-sm border border-border bg-surface">
           <div className="border-b border-border bg-surface-muted px-4 py-3">
             <p className="text-[13px] font-semibold uppercase tracking-wider text-foreground">
-              Apercu de {preview.rows.length} sur {preview.totalRows} lignes
+              {t("imports.previewing", {
+                total: preview.totalRows,
+                visible: preview.rows.length,
+              })}
             </p>
           </div>
           <TableScrollContainer minWidth={760} maxHeight={500}>
@@ -175,10 +188,11 @@ export default function ImportUsersModal({ kind, onImported }: Props) {
         <button
           disabled={!file || mutation.isPending}
           onClick={upload}
+          type="button"
           className="flex flex-row items-center gap-[4px] px-[12px] py-[6px] bg-brand rounded-[6px]"
         >
           <p className="text-[13px] text-white">
-            {mutation.isPending ? "Importation..." : "Importer le fichier"}
+            {mutation.isPending ? t("actions.importing") : t("actions.importFile")}
           </p>
         </button>
       </div>
