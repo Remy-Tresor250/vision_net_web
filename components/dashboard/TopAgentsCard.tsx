@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 import NoDataCard from "@/components/dashboard/NoDataCard";
+import { useRouter } from "next/navigation";
 
 interface Props {
   agents: Array<{ id: string; name: string; amount: string }>;
@@ -12,6 +13,7 @@ interface Props {
 
 export default function TopAgentsCard({ agents, className }: Props) {
   const { t } = useTranslation();
+  const router = useRouter()
 
   return (
     <section
@@ -24,7 +26,7 @@ export default function TopAgentsCard({ agents, className }: Props) {
         <h2 className="text-[14px] font-semibold uppercase tracking-wider text-foreground">
           {t("dashboard.topAgents")}
         </h2>
-        <button className="text-base font-semibold text-brand">
+        <button onClick={() => router.push("/agents")} className="text-base font-semibold text-brand">
           <p className="text-[13px]">{t("dashboard.viewAll")}</p>
         </button>
       </div>

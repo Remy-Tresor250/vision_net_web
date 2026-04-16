@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import NoDataCard from "@/components/dashboard/NoDataCard";
 import type { Transaction } from "@/types";
+import { useRouter } from "next/navigation";
 
 interface Props {
   transactions: Transaction[];
@@ -24,6 +25,7 @@ export default function RecentTransactionsCard({
   transactions,
 }: Props) {
   const { t } = useTranslation();
+  const router = useRouter();
 
   return (
     <section
@@ -36,7 +38,7 @@ export default function RecentTransactionsCard({
         <h2 className="text-[14px] font-semibold uppercase tracking-wider text-foreground">
           {t("dashboard.recentTransactions")}
         </h2>
-        <button className="text-base font-semibold text-brand">
+        <button onClick={() => router.push("/payments")} className="text-base font-semibold text-brand">
           <p className="text-[13px]">{t("dashboard.viewAll")}</p>
         </button>
       </div>
