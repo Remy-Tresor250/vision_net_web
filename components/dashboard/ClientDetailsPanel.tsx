@@ -187,7 +187,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                 {t("tables.dueMonths")}
               </p>
               <p className="mt-7 text-[40px] font-semibold tracking-tight text-foreground">
-                {client?.dueMonths ?? 0}
+                {client?.totalMonthsDue ?? client?.dueMonths ?? 0}
               </p>
             </div>
             <div className="flex h-10 min-w-18 items-center justify-center rounded-md bg-surface-muted px-4 text-text-muted">

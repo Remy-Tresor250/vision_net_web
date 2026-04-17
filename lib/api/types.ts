@@ -74,6 +74,7 @@ export interface AdminClientDetail extends AdminClientListItem {
   language?: Language;
   daysSinceFirstDueDate?: number;
   totalAmountDue?: string;
+  totalMonthsDue?: number;
   duePayments?: Array<{
     month: string;
     amount: string;
