@@ -17,11 +17,7 @@ import {
 
 import AppLogo from "@/components/dashboard/AppLogo";
 import Button from "@/components/ui/Button";
-import {
-  useAdminAgentsQuery,
-  useAdminClientsQuery,
-  useAdminPaymentsQuery,
-} from "@/lib/query/hooks";
+import { useAdminDashboardQuery } from "@/lib/query/hooks";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useLanguageStore } from "@/stores/language-store";
@@ -124,21 +120,10 @@ export default function DashboardShell({ children }: Props) {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const hydrateLanguage = useLanguageStore((state) => state.hydrate);
-  const isClientsRoute = pathname === "/clients";
-  const isAgentsRoute = pathname === "/agents";
-  const isPaymentsRoute = pathname === "/payments";
-  const clientsQuery = useAdminClientsQuery(
-    { limit: 1, skip: 0 },
-    { enabled: isClientsRoute },
-  );
-  const agentsQuery = useAdminAgentsQuery(
-    { limit: 1, skip: 0 },
-    { enabled: isAgentsRoute },
-  );
-  const paymentsQuery = useAdminPaymentsQuery(
-    { limit: 1, skip: 0 },
-    { enabled: isPaymentsRoute },
-  );
+  const dashboardQuery = useAdminDashboardQuery({
+    topAgentsLimit: 10,
+    year: new Date().getFullYear(),
+  });
 
   useEffect(() => {
     hydrateLanguage();
@@ -159,7 +144,7 @@ export default function DashboardShell({ children }: Props) {
       return {
         title,
         subtitle: t("dashboard.clientsCount", {
-          count: clientsQuery.data?.total ?? 0,
+          count: dashboardQuery.data?.kpis?.totalClientsActive?.count ?? 0,
         }),
       };
     }
@@ -168,7 +153,7 @@ export default function DashboardShell({ children }: Props) {
       return {
         title,
         subtitle: t("dashboard.agentsCount", {
-          count: agentsQuery.data?.total ?? 0,
+          count: dashboardQuery.data?.kpis?.totalAgentsActive?.count ?? 0,
         }),
       };
     }
@@ -176,9 +161,7 @@ export default function DashboardShell({ children }: Props) {
     if (pathname === "/payments") {
       return {
         title,
-        subtitle: t("dashboard.allPaymentsCount", {
-          count: paymentsQuery.data?.total ?? 0,
-        }),
+        subtitle: "",
       };
     }
 

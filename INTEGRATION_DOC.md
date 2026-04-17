@@ -1,871 +1,484 @@
-# Backend API & Flow Documentation
-
-## 1. Service Overview
-
-- Runtime stack: NestJS + Fastify.
-- Global API prefix: `/api`.
-- URI versioning: default version `v1`.
-- Effective base URL: `/api/v1`.
-- API docs (non-production): `/api/docs`.
-- Server startup runs database migrations automatically from `migrations/`.
-
-## 2. Global API Conventions
-
-### 2.1 Authentication
-
-- Auth scheme: `Authorization: Bearer <jwt>`.
-- JWT payload fields: `sub`, `role`, `language`, `phone`, `isActive`.
-- Role model:
-  - `ADMIN`
-  - `AGENT`
-  - `CLIENT`
-
-### 2.2 Validation, Serialization, i18n
-
-- All request inputs use `nestjs-zod` DTOs.
-- Responses are filtered/serialized by `ZodSerializerInterceptor` when response DTO is declared.
-- Validation errors are localized using `accept-language` (`en` and `fr`, fallback `en`).
-- Business/domain errors are localized via `I18nService`.
-
-### 2.3 Money & Currency
-
-- Operational currency: `USD` only.
-- API request money fields: major-unit string (e.g. `"100"`, `"100.5"`, `"100.50"` depending on endpoint regex).
-- API response money fields: normalized major-unit string with 2 decimals (e.g. `"100.50"`).
-- Persistence: integer minor units (cents).
-
-### 2.4 Date/Time Formats
-
-- Date-only: `YYYY-MM-DD`.
-- Month label: `YYYY-MM`.
-- Datetime: ISO-8601 string.
-
-### 2.5 Rate Limiting and Metrics
-
-- Global throttling is enabled (`AppRateLimitGuard`).
-- Health and metrics endpoints are excluded from throttling.
-- HTTP metrics exposed at `/api/v1/metrics` in Prometheus format.
-
----
-
-## 3. Auth & Access Model
-
-- `JwtAuthGuard` validates Bearer tokens for protected endpoints.
-- `RolesGuard` enforces role-based access where `@Roles(...)` is applied.
-- `@GetUser()` is the canonical way controllers read authenticated principal.
-
----
-
-## 4. Endpoint Catalog by Module
-
-## 4.1 Root App Module
-
-### `GET /api/v1`
-
-- Auth: none
-- Request: none
-- Response:
-  - `string` (`"Hello World!"`)
-- Side effects: none
-
-## 4.2 Auth Module (`/auth`)
-
-### `POST /api/v1/auth/first-login/start`
-
-- Auth: none
-- Status: `202`
-- Request body:
-  - `phone` (string, min 7 max 32)
-- Response:
-  - `success` (`true`)
-  - `message` (localized)
-  - `developmentOtp` (optional, local OTP mode)
-- Side effects:
-  - Creates OTP session (`FIRST_LOGIN`)
-  - Enqueues OTP SMS notification (or stores local OTP hash)
-
-### `POST /api/v1/auth/first-login/verify`
-
-- Auth: none
-- Request body:
-  - `phone`
-  - `code` (6 chars)
-- Response:
-  - `otpSessionId` (uuid)
-- Side effects:
-  - Marks OTP session `VERIFIED`
-
-### `POST /api/v1/auth/first-login/set-password`
-
-- Auth: none
-- Request body:
-  - `phone`
-  - `otpSessionId`
-  - `password` (8..128)
-- Response:
-  - `accessToken`
-  - `expiresInSeconds`
-  - `tokenType` (`Bearer`)
-  - `user` (`id`, `fullNames`, `phone`, `role`, `language`, `firstLoginCompleted`)
-- Side effects:
-  - Consumes verified OTP session
-  - Sets user password hash and first-login-completed
-
-### `POST /api/v1/auth/login/password`
-
-- Auth: none
-- Request body:
-  - `phone`
-  - `password`
-- Response: same token payload as above
-- Side effects: none
-
-### `POST /api/v1/auth/login/otp/start`
-
-- Auth: none
-- Status: `202`
-- Request body:
-  - `phone`
-- Response:
-  - `success`
-  - `message`
-  - `developmentOtp` (optional)
-- Side effects:
-  - Creates OTP session (`LOGIN`)
-  - Enqueues OTP SMS
-
-### `POST /api/v1/auth/login/otp/verify`
-
-- Auth: none
-- Request body:
-  - `phone`
-  - `code`
-- Response: auth token payload
-- Side effects:
-  - Marks OTP verified and consumes it
-
-### `POST /api/v1/auth/password/forgot/start`
-
-- Auth: none
-- Status: `202`
-- Request body:
-  - `phone`
-- Response:
-  - `success`
-  - `message`
-  - `developmentOtp` (optional)
-- Side effects:
-  - Creates OTP session (`FORGOT_PASSWORD`)
-  - Enqueues OTP SMS
-
-### `POST /api/v1/auth/password/forgot/verify`
-
-- Auth: none
-- Request body:
-  - `phone`
-  - `code`
-- Response:
-  - `otpSessionId`
-- Side effects:
-  - Marks OTP session verified
-
-### `POST /api/v1/auth/password/forgot/reset`
-
-- Auth: none
-- Request body:
-  - `phone`
-  - `otpSessionId`
-  - `password`
-- Response:
-  - `success`
-  - `message`
-- Side effects:
-  - Consumes OTP session
-  - Updates password
-
-### `POST /api/v1/auth/password/change/start`
-
-- Auth: JWT (`ADMIN|AGENT|CLIENT` token accepted), payload must match body phone
-- Status: `202`
-- Request body:
-  - `phone`
-- Response:
-  - `success`
-  - `message`
-  - `developmentOtp` (optional)
-- Side effects:
-  - Creates OTP session (`CHANGE_PASSWORD`)
-  - Enqueues OTP SMS
-
-### `POST /api/v1/auth/password/change`
-
-- Auth: JWT
-- Request body:
-  - `otpSessionId`
-  - `oldPassword`
-  - `newPassword`
-- Response:
-  - `success`
-  - `message`
-- Side effects:
-  - Verifies old password
-  - Consumes OTP session
-  - Updates password
-
-### `POST /api/v1/auth/push-token`
-
-- Auth: JWT
-- Request body:
-  - `expoPushToken`
-- Response:
-  - `success`
-  - `message`
-- Side effects:
-  - Upserts user push token in `user_push_tokens`
-
-## 4.3 App Users Module
-
-## `GET /api/v1/me`
-
-- Auth: JWT + roles `AGENT|CLIENT`
-- Request: none
-- Response:
-  - `user`: core profile fields
-  - `profile`: union
-    - CLIENT profile: `clientId`, `address`, `registeredDate`, `subscriptionAmount`, `clientType`
-    - AGENT profile: `agentId`, `currentMonthCollected`, `totalAmountCollected`, `collectionsCount`, `uniqueClientsCollectedFrom`
-- Side effects: none
-
-## `PATCH /api/v1/me`
-
-- Auth: JWT + roles `AGENT|CLIENT`
-- Request body:
-  - `fullNames?`
-  - `phone?`
-  - `otpSessionId?` (required when phone changes)
-- Response: same as `GET /me`
-- Side effects:
-  - Optional name update
-  - Optional phone update with consumed `CHANGE_PHONE` OTP session
-
-## `POST /api/v1/me/phone-change/start`
-
-- Auth: JWT + roles `AGENT|CLIENT`
-- Status: `200`
-- Request body:
-  - `phone`
-- Response:
-  - `success`
-  - `message`
-  - `developmentOtp` (optional)
-- Side effects:
-  - Creates `CHANGE_PHONE` OTP session
-  - Enqueues OTP SMS
-
-## `POST /api/v1/me/phone-change/verify`
-
-- Auth: JWT + roles `AGENT|CLIENT`
-- Request body:
-  - `phone`
-  - `code`
-- Response:
-  - `otpSessionId`
-- Side effects:
-  - Marks `CHANGE_PHONE` OTP verified
-
-## 4.4 App Clients Module (`AGENT`)
-
-### `GET /api/v1/clients`
-
-- Auth: JWT + role `AGENT`
-- Query:
-  - `skip` (default 0)
-  - `limit` (default 20, max 100)
-  - `search?`
-  - `status?` (`PENDING|PAID`)
-- Response:
-  - page object: `data`, `total`, `skip`, `limit`
-  - item fields: `clientId`, `fullNames`, `phone`, `address`, `clientType`, `registeredDate`, `subscriptionAmount`, `dueMonths`, `totalDue`, `status`
-- Side effects: none
-
-### `GET /api/v1/clients/:clientId`
-
-- Auth: JWT + role `AGENT`
-- Params:
-  - `clientId` (uuid)
-- Query:
-  - `dueOnly?` (boolean)
-- Response:
-  - `clientId`, `fullNames`, `phone`, `address`, `clientType`, `registeredDate`, `subscriptionAmount`
-  - `duePayments[]` (`month`, `amount`, `dueDate`, `daysPassedSinceDue`)
-  - `daysSinceFirstDueDate`, `totalDue`, `dueOnly`
-- Side effects: none
-
-### `GET /api/v1/clients/:clientId/payments`
-
-- Auth: JWT + role `AGENT`
-- Params:
-  - `clientId`
-- Query:
-  - `skip`, `limit`, `search?`
-- Response:
-  - page with confirmed payments including `paymentId`, `amount`, `months`, `paymentDate`, `createdAt`, `receiptId`, `receiptNumber`, `setByAdmin`, `agentId`, `agentName`
-- Side effects: none
-
-### `POST /api/v1/clients/:clientId/payments`
-
-- Auth: JWT + role `AGENT`
-- Params:
-  - `clientId`
-- Request body:
-  - `months[]` (`YYYY-MM`)
-  - `amount` (major-unit string)
-- Response (`PaymentResponseDto`):
-  - `paymentId`
-  - `receiptId` (`null` initially)
-  - `receiptNumber` (`null` initially)
-  - `receiptStatus` (`PENDING|READY`) (returns `PENDING` immediately)
-  - `amount`
-  - `months`
-  - `paymentDate`
-- Side effects:
-  - Inserts confirmed payment with `agentId`
-  - Enqueues receipt generation job (`receipts` queue)
-
-## 4.5 Payments Module
-
-### `GET /api/v1/payments/agent/pending`
-
-- Auth: JWT + role `AGENT`
-- Query:
-  - `skip`, `limit`, `search?`
-- Response:
-  - pending client page with `clientId`, `clientName`, `clientPhone`, `overdueMonths`, `overdueCount`, `totalAmountDue`
-- Side effects: none
-
-### `GET /api/v1/payments/agent/client/:clientId/unpaid-months`
-
-- Auth: JWT + role `AGENT`
-- Params:
-  - `clientId`
-- Response:
-  - `clientId`, `months[]`, `suggestedAmount`
-- Side effects: none
-
-### `POST /api/v1/payments/agent/confirm`
-
-- Auth: JWT + role `AGENT`
-- Request body:
-  - `clientId`
-  - `months[]`
-  - `amount`
-- Response: `PaymentResponseDto`
-- Side effects:
-  - Creates confirmed payment
-  - Enqueues receipt generation job
-
-### `GET /api/v1/payments/mine`
-
-- Auth: JWT (`AGENT|CLIENT|ADMIN` accepted by guard)
-- Query:
-  - `skip`, `limit`, `search?`
-- Response:
-  - For `CLIENT`: timeline from app-users service, includes both `CONFIRMED` and synthetic `DUE` entries.
-  - For `AGENT`/`ADMIN`: paginated confirmed payment list with receipt fields.
-- Side effects: none
-
-### `GET /api/v1/payments/:paymentId`
-
-- Auth: JWT + roles `AGENT|CLIENT`
-- Params:
-  - `paymentId`
-- Response:
-  - payment detail including `paymentId`, `clientId`, `amount`, `months`, `status`, `paymentDate`, `createdAt`, `receiptId`, `receiptNumber`, `setByAdmin`, `agentId`, `agentName`
-- Side effects: none
-
-### `GET /api/v1/payments/receipts/:receiptId/download`
-
-- Auth: JWT (`ADMIN|AGENT|CLIENT` with ownership checks in service)
-- Params:
-  - `receiptId`
-- Response:
-  - PDF file bytes (`Content-Type` from stored receipt, attachment filename `<receiptNumber>.pdf`)
-- Side effects: none
-
-## 4.6 Public Receipts Module
-
-### `GET /api/v1/public/receipts/:receiptId/verify`
-
-- Auth: none
-- Params:
-  - `receiptId`
-- Response:
-  - `valid` (boolean)
-  - `receiptId` (nullable)
-  - `receiptNumber` (nullable)
-  - `paymentId` (nullable)
-- Side effects: none
-
-## 4.7 Admin Module
-
-All endpoints below require: JWT + role `ADMIN`.
-
-### User management
-
-#### `POST /api/v1/admin/users/admins`
-
-- Status: `201`
-- Request body: `fullNames`, `phone`, `language`
-- Response: `UserSummaryDto`
-- Side effects:
-  - Creates `users` + `admins` rows
-
-#### `POST /api/v1/admin/users/agents`
-
-- Status: `201`
-- Request body: `fullNames`, `phone`, `language`
-- Response: `UserSummaryDto`
-- Side effects:
-  - Creates `users` + `agents` rows
-
-#### `POST /api/v1/admin/users/clients`
-
-- Status: `201`
-- Request body:
-  - `fullNames`, `phone`, `address`, `language`, `type`, `subscriptionAmount`, `registeredDate?`
-- Response: `UserSummaryDto`
-- Side effects:
-  - Creates `users` + `clients` rows
-
-#### `POST /api/v1/admin/agents/deactivate`
-
-- Request body: `userId`
-- Response: `{ success: true }`
-- Side effects:
-  - Deactivates agent user
-
-### Client admin-read and status
-
-#### `GET /api/v1/admin/clients`
-
-- Query supports filters and sorting:
-  - `skip`, `limit`, `search?`, `isActive?`, `type?`, `hasDue?`, `minDueMonths?`, `maxDueMonths?`, `registeredDateFrom?`, `registeredDateTo?`, `createdAtFrom?`, `createdAtTo?`, `sortBy`, `sortDir`
-- Response: `AdminClientsPageDto`
-- Side effects: none
-
-#### `GET /api/v1/admin/clients/:clientId`
-
-- Response: `AdminClientDetailDto`
-- Side effects: none
-
-#### `PATCH /api/v1/admin/clients/:clientId/status`
-
-- Request body: `isActive`
-- Response: `{ success: true }`
-- Side effects:
-  - Updates user active/deactivated fields
-
-#### `GET /api/v1/admin/clients/:clientId/payments`
-
-- Query:
-  - `skip`, `limit`, `search?`, `month?`, `dateFrom?`, `dateTo?`, `status?`, `sortDir`
-- Response: `AdminClientPaymentTimelinePageDto` (confirmed + due timeline)
-- Side effects: none
-
-#### `POST /api/v1/admin/clients/:clientId/payments/mark-complete`
-
-- Status: `201`
-- Request body: `months[]`
-- Response: `PaymentResponseDto`
-- Side effects:
-  - Inserts admin-confirmed payment (`setByAdmin=true`, `agentId=null`)
-  - Enqueues receipt generation job
-
-### Agent admin-read and status
-
-#### `GET /api/v1/admin/agents`
-
-- Query:
-  - `skip`, `limit`, `search?`, `isActive?`, `createdAtFrom?`, `createdAtTo?`, `minCurrentMonthCollected?`, `maxCurrentMonthCollected?`, `sortBy`, `sortDir`
-- Response: `AdminAgentsPageDto`
-- Side effects: none
-
-#### `GET /api/v1/admin/agents/:agentId`
-
-- Response: `AdminAgentDetailDto`
-- Side effects: none
-
-#### `PATCH /api/v1/admin/agents/:agentId/status`
-
-- Request body: `isActive`
-- Response: `{ success: true }`
-- Side effects:
-  - Updates agent user active/deactivated fields
-
-### Payments reports
-
-#### `GET /api/v1/admin/payments`
-
-- Query:
-  - `skip`, `limit`, `search?`, `clientId?`, `agentId?`, `setByAdmin?`, `month?`, `dateFrom?`, `dateTo?`, `amountMin?`, `amountMax?`, `receiptReady?`, `sortBy`, `sortDir`
-- Response: `AdminPaymentsPageDto`
-- Side effects: none
-
-#### `GET /api/v1/admin/payments/:paymentId`
-
-- Response: `AdminPaymentDetailDto`
-- Side effects: none
-
-### Dashboard
-
-#### `GET /api/v1/admin/dashboard`
-
-- Query:
-  - `year?` (2000..2100)
-  - `topAgentsLimit` (default 10)
-- Response: `DashboardResponseDto`
-  - `timezone`, `year`
-  - KPI blocks
-  - `graphs.revenuePerMonth[]`
-  - `tables.topAgents[]`
-- Side effects: none
-
-## 4.8 Imports Module (`/admin/imports`)
-
-All endpoints require JWT + role `ADMIN`.
-
-### Template downloads
-
-#### `GET /api/v1/admin/imports/templates/agents.csv`
-
-- Response: CSV file template
-- Side effects: none
-
-#### `GET /api/v1/admin/imports/templates/agents.xlsx`
-
-- Response: XLSX file template
-- Side effects: none
-
-#### `GET /api/v1/admin/imports/templates/clients.csv`
-
-- Response: CSV file template
-- Side effects: none
-
-#### `GET /api/v1/admin/imports/templates/clients.xlsx`
-
-- Response: XLSX file template
-- Side effects: none
-
-### Import endpoints
-
-#### `POST /api/v1/admin/imports/agents`
-
-- Status: `200`
-- Content type: `multipart/form-data` (single file)
-- Accepted file extensions: `.csv`, `.xlsx`
-- Response: `ImportReportDto`
-  - `totalRows`, `successCount`, `failedCount`, `failures[]`
-- Side effects:
-  - Creates agent users from rows via `AdminService`
-
-#### `POST /api/v1/admin/imports/clients`
-
-- Status: `200`
-- Content type: `multipart/form-data` (single file)
-- Accepted file extensions: `.csv`, `.xlsx`
-- Response: `ImportReportDto`
-- Side effects:
-  - Creates client users from rows via `AdminService`
-
-## 4.9 Billing Module
-
-### `POST /api/v1/billing/run-daily`
-
-- Auth: JWT + role `ADMIN`
-- Status: `200`
-- Request: none
-- Response: `{ success: true }`
-- Side effects:
-  - Executes daily reminder logic immediately
-  - Enqueues SMS and push notifications for due/overdue clients
-
-## 4.10 Health Module
-
-### `GET /api/v1/health`
-
-- Auth: none
-- Status:
-  - `200` when service status is `up`
-  - `503` when any required dependency is `down`
-- Response (`HealthCheckResult`):
-  - `status` (`up|down`)
-  - `timestamp`
-  - `checks.database` (`status`, `latencyMs`, `details?`)
-  - `checks.s3` (`status`, `latencyMs`, `details?`)
-- Side effects: none
-
-## 4.11 Monitoring Module
-
-### `GET /api/v1/metrics`
-
-- Auth: none
-- Response: Prometheus plaintext metrics
-- Side effects: none
-
----
-
-## 5. Flow Playbooks (Ordered API Usage)
-
-## 5.1 First Login (password bootstrap)
-
-1. `POST /auth/first-login/start`
-- Input: `phone`
-- Output: OTP sent confirmation.
-
-2. `POST /auth/first-login/verify`
-- Input: `phone`, `code`
-- Output: `otpSessionId`.
-
-3. `POST /auth/first-login/set-password`
-- Input: `phone`, `otpSessionId`, `password`
-- Output: JWT token payload.
-
-## 5.2 Password Login
-
-1. `POST /auth/login/password`
-- Input: `phone`, `password`
-- Output: JWT token payload.
-
-## 5.3 OTP Login
-
-1. `POST /auth/login/otp/start`
-- Input: `phone`
-- Output: OTP sent confirmation.
-
-2. `POST /auth/login/otp/verify`
-- Input: `phone`, `code`
-- Output: JWT token payload.
-
-## 5.4 Forgot Password
-
-1. `POST /auth/password/forgot/start`
-- Input: `phone`
-- Output: OTP sent confirmation.
-
-2. `POST /auth/password/forgot/verify`
-- Input: `phone`, `code`
-- Output: `otpSessionId`.
-
-3. `POST /auth/password/forgot/reset`
-- Input: `phone`, `otpSessionId`, `password`
-- Output: success message.
-
-## 5.5 Change Password (authenticated)
-
-1. `POST /auth/password/change/start`
-- Input: authenticated user + same `phone`
-- Output: OTP sent confirmation.
-
-2. `POST /auth/password/change`
-- Input: `otpSessionId`, `oldPassword`, `newPassword`
-- Output: success message.
-
-## 5.6 Update Profile + Phone Change
-
-1. Optional read baseline: `GET /me`.
-
-2. Start phone change: `POST /me/phone-change/start`.
-
-3. Verify phone OTP: `POST /me/phone-change/verify` -> `otpSessionId`.
-
-4. Commit profile update: `PATCH /me` with `phone` + `otpSessionId` and/or `fullNames`.
-
-5. Read updated profile: `GET /me`.
-
-## 5.7 Agent Collection Flow
-
-1. `GET /payments/agent/pending` to discover clients with debt.
-
-2. Optional: `GET /payments/agent/client/:clientId/unpaid-months` for month list and amount suggestion.
-
-3. Optional client context:
-- `GET /clients/:clientId`
-- `GET /clients/:clientId/payments`
-
-4. Confirm payment:
-- `POST /payments/agent/confirm` or `POST /clients/:clientId/payments`.
-- Immediate response has `receiptStatus = PENDING` and `receiptId = null`.
-
-5. Receipt generation occurs asynchronously in queue worker.
-
-6. Later reads for receipt availability:
+# Frontend Integration Documentation
+
+## 1. Base
+- Runtime: NestJS + Fastify
+- Base path: `/api/v1`
+- Swagger in non-production: `/api/docs`
+- Auth header: `Authorization: Bearer <jwt>`
+- Languages: `en`, `fr` with fallback `en`
+- Currency: `USD` only
+- Money requests: major-unit strings like `"100"` or `"100.50"`
+- Money responses: normalized strings like `"100.00"`
+- Common formats: UUID, month `YYYY-MM`, date `YYYY-MM-DD`, datetime ISO-8601
+- Pagination defaults: `skip=0`, `limit=20`, max `limit=100`
+
+## 2. Roles
+- `ADMIN`: admin dashboards, user management, imports, reports, billing trigger
+- `AGENT`: assigned clients, collections, own profile
+- `CLIENT`: own profile, own payment timeline, own receipts
+
+## 3. Request formats
+
+### Auth
+- `StartOtpBody`: `{ "phone": "+2507..." }`
+- `VerifyOtpBody`: `{ "phone": "+2507...", "code": "123456" }`
+- `SetPasswordBody`: `{ "phone": "+2507...", "otpSessionId": "uuid", "password": "password123" }`
+- `PasswordLoginBody`: `{ "phone": "+2507...", "password": "password123" }`
+- `ChangePasswordBody`: `{ "otpSessionId": "uuid", "oldPassword": "old-pass", "newPassword": "new-pass" }`
+- `PushTokenBody`: `{ "expoPushToken": "ExponentPushToken[...]" }`
+
+### Me
+- `UpdateMeBody`: `{ "fullNames": "New Name", "phone": "+2507...", "otpSessionId": "uuid" }`
+- `UpdateLanguageBody`: `{ "language": "en" }`
+
+### Payments
+- `CollectPaymentBody`: `{ "clientId": "uuid", "months": ["2026-03", "2026-04"], "amount": "20.00" }`
+- `CollectClientPaymentBody`: `{ "months": ["2026-03", "2026-04"], "amount": "20.00" }`
+- `MarkClientPaymentCompleteBody`: `{ "months": ["2026-03", "2026-04"] }`
+
+### Admin
+- `CreateAdminOrAgentBody`: `{ "fullNames": "Agent Name", "phone": "+2507...", "language": "en" }`
+- `CreateClientBody`: `{ "fullNames": "Client Name", "phone": "+2507...", "address": "Kigali", "language": "en", "type": "NORMAL", "subscriptionAmount": "10.00", "registeredDate": "2026-01-01" }`
+- `UpdateAdminClientBody`: `{ "fullNames": "New Name", "phone": "+2507...", "language": "fr", "isActive": true, "address": "Kigali", "type": "NORMAL", "subscriptionAmount": "10.00", "registeredDate": "2026-01-01" }`
+- `UpdateAdminAgentBody`: `{ "fullNames": "New Name", "phone": "+2507...", "language": "fr", "isActive": true }`
+- `SetStatusBody`: `{ "isActive": true }`
+
+## 4. Response formats
+
+### Generic
+- `SimpleSuccess`
+```json
+{ "success": true, "message": "Operation completed" }
+```
+- `BooleanSuccess`
+```json
+{ "success": true }
+```
+- `OtpStartSuccess`
+```json
+{ "success": true, "message": "OTP sent", "developmentOtp": "123456" }
+```
+- `OtpVerifySuccess`
+```json
+{ "otpSessionId": "uuid" }
+```
+- `Page<T>`
+```json
+{ "data": [], "total": 0, "skip": 0, "limit": 20 }
+```
+
+### Auth
+- `AuthTokenResponse`
+```json
+{
+  "accessToken": "jwt",
+  "expiresInSeconds": 86400,
+  "tokenType": "Bearer",
+  "user": {
+    "id": "uuid",
+    "fullNames": "John Doe",
+    "phone": "+2507...",
+    "role": "AGENT",
+    "language": "en",
+    "firstLoginCompleted": true
+  }
+}
+```
+
+### Me
+- `MeResponse`
+```json
+{
+  "user": {
+    "id": "uuid",
+    "fullNames": "John Doe",
+    "phone": "+2507...",
+    "role": "CLIENT",
+    "language": "en",
+    "isActive": true,
+    "firstLoginCompleted": true,
+    "createdAt": "2026-04-16T10:00:00.000Z"
+  },
+  "profile": {
+    "type": "CLIENT",
+    "clientId": "uuid",
+    "address": "Kigali",
+    "registeredDate": "2026-01-01",
+    "subscriptionAmount": "10.00",
+    "clientType": "NORMAL"
+  }
+}
+```
+- Agent `profile` shape
+```json
+{
+  "type": "AGENT",
+  "agentId": "uuid",
+  "currentMonthCollected": "150.00",
+  "totalAmountCollected": "400.00",
+  "collectionsCount": 20,
+  "uniqueClientsCollectedFrom": 8
+}
+```
+
+### Agent client views
+- `AgentClientsPage`
+```json
+{
+  "data": [
+    {
+      "clientId": "uuid",
+      "fullNames": "Jane Doe",
+      "phone": "+2507...",
+      "address": "Kigali",
+      "clientType": "NORMAL",
+      "registeredDate": "2026-01-01",
+      "subscriptionAmount": "10.00",
+      "dueMonths": ["2026-03", "2026-04"],
+      "totalDue": "20.00",
+      "status": "PENDING"
+    }
+  ],
+  "total": 1,
+  "skip": 0,
+  "limit": 20
+}
+```
+- `AgentClientDetail`
+```json
+{
+  "clientId": "uuid",
+  "fullNames": "Jane Doe",
+  "phone": "+2507...",
+  "address": "Kigali",
+  "clientType": "NORMAL",
+  "registeredDate": "2026-01-01",
+  "subscriptionAmount": "10.00",
+  "duePayments": [
+    {
+      "month": "2026-04",
+      "amount": "10.00",
+      "dueDate": "2026-04-01T00:00:00.000Z",
+      "daysPassedSinceDue": 15
+    }
+  ],
+  "daysSinceFirstDueDate": 15,
+  "totalDue": "10.00",
+  "dueOnly": false
+}
+```
+- `AgentClientPaymentsPage`
+```json
+{
+  "data": [
+    {
+      "paymentId": "uuid",
+      "amount": "20.00",
+      "months": ["2026-03", "2026-04"],
+      "paymentDate": "2026-04-16T10:00:00.000Z",
+      "createdAt": "2026-04-16T10:00:00.000Z",
+      "receiptId": "uuid",
+      "receiptNumber": "RCPT-20260416-ABCDEFGH",
+      "setByAdmin": false,
+      "agentId": "uuid",
+      "agentName": "Agent Name"
+    }
+  ],
+  "total": 1,
+  "skip": 0,
+  "limit": 20
+}
+```
+
+### Payments
+- `PendingPaymentsPage`
+```json
+{
+  "data": [
+    {
+      "clientId": "uuid",
+      "clientName": "Jane Doe",
+      "clientPhone": "+2507...",
+      "overdueMonths": ["2026-03", "2026-04"],
+      "overdueCount": 2,
+      "totalAmountDue": "20.00"
+    }
+  ],
+  "total": 1,
+  "skip": 0,
+  "limit": 20
+}
+```
+- `UnpaidMonthsResponse`
+```json
+{ "clientId": "uuid", "months": ["2026-03", "2026-04"], "suggestedAmount": "20.00" }
+```
+- `PaymentCreateResponse`
+```json
+{
+  "paymentId": "uuid",
+  "receiptId": null,
+  "receiptNumber": null,
+  "receiptStatus": "PENDING",
+  "amount": "20.00",
+  "months": ["2026-03", "2026-04"],
+  "paymentDate": "2026-04-16T10:00:00.000Z"
+}
+```
+- `PaymentDetailResponse`
+```json
+{
+  "paymentId": "uuid",
+  "clientId": "uuid",
+  "amount": "20.00",
+  "months": ["2026-03", "2026-04"],
+  "status": "CONFIRMED",
+  "paymentDate": "2026-04-16T10:00:00.000Z",
+  "createdAt": "2026-04-16T10:00:00.000Z",
+  "receiptId": "uuid",
+  "receiptNumber": "RCPT-20260416-ABCDEFGH",
+  "setByAdmin": false,
+  "agentId": "uuid",
+  "agentName": "Agent Name"
+}
+```
+- `ClientTimelinePage`
+```json
+{
+  "data": [
+    {
+      "id": "uuid-or-due-key",
+      "status": "CONFIRMED",
+      "amount": "10.00",
+      "months": ["2026-04"],
+      "paymentDate": "2026-04-16T10:00:00.000Z",
+      "dueDate": "2026-04-16T10:00:00.000Z",
+      "receiptId": "uuid",
+      "receiptNumber": "RCPT-20260416-ABCDEFGH",
+      "setByAdmin": false,
+      "createdAt": "2026-04-16T10:00:00.000Z"
+    }
+  ],
+  "total": 1,
+  "skip": 0,
+  "limit": 20
+}
+```
+- `ReceiptDataResponse`
+```json
+{
+  "paymentId": "uuid",
+  "receiptId": "uuid",
+  "receiptNumber": "RCPT-20260416-ABCDEFGH",
+  "clientName": "Jane Doe",
+  "clientPhone": "+2507...",
+  "agentName": "Agent Name",
+  "months": ["2026-03", "2026-04"],
+  "amount": "20.00",
+  "paymentDate": "2026-04-16T10:00:00.000Z",
+  "verificationUrl": "https://app.example.com/receipt/uuid",
+  "qrCodeUrl": "https://app.example.com/receipt/uuid"
+}
+```
+- `ReceiptVerifyResponse`
+```json
+{
+  "valid": true,
+  "receiptId": "uuid",
+  "receiptNumber": "RCPT-20260416-ABCDEFGH",
+  "paymentId": "uuid"
+}
+```
+
+### Admin
+- `UserSummaryResponse`
+```json
+{
+  "id": "uuid",
+  "fullNames": "Agent Name",
+  "phone": "+2507...",
+  "role": "AGENT",
+  "language": "en",
+  "isActive": true,
+  "firstLoginCompleted": false,
+  "createdAt": "2026-04-16T10:00:00.000Z"
+}
+```
+- `AdminClientsPage`: `Page<{ clientId, userId, fullNames, phone, language, isActive, type, address, registeredDate, subscriptionAmount, createdAt, totalAmountDue, totalMonthsDue }>`
+- `AdminClientDetailResponse`: `{ clientId, userId, fullNames, phone, language, isActive, type, address, registeredDate, subscriptionAmount, createdAt, updatedAt, totalAmountDue, totalMonthsDue }`
+- `AdminClientPaymentsPage`: `Page<{ id, status, amount, months, paymentDate, createdAt, agentId, agentName, setByAdmin, receiptId, receiptNumber }>`
+- `AdminAgentsPage`: `Page<{ agentId, userId, fullNames, phone, language, isActive, createdAt, currentMonthCollected }>`
+- `AdminAgentDetailResponse`: `{ agentId, userId, fullNames, phone, language, isActive, createdAt, currentMonthCollected, totalAmountCollected, uniqueClientsCollectedFrom }`
+- `AdminPaymentsPage`: `Page<{ paymentId, clientId, clientName, clientPhone, agentId, agentName, agentPhone, setByAdmin, amount, months, status, paymentDate, createdAt, receiptId, receiptNumber, receiptReady }>`
+- `DashboardResponse`
+```json
+{
+  "timezone": "Africa/Kigali",
+  "year": 2026,
+  "kpis": {
+    "currentMonthRevenue": {
+      "amount": "1000.00",
+      "contributingClients": 100,
+      "percentIncreaseVsLastMonth": 10.5,
+      "currentAmount": "1000.00",
+      "previousAmount": "905.00"
+    },
+    "totalPendingDue": { "amount": "250.00", "clients": 12 },
+    "totalClientsActive": { "count": 120, "previousCount": 115, "percentIncreaseVsLastMonth": 4.35 },
+    "totalAgentsActive": { "count": 8, "previousCount": 7, "percentIncreaseVsLastMonth": 14.29 }
+  },
+  "graphs": { "revenuePerMonth": [{ "month": "2026-01", "amount": "100.00" }] },
+  "tables": {
+    "topAgents": [
+      {
+        "agentId": "uuid",
+        "userId": "uuid",
+        "fullNames": "Agent Name",
+        "phone": "+2507...",
+        "amountCollected": "300.00",
+        "collectionsCount": 20
+      }
+    ]
+  }
+}
+```
+- `ImportReportResponse`
+```json
+{
+  "totalRows": 10,
+  "successCount": 8,
+  "failedCount": 2,
+  "failures": [
+    { "row": 3, "reason": "Invalid phone number", "data": { "phone": "..." } }
+  ]
+}
+```
+
+### Ops
+- `HealthResponse`
+```json
+{
+  "status": "up",
+  "timestamp": "2026-04-16T10:00:00.000Z",
+  "checks": {
+    "database": { "status": "up", "latencyMs": 4 },
+    "s3": { "status": "up", "latencyMs": 12 }
+  }
+}
+```
+- `MetricsResponse`
+```text
+Prometheus plaintext
+```
+
+## 5. Endpoint map
+
+### Root
+- `GET /` -> string response `"Hello World!"`
+
+### Auth
+- `POST /auth/first-login/start` -> `OtpStartSuccess`
+- `POST /auth/first-login/verify` -> `OtpVerifySuccess`
+- `POST /auth/first-login/set-password` -> `AuthTokenResponse`
+- `POST /auth/login/password` -> `AuthTokenResponse`
+- `POST /auth/login/otp/start` -> `OtpStartSuccess`
+- `POST /auth/login/otp/verify` -> `AuthTokenResponse`
+- `POST /auth/password/forgot/start` -> `OtpStartSuccess`
+- `POST /auth/password/forgot/verify` -> `OtpVerifySuccess`
+- `POST /auth/password/forgot/reset` -> `SimpleSuccess`
+- `POST /auth/password/change/start` -> `OtpStartSuccess`
+- `POST /auth/password/change` -> `SimpleSuccess`
+- `POST /auth/push-token` -> `SimpleSuccess`
+
+### Me
+- `GET /me` -> `MeResponse`
+- `PATCH /me` -> `MeResponse`
+- `PATCH /me/language` -> `SimpleSuccess`
+- `POST /me/phone-change/start` -> `OtpStartSuccess`
+- `POST /me/phone-change/verify` -> `OtpVerifySuccess`
+
+### Agent clients
+- `GET /clients` -> `AgentClientsPage`
+- `GET /clients/:clientId` -> `AgentClientDetail`
+- `GET /clients/:clientId/payments` -> `AgentClientPaymentsPage`
+- `POST /clients/:clientId/payments` -> `PaymentCreateResponse`
+
+### Payments
+- `GET /payments/agent/pending` -> `PendingPaymentsPage`
+- `GET /payments/agent/client/:clientId/unpaid-months` -> `UnpaidMonthsResponse`
+- `POST /payments/agent/confirm` -> `PaymentCreateResponse`
 - `GET /payments/mine`
-- `GET /clients/:clientId/payments`
-- `GET /payments/:paymentId`
+- As `CLIENT` -> `ClientTimelinePage`
+- As `AGENT` or `ADMIN` -> compact payment page with items shaped like payment list objects
+- `GET /payments/:paymentId` -> `PaymentDetailResponse`
+- `GET /payments/:paymentId/receipt/data` -> `ReceiptDataResponse`
+- `GET /payments/:paymentId/receipt/download` -> PDF file
+- `GET /payments/receipts/:receiptId/download` -> PDF file
 
-7. Download when receipt exists:
-- `GET /payments/receipts/:receiptId/download`.
+### Public receipt verification
+- `GET /public/receipts/:receiptId/verify` -> `ReceiptVerifyResponse`
 
-8. Public verification option:
-- `GET /public/receipts/:receiptId/verify`.
+### Admin
+- `POST /admin/users/admins` -> `UserSummaryResponse` with `role: "ADMIN"`
+- `POST /admin/users/agents` -> `UserSummaryResponse` with `role: "AGENT"`
+- `POST /admin/users/clients` -> `UserSummaryResponse` with `role: "CLIENT"`
+- `POST /admin/agents/deactivate` -> `BooleanSuccess`
+- `GET /admin/clients` -> `AdminClientsPage`
+- `GET /admin/clients/:clientId` -> `AdminClientDetailResponse`
+- `PATCH /admin/clients/:clientId` -> `AdminClientDetailResponse`
+- `PATCH /admin/clients/:clientId/status` -> `BooleanSuccess`
+- `GET /admin/clients/:clientId/payments` -> `AdminClientPaymentsPage`
+- `POST /admin/clients/:clientId/payments/mark-complete` -> `PaymentCreateResponse`
+- `GET /admin/agents` -> `AdminAgentsPage`
+- `GET /admin/agents/:agentId` -> `AdminAgentDetailResponse`
+- `PATCH /admin/agents/:agentId` -> `AdminAgentDetailResponse`
+- `PATCH /admin/agents/:agentId/status` -> `BooleanSuccess`
+- `GET /admin/payments` -> `AdminPaymentsPage`
+- `GET /admin/payments/:paymentId` -> one item from `AdminPaymentsPage.data`
+- `GET /admin/dashboard` -> `DashboardResponse`
 
-## 5.8 Client Payment History Flow
+### Imports
+- `GET /admin/imports/templates/agents.csv` -> CSV file
+- `GET /admin/imports/templates/agents.xlsx` -> XLSX file
+- `GET /admin/imports/templates/clients.csv` -> CSV file
+- `GET /admin/imports/templates/clients.xlsx` -> XLSX file
+- `POST /admin/imports/agents` -> `ImportReportResponse`
+- `POST /admin/imports/clients` -> `ImportReportResponse`
 
-1. `GET /payments/mine` (as client) returns timeline including `DUE` and `CONFIRMED` items.
+### Billing and ops
+- `POST /billing/run-daily` -> `BooleanSuccess`
+- `GET /health` -> `HealthResponse`
+- `GET /metrics` -> Prometheus plaintext
 
-2. For confirmed item detail: `GET /payments/:paymentId`.
+## 6. Flow playbooks
 
-3. If `receiptId` present: `GET /payments/receipts/:receiptId/download`.
+### First login
+1. `POST /auth/first-login/start`
+2. `POST /auth/first-login/verify`
+3. `POST /auth/first-login/set-password`
+4. Store `accessToken` and user payload
 
-4. External receipt authenticity check: `GET /public/receipts/:receiptId/verify`.
+### Change phone
+1. `POST /me/phone-change/start`
+2. `POST /me/phone-change/verify`
+3. `PATCH /me` with `phone` and returned `otpSessionId`
 
-## 5.9 Admin User & Operations Flow
+### Agent collection
+1. Load due clients with `GET /payments/agent/pending`
+2. Optionally fetch month suggestions with `GET /payments/agent/client/:clientId/unpaid-months`
+3. Create payment using `POST /payments/agent/confirm` or `POST /clients/:clientId/payments`
+4. Treat the immediate create response as saved payment with pending receipt
 
-### Create accounts
+### Receipt and QR flow
+1. Call `GET /payments/:paymentId/receipt/data`
+2. Use `verificationUrl` or `qrCodeUrl` as the QR payload
+3. Render the QR image on the frontend from that URL string
+4. Download the PDF from `GET /payments/:paymentId/receipt/download` or `GET /payments/receipts/:receiptId/download`
+5. For scanned QR verification, call `GET /public/receipts/:receiptId/verify`
 
-1. `POST /admin/users/admins` or `/agents` or `/clients`.
-
-2. New users complete first login via auth flow.
-
-### Client lifecycle and collections
-
-1. Browse/filter clients: `GET /admin/clients`.
-
-2. Inspect one client: `GET /admin/clients/:clientId`.
-
-3. Optional status update: `PATCH /admin/clients/:clientId/status`.
-
-4. View timeline: `GET /admin/clients/:clientId/payments`.
-
-5. Admin mark payment complete: `POST /admin/clients/:clientId/payments/mark-complete`.
-
-6. Receipt generation completes asynchronously.
-
-### Agent lifecycle
-
-1. Browse/filter agents: `GET /admin/agents`.
-
-2. Inspect one agent: `GET /admin/agents/:agentId`.
-
-3. Activate/deactivate: `PATCH /admin/agents/:agentId/status` or legacy deactivate route.
-
-### Reporting
-
-1. List payments: `GET /admin/payments`.
-
-2. Payment detail: `GET /admin/payments/:paymentId`.
-
-3. Dashboard KPI/graphs/top-agents: `GET /admin/dashboard`.
-
-## 5.10 Import Flow (Admin)
-
-1. Download template:
-- `/admin/imports/templates/agents.csv|xlsx`
-- `/admin/imports/templates/clients.csv|xlsx`
-
-2. Upload data file:
-- `POST /admin/imports/agents` or `/clients` (multipart).
-
-3. Read import report:
-- inspect `successCount`, `failedCount`, and `failures[]` row-level reasons.
-
-## 5.11 Billing Reminder Flow
-
-1. Trigger sources:
-- Scheduled job at `0 8 * * *` (daily)
-- Manual admin endpoint `/billing/run-daily`
-
-2. For each active client:
-- compute unpaid months
-- decide trigger type (`BILLING_REMINDER` pre-due or `OVERDUE_REMINDER` post-due cadence)
-
-3. Enqueue SMS and push notifications (`notifications` queue).
-
-4. Notification worker dispatches Twilio/Expo and updates notification log status.
-
----
-
-## 6. Background / Async Flow Map
-
-## 6.1 Queue Names
-
-- `starter`
-- `notifications`
-- `billing`
-- `receipts`
-
-## 6.2 Receipt Job (`receipts` queue)
-
-- Producers:
-  - `PaymentsService.confirmPayment`
-  - `AdminClientsService.markClientPaymentComplete`
-- Payload:
-  - `paymentId`
-- Consumer:
-  - `PaymentsProcessor`
-- Processing:
-  - Reads payment + participant metadata.
-  - Generates receipt PDF file.
-  - Inserts `receipts` row.
-  - Sets `payments.receiptId` if still null.
-  - Enqueues payment receipt SMS and push notifications.
-
-## 6.3 Notification Job (`notifications` queue)
-
-- Producers:
-  - Auth OTP starts
-  - Billing reminders
-  - Receipt generation completion
-- Payload types:
-  - Verify OTP SMS job
-  - Generic SMS job
-  - Push notification job
-- Consumer:
-  - `NotificationsProcessor`
-- Processing:
-  - OTP SMS -> Twilio Verify start
-  - SMS -> Twilio message send
-  - Push -> Expo send to active tokens
-  - Updates `notification_logs` to `SENT` or `FAILED`
-
-## 6.4 Starter Job (`starter` queue)
-
-- Producer: `JobsService.enqueueLogMessage`
-- Consumer: `StarterProcessor`
-- Processing: logs message and emits monitoring metrics.
-
----
-
-## 7. Module Coverage Matrix
-
-| Module | Public API Endpoints | Internal Responsibility | Depends On | Used By |
-|---|---|---|---|---|
-| `AuthModule` | Yes (`/auth/*`) | OTP and password auth, JWT issuing, push-token registration | `Users`, `Notifications`, `I18n`, `Jwt` | App/API modules via guards/tokens |
-| `AppUsersModule` | Yes (`/me*`) | Authenticated profile reads/updates, phone change OTP | `Auth`, `Users`, `Notifications`, `I18n` | `PaymentsModule` |
-| `AppClientsModule` | Yes (`/clients*`) | Agent-side client browsing/details/payments view | `Auth`, `Payments`, `I18n` | API |
-| `PaymentsModule` | Yes (`/payments*`, `/public/receipts/*`) | Payment confirmation, listing, receipt access and validation, receipt job processing | `AppUsers`, `Auth`, `Notifications`, `I18n` | API + Admin workflows |
-| `AdminModule` | Yes (`/admin*`) | Admin CRUD, reporting, dashboard, mark-complete | `Users`, `Auth`, `I18n`, `Payments` (through service usage) | API + Imports |
-| `ImportsModule` | Yes (`/admin/imports*`) | Import template generation and bulk user/client creation | `Admin`, `Auth`, `I18n` | API |
-| `BillingModule` | Yes (`/billing/run-daily`) + scheduled | Reminder schedule and due/overdue notification generation | `Notifications`, `I18n`, DB | API + scheduler |
-| `HealthModule` | Yes (`/health`) | DB + S3 readiness/liveness checks | DB, config | Ops |
-| `MonitoringModule` | Yes (`/metrics`) | Prometheus metrics + job timing helpers | Prom client registry | All modules via interceptors/services |
-| `NotificationsModule` | No direct route | Notification enqueueing and async dispatch (Twilio/Expo) | DB, queue, monitoring | Auth, Billing, Payments |
-| `UsersModule` | No direct route | User, role-record, OTP-session, push-token persistence API | DB, i18n | Auth, Admin, AppUsers |
-| `QueueModule` | No direct route | Global pg-boss integration | DB URL/config | Jobs, Notifications, Payments, Billing |
-| `JobsModule` | No direct route | Starter queue dispatch + processing | Monitoring | Internal/infra |
-| `DrizzlePGModule` | No direct route | DB connection/provider wiring | `pg`, drizzle config | All data modules |
-| `I18nModule` | No direct route | Language resolution and message localization | Context service + message dictionary | All user-facing modules |
-| `Common` | No direct route | Guards, decorators, money utils, timezone utils, filters | Nest + shared libs | All modules |
-| `Config` | No direct route | Typed environment/secrets access | `process.env` | All modules |
-
----
-
-## 8. Operational Notes
-
-- OTP behavior:
-  - Local/dev mode stores hashed OTP internally and may return `developmentOtp` in responses.
-  - Non-local mode relies on Twilio Verify.
-- Receipt download requires ownership checks for non-admin callers.
-- `GET /payments/mine` is role-sensitive and returns different shapes for client vs agent/admin paths.
-- Receipt issuance is asynchronous; immediate payment confirmation does not include receipt ID.
-- Import endpoints process only first worksheet for XLSX and report per-row failures.
+## 7. Important notes
+- Receipt generation is async after payment creation, but receipt data and receipt download endpoints can also generate on demand
+- `qrCodeUrl` is not a hosted QR image; it is currently the same verification URL string returned by the backend
+- Public QR verification is keyed by `receiptId`
+- Admin payment creation via `mark-complete` follows the same receipt workflow as agent-collected payments
+- Current edit endpoints are `PATCH /admin/clients/:clientId` and `PATCH /admin/agents/:agentId`

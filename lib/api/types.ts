@@ -138,7 +138,30 @@ export interface PaymentResponse {
 export interface DashboardResponse {
   timezone: string;
   year: number;
-  kpis: Record<string, unknown>;
+  kpis: {
+    currentMonthRevenue?: {
+      amount: string;
+      contributingClients?: number;
+      percentIncreaseVsLastMonth?: number;
+      currentAmount?: string;
+      previousAmount?: string;
+    };
+    totalPendingDue?: {
+      amount: string;
+      clients?: number;
+    };
+    totalClientsActive?: {
+      count: number;
+      previousCount?: number;
+      percentIncreaseVsLastMonth?: number;
+    };
+    totalAgentsActive?: {
+      count: number;
+      previousCount?: number;
+      percentIncreaseVsLastMonth?: number;
+    };
+    [key: string]: unknown;
+  };
   graphs: {
     revenuePerMonth: Array<{
       month: string;
@@ -149,8 +172,11 @@ export interface DashboardResponse {
   tables: {
     topAgents: Array<{
       agentId: string;
+      userId?: string;
       fullNames: string;
-      amount: string;
+      phone?: string;
+      amountCollected: string;
+      collectionsCount?: number;
     }>;
   };
 }

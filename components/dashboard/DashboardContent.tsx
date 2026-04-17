@@ -23,107 +23,88 @@ import {
 } from "@/lib/query/hooks";
 import type { MetricCard, RevenuePoint } from "@/types";
 
-function readNumber(source: Record<string, unknown>, keys: string[]): number {
-  const normalizedKeys = keys.map((key) => key.toLowerCase());
-
-  for (const key of keys) {
-    const value = source[key];
-
-    if (typeof value === "number") return value;
-    if (typeof value === "string") {
-      const parsed = Number(value.replace(/[^0-9.-]/g, ""));
-      if (!Number.isNaN(parsed)) return parsed;
-    }
-
-    if (value && typeof value === "object") {
-      const objectValue = value as Record<string, unknown>;
-      const nested = readNumber(objectValue, [
-        "value",
-        "amount",
-        "total",
-        "count",
-      ]);
-      if (nested) return nested;
-    }
-  }
-
-  for (const [key, value] of Object.entries(source)) {
-    if (
-      normalizedKeys.some((candidate) =>
-        key.toLowerCase().includes(candidate.toLowerCase()),
-      )
-    ) {
-      if (typeof value === "number") return value;
-      if (typeof value === "string") {
-        const parsed = Number(value.replace(/[^0-9.-]/g, ""));
-        if (!Number.isNaN(parsed)) return parsed;
-      }
-    }
-
-    if (value && typeof value === "object") {
-      const nested = readNumber(value as Record<string, unknown>, keys);
-      if (nested) return nested;
-    }
-  }
-
-  return 0;
-}
-
 function buildMetricCards(
-  kpis: Record<string, unknown> | undefined,
-  totals: {
-    agents: number;
-    clients: number;
-  },
-  t: (key: string) => string,
+  kpis:
+    | {
+        currentMonthRevenue?: {
+          amount: string;
+          contributingClients?: number;
+          percentIncreaseVsLastMonth?: number;
+        };
+        totalPendingDue?: {
+          amount: string;
+          clients?: number;
+        };
+        totalClientsActive?: {
+          count: number;
+          percentIncreaseVsLastMonth?: number;
+        };
+        totalAgentsActive?: {
+          count: number;
+          percentIncreaseVsLastMonth?: number;
+        };
+      }
+    | undefined,
+  locale: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
 ): MetricCard[] {
-  const source = kpis ?? {};
-  const revenue = readNumber(source, [
-    "monthlyRevenue",
-    "currentMonthRevenue",
-    "totalRevenue",
-    "revenue",
-  ]);
-  const pending = readNumber(source, [
-    "pendingPayments",
-    "pendingAmount",
-    "totalDue",
-    "overdueAmount",
-  ]);
-  const clients =
-    totals.clients ||
-    readNumber(source, ["totalClients", "clients", "clientCount"]);
-  const agents =
-    totals.agents ||
-    readNumber(source, ["totalAgents", "agents", "agentCount"]);
+  const revenueAmount = kpis?.currentMonthRevenue?.amount ?? "0";
+  const revenueClients = kpis?.currentMonthRevenue?.contributingClients ?? 0;
+  const revenueTrend = kpis?.currentMonthRevenue?.percentIncreaseVsLastMonth ?? 0;
+  const pendingAmount = kpis?.totalPendingDue?.amount ?? "0";
+  const pendingClients = kpis?.totalPendingDue?.clients ?? 0;
+  const totalClients = kpis?.totalClientsActive?.count ?? 0;
+  const clientsTrend = kpis?.totalClientsActive?.percentIncreaseVsLastMonth ?? 0;
+  const totalAgents = kpis?.totalAgentsActive?.count ?? 0;
+  const agentsTrend = kpis?.totalAgentsActive?.percentIncreaseVsLastMonth;
+
+  function formatCount(value: number) {
+    return value.toLocaleString(locale);
+  }
+
+  function formatTrend(value: number | undefined) {
+    if (typeof value !== "number") return undefined;
+
+    const sign = value > 0 ? "+" : "";
+    return t("dashboard.vsLastMonth", {
+      value: `${sign}${value}%`,
+    });
+  }
 
   return [
     {
       id: "revenue",
       label: t("dashboard.thisMonthsRevenue"),
-      value: formatCurrency(revenue),
-      caption: t("dashboard.collectedThisMonth"),
+      value: formatCurrency(revenueAmount),
+      caption: t("dashboard.basedOnActiveClients", {
+        count: formatCount(revenueClients),
+      }),
+      trend: formatTrend(revenueTrend),
       tone: "brand",
     },
     {
       id: "pending",
       label: t("dashboard.pendingPayments"),
-      value: formatCurrency(pending),
-      caption: t("dashboard.outstandingClientBalance"),
+      value: formatCurrency(pendingAmount),
+      caption: t("dashboard.clientsUnpaid", {
+        count: formatCount(pendingClients),
+      }),
       tone: "danger",
     },
     {
       id: "clients",
       label: t("dashboard.totalClients"),
-      value: clients.toLocaleString("en-US"),
+      value: formatCount(totalClients),
       caption: t("dashboard.registeredClients"),
+      trend: formatTrend(clientsTrend),
       tone: "default",
     },
     {
       id: "agents",
       label: t("dashboard.totalAgents"),
-      value: agents.toLocaleString("en-US"),
-      caption: t("dashboard.registeredAgents"),
+      value: formatCount(totalAgents),
+      caption: t("dashboard.allAgentsActiveToday"),
+      trend: formatTrend(agentsTrend),
       tone: "default",
     },
   ];
@@ -233,10 +214,7 @@ export default function DashboardContent() {
 
   const metricCards = buildMetricCards(
     dashboardQuery.data?.kpis,
-    {
-      agents: 0,
-      clients: 0,
-    },
+    i18n.language === "fr" ? "fr-FR" : "en-US",
     t,
   );
   const currentWindowStart = getMonthIndex(toMonthKey(minMonth));
@@ -258,7 +236,7 @@ export default function DashboardContent() {
       : latestSixRevenueSeries;
   const topAgents =
     dashboardQuery.data?.tables?.topAgents.map((agent) => ({
-      amount: formatCurrency(agent.amount),
+      amount: formatCurrency(agent.amountCollected),
       id: agent.agentId,
       name: agent.fullNames,
     })) ?? [];
@@ -287,7 +265,7 @@ export default function DashboardContent() {
                 key={index}
               />
             ))
-          : metricCards.map((card) => <StatCard key={card.id} card={card} />)}
+          : metricCards.map((card) => <StatCard key={card.id} card={card} className="flex flex-col flex-1 justify-between" />)}
       </section>
       <section className="grid gap-5 xl:grid-cols-12">
         <div className="space-y-5 xl:col-span-8">
