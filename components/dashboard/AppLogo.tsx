@@ -10,10 +10,10 @@ export default function AppLogo() {
         <Image src={leafLogo} alt="logo" className="w-[28px] h-[28px]" />
       </div>
       <div>
-        <p className="text-[28px] font-semibold -mb-[12px] text-foreground">
-          Vision Net
+        <p className="text-[18px] font-semibold -mb-[12px] text-foreground">
+          Société Vision Net
         </p>
-        <p className="mt-1 text-[11px] text-text-muted">
+        <p className="mt-2 text-[11px] text-text-muted">
           {t("auth.adminPanel")}
         </p>
       </div>
