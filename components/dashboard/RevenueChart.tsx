@@ -17,6 +17,14 @@ interface Props {
   data: RevenuePoint[];
 }
 
+function formatChartMonth(value: string) {
+  const [year, month] = value.split("-");
+
+  if (!year || !month) return value;
+
+  return `${month}-${year}`;
+}
+
 export default function RevenueChart({ data }: Props) {
   return (
     <div className="h-64 w-full outline-none focus:outline-none" tabIndex={-1}>
@@ -36,6 +44,7 @@ export default function RevenueChart({ data }: Props) {
           <XAxis
             axisLine={false}
             dataKey="month"
+            tickFormatter={formatChartMonth}
             tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
             tickLine={false}
           />
@@ -76,10 +85,10 @@ export default function RevenueChart({ data }: Props) {
                   }}
                 >
                   <div style={{ color: "var(--color-text-muted)" }}>
-                    {item.payload.month}
+                    {formatChartMonth(item.payload.month)}
                   </div>
                   <div style={{ fontWeight: 600 }}>
-                    {item.value}
+                    ${item?.value?.toLocaleString()}
                   </div>
                 </div>
               );

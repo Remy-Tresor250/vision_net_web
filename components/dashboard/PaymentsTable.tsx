@@ -13,7 +13,7 @@ import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
-import type { AdminPaymentListItem } from "@/lib/api/types";
+import type { AdminPaymentListItem, AdminPaymentsParams } from "@/lib/api/types";
 import { formatCurrency, formatDate, formatMonths, getPageCount } from "@/lib/format";
 import { useAdminPaymentsQuery } from "@/lib/query/hooks";
 import type { Payment } from "@/types";
@@ -24,13 +24,36 @@ export default function PaymentsTable() {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
-  const [selectedPayment, setSelectedPayment] = useState<AdminPaymentListItem | null>(null);
-  const paymentsQuery = useAdminPaymentsQuery({
-    limit: PAGE_SIZE,
-    search: query || undefined,
-    skip: (page - 1) * PAGE_SIZE,
+  const [filters, setFilters] = useState<Record<string, string>>({
+    amountMax: "",
+    amountMin: "",
+    dateFrom: "",
+    dateTo: "",
+    month: "",
+    setByAdmin: "",
+    sortBy: "",
     sortDir: "desc",
   });
+  const [selectedPayment, setSelectedPayment] = useState<AdminPaymentListItem | null>(null);
+  const paymentParams: AdminPaymentsParams = {
+    amountMax: filters.amountMax || undefined,
+    amountMin: filters.amountMin || undefined,
+    dateFrom: filters.dateFrom || undefined,
+    dateTo: filters.dateTo || undefined,
+    limit: PAGE_SIZE,
+    month: filters.month || undefined,
+    search: query || undefined,
+    setByAdmin:
+      filters.setByAdmin === "true"
+        ? true
+        : filters.setByAdmin === "false"
+          ? false
+          : undefined,
+    skip: (page - 1) * PAGE_SIZE,
+    sortBy: filters.sortBy || undefined,
+    sortDir: (filters.sortDir as "asc" | "desc") || undefined,
+  };
+  const paymentsQuery = useAdminPaymentsQuery(paymentParams);
   const payments = [...(paymentsQuery.data?.data ?? [])].sort((left, right) => {
     const leftIsOverdue = left.status === "DUE" ? 1 : 0;
     const rightIsOverdue = right.status === "DUE" ? 1 : 0;
@@ -48,6 +71,11 @@ export default function PaymentsTable() {
 
   function handleQueryChange(value: string) {
     setQuery(value);
+    setPage(1);
+  }
+
+  function handleFiltersChange(value: Record<string, string>) {
+    setFilters(value);
     setPage(1);
   }
 
@@ -72,6 +100,46 @@ export default function PaymentsTable() {
   return (
     <div className="space-y-6">
       <FilterToolbar
+        filterFields={[
+          {
+            id: "setByAdmin",
+            label: t("filters.adminEntry"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: t("common.yes"), value: "true" },
+              { label: t("common.no"), value: "false" },
+            ],
+            type: "select",
+          },
+          { id: "month", label: t("filters.month"), type: "month" },
+          { id: "dateFrom", label: t("filters.dateFrom"), type: "date" },
+          { id: "dateTo", label: t("filters.dateTo"), type: "date" },
+          { id: "amountMin", label: t("filters.amountMin"), type: "number" },
+          { id: "amountMax", label: t("filters.amountMax"), type: "number" },
+          {
+            id: "sortBy",
+            label: t("filters.sortBy"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: t("common.date"), value: "paymentDate" },
+              { label: t("common.amount"), value: "amount" },
+              { label: t("filters.createdAtFrom"), value: "createdAt" },
+            ],
+            type: "select",
+          },
+          {
+            id: "sortDir",
+            label: t("filters.sortDir"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: "ASC", value: "asc" },
+              { label: "DESC", value: "desc" },
+            ],
+            type: "select",
+          },
+        ]}
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
         title={t("dashboard.allPayments")}
         onQueryChange={handleQueryChange}
         placeholder={t("tables.searchPayments")}

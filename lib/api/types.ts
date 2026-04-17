@@ -73,6 +73,7 @@ export interface AdminClientListItem {
 export interface AdminClientDetail extends AdminClientListItem {
   language?: Language;
   daysSinceFirstDueDate?: number;
+  totalAmountDue?: string;
   duePayments?: Array<{
     month: string;
     amount: string;
@@ -251,6 +252,7 @@ export interface MarkPaymentCompletePayload {
 
 export interface AdminClientsParams extends PageParams {
   isActive?: boolean;
+  is_due?: boolean;
   type?: ClientType;
   hasDue?: boolean;
   minDueMonths?: number;
@@ -276,6 +278,7 @@ export interface AdminAgentsParams extends PageParams {
 export interface AdminPaymentsParams extends PageParams {
   clientId?: string;
   agentId?: string;
+  is_due?: boolean;
   setByAdmin?: boolean;
   month?: string;
   dateFrom?: string;

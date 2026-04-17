@@ -45,19 +45,26 @@ interface Props {
 
 const PAGE_SIZE = 7;
 
-function toReceiptPayment(payment: AdminPaymentListItem): Payment {
+function toReceiptPayment(
+  payment: AdminPaymentListItem,
+  client?: { clientId?: string; fullNames?: string; phone?: string },
+): Payment {
   return {
     agentId: payment.agentId ?? "admin",
     agentName: payment.agentName ?? "Admin",
     amount: formatCurrency(payment.amount),
     billingMonth: formatMonths(payment.months ?? payment.month),
-    clientId: payment.clientId ?? "",
-    clientName: payment.clientName ?? "-",
+    clientId: payment.clientId ?? client?.clientId ?? "",
+    clientName: payment.clientName ?? client?.fullNames ?? "-",
+    clientPhone: payment.clientPhone ?? client?.phone ?? undefined,
     date: formatDate(payment.paymentDate ?? payment.createdAt),
     id: payment.paymentId,
     months: String(payment.months?.length ?? 1),
+    receiptId: payment.receiptId ?? undefined,
     receiptNumber: payment.receiptNumber ?? "-",
     status: payment.status === "DUE" ? "Overdue" : "Paid",
+    qrCodeUrl: undefined,
+    verificationUrl: undefined,
   };
 }
 
@@ -121,32 +128,32 @@ export default function ClientDetailsPanel({ clientId }: Props) {
           <div className="flex size-16 items-center justify-center rounded-md bg-brand text-white">
             <HiOutlineUser className="size-9" />
           </div>
-          <div className="flex flex-1 gap-[5vw] flex-row items-center">
-            <div>
+          <div className="grid flex-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="min-w-0">
               <p className="text-[16px] font-medium uppercase text-text-muted">
                 {t("common.fullNames")}
               </p>
-              <p className="text-[18px] font-medium tracking-tight text-foreground">
+              <p className="break-words text-[18px] font-medium tracking-tight text-foreground">
                 {clientQuery.isLoading
                   ? t("common.loading")
                   : (client?.fullNames ?? "-")}
               </p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[16px] font-medium uppercase text-text-muted">
                 {t("common.address")}
               </p>
-              <p className="text-[18px] font-medium tracking-tight text-foreground">
+              <p className="break-words text-[18px] font-medium tracking-tight text-foreground">
                 {clientQuery.isLoading
                   ? t("common.loading")
                   : (client?.address ?? "-")}
               </p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[16px] font-medium uppercase text-text-muted">
                 {t("common.phoneNumber")}
               </p>
-              <p className="text-[18px] font-medium tracking-tight text-foreground">
+              <p className="break-words text-[18px] font-medium tracking-tight text-foreground">
                 {clientQuery.isLoading
                   ? t("common.loading")
                   : (client?.phone ?? "-")}
@@ -164,7 +171,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                 {t("tables.duePayments")}
               </p>
               <p className="mt-7 text-[40px] font-semibold tracking-tight text-danger">
-                {formatCurrency(client?.totalDue)}
+                {formatCurrency(client?.totalAmountDue ?? client?.totalDue)}
               </p>
             </div>
             <div className="flex h-10 min-w-18 items-center justify-center rounded-md bg-surface-muted px-4 text-text-muted">
@@ -262,7 +269,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                           }
                         />
                       </TableTd>
-                      <TableTd className="px-3 py-6 flex items-center">
+                      <TableTd className="px-3 py-6 text-center">
                         {isOverdue ? (
                           <Menu position="bottom-end" shadow="md" width={180}>
                             <Menu.Target>
@@ -323,7 +330,15 @@ export default function ClientDetailsPanel({ clientId }: Props) {
       <ReceiptModal
         onClose={() => setSelectedPayment(null)}
         opened={selectedPayment !== null}
-        payment={selectedPayment ? toReceiptPayment(selectedPayment) : null}
+        payment={
+          selectedPayment
+            ? toReceiptPayment(selectedPayment, {
+                clientId: client?.clientId,
+                fullNames: client?.fullNames,
+                phone: client?.phone,
+              })
+            : null
+        }
       />
     </div>
   );

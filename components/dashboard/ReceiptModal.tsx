@@ -39,10 +39,14 @@ function formatReceiptTotal(payment: Payment) {
 }
 
 export default function ReceiptModal({ opened, onClose, payment }: Props) {
+  console.log(payment)
   const { t } = useTranslation();
-  const receiptDataQuery = useAdminPaymentReceiptDataQuery(opened ? (payment?.id ?? "") : "");
+  const receiptDataQuery = useAdminPaymentReceiptDataQuery(
+    opened ? (payment?.id ?? "") : "",
+  );
   const receiptData = receiptDataQuery.data;
-  const clientIdentity = payment?.clientId?.trim() || receiptData?.clientPhone || payment?.clientPhone || null;
+  const clientIdentity =
+    receiptData?.clientPhone?.trim() || payment?.clientPhone?.trim() || null;
   const resolvedPayment = payment
     ? {
         ...payment,
@@ -57,12 +61,15 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
           : payment.date,
         qrCodeUrl: receiptData?.qrCodeUrl ?? payment.qrCodeUrl,
         receiptNumber: receiptData?.receiptNumber ?? payment.receiptNumber,
-        verificationUrl: receiptData?.verificationUrl ?? payment.verificationUrl,
+        verificationUrl:
+          receiptData?.verificationUrl ?? payment.verificationUrl,
       }
     : null;
   const qrValue =
     resolvedPayment?.qrCodeUrl ??
-    (resolvedPayment ? `https://svn-api.aurumdev.cfd/api/v1/payments/${resolvedPayment.id}/receipt/data` : "");
+    (resolvedPayment
+      ? `${window.location.origin}/receipt/${resolvedPayment.id}/receipt/data`
+      : "");
 
   return (
     <Modal
@@ -95,7 +102,9 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
                 {t("modals.receipt")}
               </p>
               <div className="mt-7 text-[12px] leading-5 text-text-muted">
-                <p>{t("modals.receiptNo")}: {resolvedPayment.receiptNumber}</p>
+                <p>
+                  {t("modals.receiptNo")}: {resolvedPayment.receiptNumber}
+                </p>
                 <p>{resolvedPayment.date}</p>
               </div>
             </div>
@@ -107,7 +116,9 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
             </p>
             <div className="mt-2 text-[12px] leading-6 text-text-muted">
               <p className="text-foreground">{resolvedPayment.clientName}</p>
-              {clientIdentity ? <p>{clientIdentity.replaceAll("-", " ")}</p> : null}
+              {clientIdentity ? (
+                <p>{clientIdentity.replaceAll("-", " ")}</p>
+              ) : null}
               <p>{t("modals.clientPaymentRecord")}</p>
             </div>
           </div>
@@ -154,10 +165,14 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
             <div>
               <div className="grid grid-cols-[120px_1fr] items-baseline gap-4">
                 <p className="text-[22px] font-semibold">{t("modals.total")}</p>
-                <p className="text-[22px] font-semibold">{formatReceiptTotal(resolvedPayment)}</p>
+                <p className="text-[22px] font-semibold">
+                  {formatReceiptTotal(resolvedPayment)}
+                </p>
               </div>
               <div className="mt-12">
-                <p className="text-[9px] text-text-muted">{t("modals.verificationQrCode")}</p>
+                <p className="text-[9px] text-text-muted">
+                  {t("modals.verificationQrCode")}
+                </p>
                 <div className="mt-2 flex size-24 items-center justify-center rounded-md border border-border bg-white p-2">
                   {receiptDataQuery.isLoading && !receiptData ? (
                     <Skeleton className="size-full rounded-sm" />

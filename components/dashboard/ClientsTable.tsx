@@ -14,6 +14,7 @@ import FilterToolbar from "@/components/dashboard/FilterToolbar";
 import StatusBadge from "@/components/ui/StatusBadge";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
+import type { AdminClientsParams } from "@/lib/api/types";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { formatCurrency, formatDate, getPageCount } from "@/lib/format";
 import {
@@ -27,15 +28,45 @@ export default function ClientsTable() {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({
+    createdAtFrom: "",
+    createdAtTo: "",
+    isActive: "",
+    is_due: "",
+    registeredDateFrom: "",
+    registeredDateTo: "",
+    sortBy: "",
+    sortDir: "desc",
+    type: "",
+  });
   const [addOpened, setAddOpened] = useState(false);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const skip = (page - 1) * PAGE_SIZE;
-  const clientsQuery = useAdminClientsQuery({
+  const clientParams: AdminClientsParams = {
+    createdAtFrom: filters.createdAtFrom || undefined,
+    createdAtTo: filters.createdAtTo || undefined,
+    isActive:
+      filters.isActive === "true"
+        ? true
+        : filters.isActive === "false"
+          ? false
+          : undefined,
+    is_due:
+      filters.is_due === "true"
+        ? true
+        : filters.is_due === "false"
+          ? false
+          : undefined,
     limit: PAGE_SIZE,
+    registeredDateFrom: filters.registeredDateFrom || undefined,
+    registeredDateTo: filters.registeredDateTo || undefined,
     search: query || undefined,
     skip,
-    sortDir: "desc",
-  });
+    sortBy: filters.sortBy || undefined,
+    sortDir: (filters.sortDir as "asc" | "desc") || undefined,
+    type: (filters.type as "NORMAL" | "POTENTIEL") || undefined,
+  };
+  const clientsQuery = useAdminClientsQuery(clientParams);
   const statusMutation = useUpdateClientStatusMutation("");
 
   const clients = clientsQuery.data?.data ?? [];
@@ -45,6 +76,11 @@ export default function ClientsTable() {
 
   function handleQueryChange(value: string) {
     setQuery(value);
+    setPage(1);
+  }
+
+  function handleFiltersChange(value: Record<string, string>) {
+    setFilters(value);
     setPage(1);
   }
 
@@ -66,7 +102,67 @@ export default function ClientsTable() {
       <FilterToolbar
         title={t("tables.allClients")}
         addLabel={t("actions.addClient")}
+        filterFields={[
+          {
+            id: "isActive",
+            label: t("filters.activeStatus"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: t("common.active"), value: "true" },
+              { label: t("common.inactive"), value: "false" },
+            ],
+            type: "select",
+          },
+          {
+            id: "type",
+            label: t("filters.type"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: "NORMAL", value: "NORMAL" },
+              { label: "POTENTIEL", value: "POTENTIEL" },
+            ],
+            type: "select",
+          },
+          {
+            id: "is_due",
+            label: t("filters.dueStatus"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: t("filters.overdueOnly"), value: "true" },
+              { label: t("filters.notDueOnly"), value: "false" },
+            ],
+            type: "select",
+          },
+          { id: "registeredDateFrom", label: t("filters.registeredDateFrom"), type: "date" },
+          { id: "registeredDateTo", label: t("filters.registeredDateTo"), type: "date" },
+          { id: "createdAtFrom", label: t("filters.createdAtFrom"), type: "date" },
+          { id: "createdAtTo", label: t("filters.createdAtTo"), type: "date" },
+          {
+            id: "sortBy",
+            label: t("filters.sortBy"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: t("common.registeredDate"), value: "registeredDate" },
+              { label: t("common.fullNames"), value: "fullNames" },
+              { label: t("common.phone"), value: "phone" },
+              { label: t("filters.createdAtFrom"), value: "createdAt" },
+            ],
+            type: "select",
+          },
+          {
+            id: "sortDir",
+            label: t("filters.sortDir"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: "ASC", value: "asc" },
+              { label: "DESC", value: "desc" },
+            ],
+            type: "select",
+          },
+        ]}
+        filters={filters}
         onAdd={() => setAddOpened(true)}
+        onFiltersChange={handleFiltersChange}
         onQueryChange={handleQueryChange}
         placeholder={t("tables.searchClients")}
         query={query}

@@ -14,6 +14,7 @@ import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
+import type { AdminAgentsParams } from "@/lib/api/types";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { formatCurrency, formatDate, getPageCount } from "@/lib/format";
 import {
@@ -27,15 +28,36 @@ export default function AgentsTable() {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<Record<string, string>>({
+    createdAtFrom: "",
+    createdAtTo: "",
+    isActive: "",
+    maxCurrentMonthCollected: "",
+    minCurrentMonthCollected: "",
+    sortBy: "",
+    sortDir: "desc",
+  });
   const [addOpened, setAddOpened] = useState(false);
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
   const skip = (page - 1) * PAGE_SIZE;
-  const agentsQuery = useAdminAgentsQuery({
+  const agentParams: AdminAgentsParams = {
+    createdAtFrom: filters.createdAtFrom || undefined,
+    createdAtTo: filters.createdAtTo || undefined,
+    isActive:
+      filters.isActive === "true"
+        ? true
+        : filters.isActive === "false"
+          ? false
+          : undefined,
     limit: PAGE_SIZE,
+    maxCurrentMonthCollected: filters.maxCurrentMonthCollected || undefined,
+    minCurrentMonthCollected: filters.minCurrentMonthCollected || undefined,
     search: query || undefined,
     skip,
-    sortDir: "desc",
-  });
+    sortBy: filters.sortBy || undefined,
+    sortDir: (filters.sortDir as "asc" | "desc") || undefined,
+  };
+  const agentsQuery = useAdminAgentsQuery(agentParams);
   const statusMutation = useUpdateAgentStatusMutation();
 
   const agents = agentsQuery.data?.data ?? [];
@@ -45,6 +67,11 @@ export default function AgentsTable() {
 
   function handleQueryChange(value: string) {
     setQuery(value);
+    setPage(1);
+  }
+
+  function handleFiltersChange(value: Record<string, string>) {
+    setFilters(value);
     setPage(1);
   }
 
@@ -66,7 +93,55 @@ export default function AgentsTable() {
       <FilterToolbar
         title={t("tables.allAgents")}
         addLabel={t("actions.addAgent")}
+        filterFields={[
+          {
+            id: "isActive",
+            label: t("filters.activeStatus"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: t("common.active"), value: "true" },
+              { label: t("common.inactive"), value: "false" },
+            ],
+            type: "select",
+          },
+          { id: "createdAtFrom", label: t("filters.createdAtFrom"), type: "date" },
+          { id: "createdAtTo", label: t("filters.createdAtTo"), type: "date" },
+          {
+            id: "minCurrentMonthCollected",
+            label: t("filters.currentMonthCollectedMin"),
+            type: "number",
+          },
+          {
+            id: "maxCurrentMonthCollected",
+            label: t("filters.currentMonthCollectedMax"),
+            type: "number",
+          },
+          {
+            id: "sortBy",
+            label: t("filters.sortBy"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: t("common.registeredDate"), value: "createdAt" },
+              { label: t("common.fullNames"), value: "fullNames" },
+              { label: t("common.phone"), value: "phone" },
+              { label: t("tables.thisMonthPerformance"), value: "currentMonthCollected" },
+            ],
+            type: "select",
+          },
+          {
+            id: "sortDir",
+            label: t("filters.sortDir"),
+            options: [
+              { label: t("common.all"), value: "" },
+              { label: "ASC", value: "asc" },
+              { label: "DESC", value: "desc" },
+            ],
+            type: "select",
+          },
+        ]}
+        filters={filters}
         onAdd={() => setAddOpened(true)}
+        onFiltersChange={handleFiltersChange}
         onQueryChange={handleQueryChange}
         placeholder={t("tables.searchAgents")}
         query={query}
