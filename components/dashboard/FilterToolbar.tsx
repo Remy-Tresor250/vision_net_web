@@ -40,6 +40,20 @@ interface Props {
   className?: string;
 }
 
+function toDateParts(value: string | Date | null | undefined) {
+  if (!value) return null;
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  return {
+    day: String(date.getDate()).padStart(2, "0"),
+    month: String(date.getMonth() + 1).padStart(2, "0"),
+    year: String(date.getFullYear()),
+  };
+}
+
 export default function FilterToolbar({
   addLabel,
   className,
@@ -200,12 +214,13 @@ export default function FilterToolbar({
                           label={field.label}
                           locale={i18n.language}
                           onChange={(value) =>
-                            updateDraftFilter(
-                              field.id,
-                              value
-                                ? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`
-                                : "",
-                            )
+                            updateDraftFilter(field.id, (() => {
+                              const parts = toDateParts(value);
+
+                              return parts
+                                ? `${parts.year}-${parts.month}-${parts.day}`
+                                : "";
+                            })())
                           }
                           placeholder={field.placeholder ?? field.label}
                           styles={appFieldStyles}
@@ -224,12 +239,13 @@ export default function FilterToolbar({
                           label={field.label}
                           locale={i18n.language}
                           onChange={(value) =>
-                            updateDraftFilter(
-                              field.id,
-                              value
-                                ? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`
-                                : "",
-                            )
+                            updateDraftFilter(field.id, (() => {
+                              const parts = toDateParts(value);
+
+                              return parts
+                                ? `${parts.year}-${parts.month}`
+                                : "";
+                            })())
                           }
                           placeholder={field.placeholder ?? field.label}
                           styles={appFieldStyles}
