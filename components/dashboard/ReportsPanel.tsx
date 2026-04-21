@@ -302,7 +302,7 @@ export default function ReportsPanel() {
             </div>
           </div>
         ) : (
-          <div className="relative flex min-h-[76vh] items-center justify-center overflow-hidden bg-[linear-gradient(180deg,_rgba(251,253,251,1)_0%,_rgba(245,249,246,1)_100%)] p-8">
+          <div className="relative flex h-full items-center justify-center overflow-hidden bg-[linear-gradient(180deg,_rgba(251,253,251,1)_0%,_rgba(245,249,246,1)_100%)] p-8">
             <div className="pointer-events-none absolute left-12 top-12 h-24 w-24 rounded-full bg-brand/10 blur-3xl" />
             <div className="pointer-events-none absolute bottom-12 right-12 h-32 w-32 rounded-full bg-brand/10 blur-3xl" />
 
