@@ -31,6 +31,10 @@ function buildPdfPreviewUrl(pdfUrl: string) {
 
 export default function ReportsPanel() {
   const { t } = useTranslation();
+  const currentMonth = useMemo(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  }, []);
   const [billingMonth, setBillingMonth] = useState<Date | null>(new Date());
   const [selectedAvenueId, setSelectedAvenueId] = useState("");
   const [reportId, setReportId] = useState("");
@@ -218,6 +222,7 @@ export default function ReportsPanel() {
             classNames={appFieldClassNames}
             disabled={isGenerating}
             label={t("reports.selectBillingMonth")}
+            maxDate={currentMonth}
             onChange={setBillingMonth}
             placeholder="ex. April 2026"
             styles={appFieldStyles}

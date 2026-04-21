@@ -314,7 +314,7 @@ export default function ConfigurationsPanel() {
   }
 
   function addCellDraft() {
-    setLocationCells((current) => [...current, createCellDraft()]);
+    setLocationCells((current) => [createCellDraft(), ...current]);
   }
 
   function removeCellDraft(cellId: string) {
@@ -326,7 +326,7 @@ export default function ConfigurationsPanel() {
   function addAvenueDraft(cellId: string) {
     updateCellDraft(cellId, (cell) => ({
       ...cell,
-      avenues: [...cell.avenues, createAvenueDraft()],
+      avenues: [createAvenueDraft(), ...cell.avenues],
     }));
   }
 
@@ -623,7 +623,7 @@ export default function ConfigurationsPanel() {
   return (
     <>
       <div className="space-y-4 py-3">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
           <ConfigurationTabs activeTab={activeTab} onChange={setActiveTab} />
 
           {activeTab === "service" ? (

@@ -119,6 +119,21 @@ export default function LocationConfigurationModal({
           value={quartierName}
         />
 
+        <div className="flex flex-wrap items-center gap-3">
+          {mode !== "add-avenue" && mode !== "edit" ? (
+            <button
+              className="rounded-sm border border-border bg-surface px-3 py-2 transition-colors hover:border-brand/30 hover:bg-brand/5"
+              disabled={isSaving}
+              onClick={onAddCell}
+              type="button"
+            >
+              <p className="text-[14px] font-medium text-brand">
+                + {t("configurations.addAnotherCell")}
+              </p>
+            </button>
+          ) : null}
+        </div>
+
         <div className="max-h-[52vh] space-y-4 overflow-y-auto pr-1">
           {cells.map((cell, cellIndex) => (
             <section
@@ -129,19 +144,32 @@ export default function LocationConfigurationModal({
                 <p className="text-[15px] font-semibold text-foreground">
                   {t("configurations.cell")} {cellIndex + 1}
                 </p>
-                {mode !== "add-avenue" &&
-                mode !== "edit" &&
-                cells.length > 1 &&
-                !cell.locked ? (
+                <div className="flex flex-wrap items-center justify-end gap-3">
                   <button
-                    className="text-[13px] font-medium text-danger"
+                    className="rounded-sm border border-border bg-surface px-3 py-2 transition-colors hover:border-brand/30 hover:bg-brand/5"
                     disabled={isSaving}
-                    onClick={() => onRemoveCell(cell.id)}
+                    onClick={() => onAddAvenue(cell.id)}
                     type="button"
                   >
-                    {t("configurations.removeCell")}
+                    <p className="text-[14px] font-medium text-brand">
+                      + {t("configurations.addAnotherAvenue")}
+                    </p>
                   </button>
-                ) : null}
+                  {mode !== "add-avenue" &&
+                  mode !== "edit" &&
+                  cells.length > 1 &&
+                  !cell.locked ? (
+                    <button
+                      className="bg-danger/90 rounded-sm"
+                      disabled={isSaving}
+                      onClick={() => onRemoveCell(cell.id)}
+                      type="button"
+                    >
+                      <p className="text-[13px] font-medium text-white px-3 py-2">{t("configurations.removeCell")}</p>
+                      
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
               <div className="mt-4">
@@ -194,37 +222,9 @@ export default function LocationConfigurationModal({
                   </div>
                 ))}
               </div>
-
-              <div className="mt-4 flex justify-start">
-                <button
-                  className="border px-3 py-2 rounded-sm cursor-pointer"
-                  disabled={isSaving}
-                  onClick={() => onAddAvenue(cell.id)}
-                  type="button"
-                >
-                  <p className="text-[14px] font-medium text-brand">
-                    + {t("configurations.addAnotherAvenue")}
-                  </p>
-                </button>
-              </div>
             </section>
           ))}
         </div>
-
-        {mode !== "add-avenue" && mode !== "edit" ? (
-          <div className="flex justify-start">
-            <button
-              className="border px-3 py-2 rounded-sm cursor-pointer"
-              disabled={isSaving}
-              onClick={onAddCell}
-              type="button"
-            >
-              <p className="text-[14px] font-medium text-brand">
-                + {t("configurations.addAnotherCell")}
-              </p>
-            </button>
-          </div>
-        ) : null}
 
         {isSaving ? (
           <div className="space-y-2">

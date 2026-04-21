@@ -114,8 +114,8 @@ export default function LocationGroupsTable({
                       </div>
                     </TableTd>
 
-                    <TableTd className="min-w-[360px] px-8 py-5 align-top">
-                      <div className="max-w-[360px] overflow-x-auto pb-1">
+                    <TableTd className="min-w-[440px] px-8 py-5 align-top">
+                      <div className="max-w-[440px] overflow-x-auto pb-1">
                         <div className="flex min-w-max gap-3">
                           {row.avenueItems.length ? (
                             row.avenueItems.map((avenue) => (
