@@ -6,7 +6,11 @@ import { useTranslation } from "react-i18next";
 
 import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
 
-export type LocationModalMode = "new-location" | "add-cell" | "add-avenue" | "edit";
+export type LocationModalMode =
+  | "new-location"
+  | "add-cell"
+  | "add-avenue"
+  | "edit";
 
 export interface AvenueDraft {
   avenueId?: string;
@@ -53,7 +57,8 @@ export function createAvenueDraft(name = "", avenueId?: string): AvenueDraft {
 export function createCellDraft(options?: Partial<CellDraft>): CellDraft {
   return {
     avenues: options?.avenues?.length ? options.avenues : [createAvenueDraft()],
-    id: options?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    id:
+      options?.id ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     locked: options?.locked ?? false,
     name: options?.name ?? "",
     serineId: options?.serineId,
@@ -97,7 +102,11 @@ export default function LocationConfigurationModal({
       opened={opened}
       radius="sm"
       size="xl"
-      title={<span className="text-[28px] font-semibold text-foreground">{title}</span>}
+      title={
+        <span className="text-[28px] font-semibold text-foreground">
+          {title}
+        </span>
+      }
     >
       <div className="space-y-5 lg:px-6">
         <TextInput
@@ -120,7 +129,10 @@ export default function LocationConfigurationModal({
                 <p className="text-[15px] font-semibold text-foreground">
                   {t("configurations.cell")} {cellIndex + 1}
                 </p>
-                {mode !== "add-avenue" && mode !== "edit" && cells.length > 1 && !cell.locked ? (
+                {mode !== "add-avenue" &&
+                mode !== "edit" &&
+                cells.length > 1 &&
+                !cell.locked ? (
                   <button
                     className="text-[13px] font-medium text-danger"
                     disabled={isSaving}
@@ -185,12 +197,14 @@ export default function LocationConfigurationModal({
 
               <div className="mt-4 flex justify-start">
                 <button
-                  className="text-[14px] font-medium text-brand"
+                  className="border px-3 py-2 rounded-sm cursor-pointer"
                   disabled={isSaving}
                   onClick={() => onAddAvenue(cell.id)}
                   type="button"
                 >
-                  + {t("configurations.addAnotherAvenue")}
+                  <p className="text-[14px] font-medium text-brand">
+                    + {t("configurations.addAnotherAvenue")}
+                  </p>
                 </button>
               </div>
             </section>
@@ -200,12 +214,14 @@ export default function LocationConfigurationModal({
         {mode !== "add-avenue" && mode !== "edit" ? (
           <div className="flex justify-start">
             <button
-              className="text-[14px] font-medium text-brand"
+              className="border px-3 py-2 rounded-sm cursor-pointer"
               disabled={isSaving}
               onClick={onAddCell}
               type="button"
             >
-              + {t("configurations.addAnotherCell")}
+              <p className="text-[14px] font-medium text-brand">
+                + {t("configurations.addAnotherCell")}
+              </p>
             </button>
           </div>
         ) : null}
@@ -231,7 +247,9 @@ export default function LocationConfigurationModal({
             onClick={onSave}
             type="button"
           >
-            <p className="text-[14px] text-white">{isSaving ? t("forms.saving") : submitLabel}</p>
+            <p className="text-[14px] text-white">
+              {isSaving ? t("forms.saving") : submitLabel}
+            </p>
           </button>
         </div>
       </div>
