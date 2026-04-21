@@ -2,7 +2,10 @@ import type {
   AdminAgentsParams,
   AdminClientPaymentsParams,
   AdminClientsParams,
+  AdminLocationsParams,
   AdminPaymentsParams,
+  AdminServiceTypesParams,
+  CommissionSummaryParams,
 } from "@/lib/api/types";
 import type { DashboardParams } from "@/lib/api/admin";
 
@@ -11,6 +14,28 @@ export const queryKeys = {
     all: ["admin"] as const,
     dashboard: (params?: DashboardParams) =>
       [...queryKeys.admin.all, "dashboard", params ?? {}] as const,
+    serviceTypes: {
+      all: () => [...queryKeys.admin.all, "service-types"] as const,
+      list: (params?: AdminServiceTypesParams) =>
+        [...queryKeys.admin.serviceTypes.all(), "list", params ?? {}] as const,
+    },
+    locations: {
+      all: () => [...queryKeys.admin.all, "locations"] as const,
+      quartiers: (params?: AdminLocationsParams) =>
+        [...queryKeys.admin.locations.all(), "quartiers", params ?? {}] as const,
+      serines: (params?: AdminLocationsParams) =>
+        [...queryKeys.admin.locations.all(), "serines", params ?? {}] as const,
+      avenues: (params?: AdminLocationsParams) =>
+        [...queryKeys.admin.locations.all(), "avenues", params ?? {}] as const,
+    },
+    commissions: {
+      all: () => [...queryKeys.admin.all, "commissions"] as const,
+      config: () => [...queryKeys.admin.commissions.all(), "config"] as const,
+      summary: (params?: CommissionSummaryParams) =>
+        [...queryKeys.admin.commissions.all(), "summary", params ?? {}] as const,
+      details: (params?: CommissionSummaryParams) =>
+        [...queryKeys.admin.commissions.all(), "details", params ?? {}] as const,
+    },
     clients: {
       all: () => [...queryKeys.admin.all, "clients"] as const,
       list: (params?: AdminClientsParams) =>
@@ -39,6 +64,11 @@ export const queryKeys = {
     receipt: {
       verification: (receiptId: string) =>
         [...queryKeys.admin.all, "receipt", "verification", receiptId] as const,
+    },
+    reports: {
+      all: () => [...queryKeys.admin.all, "reports"] as const,
+      avenueMonthlyStatus: (reportId: string) =>
+        [...queryKeys.admin.reports.all(), "avenue-monthly", "status", reportId] as const,
     },
   },
 };

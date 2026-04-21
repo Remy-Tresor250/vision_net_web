@@ -6,12 +6,12 @@ export const agentFormSchema = z.object({
 });
 
 export const clientFormSchema = agentFormSchema.extend({
-  address: z.string().min(2, "Enter the client address"),
+  avenueId: z.string().min(1, "Select an avenue"),
+  code: z.string().optional().or(z.literal("")),
+  quartierId: z.string().min(1, "Select a quartier"),
   registeredDate: z.string().optional(),
-  subscriptionAmount: z
-    .string()
-    .regex(/^\d+(\.\d{1,2})?$/, "Use a valid amount"),
-  type: z.enum(["NORMAL", "POTENTIEL"]),
+  serineId: z.string().min(1, "Select a serine"),
+  serviceTypeId: z.string().min(1, "Select a service type"),
 });
 
 export type AgentFormValues = z.infer<typeof agentFormSchema>;

@@ -10,6 +10,7 @@ import {
   HiOutlineBanknotes,
   HiOutlineCog6Tooth,
   HiOutlineArrowRightOnRectangle,
+  HiOutlineDocumentChartBar,
   HiOutlineSquares2X2,
   HiOutlineUserCircle,
   HiOutlineUsers,
@@ -49,9 +50,14 @@ const navigationItems = [
     icon: HiOutlineBanknotes,
   },
   {
-    href: "/settings",
-    labelKey: "settings",
+    href: "/configurations",
+    labelKey: "configurations",
     icon: HiOutlineCog6Tooth,
+  },
+  {
+    href: "/reports",
+    labelKey: "reports",
+    icon: HiOutlineDocumentChartBar,
   },
 ] as const;
 
@@ -161,6 +167,27 @@ export default function DashboardShell({ children }: Props) {
     if (pathname === "/payments") {
       return {
         title,
+        subtitle: "",
+      };
+    }
+
+    if (pathname === "/configurations") {
+      return {
+        title,
+        subtitle: "System configurations",
+      };
+    }
+
+    if (pathname === "/reports") {
+      return {
+        title,
+        subtitle: "Monthly billing reports",
+      };
+    }
+
+    if (pathname === "/settings") {
+      return {
+        title: t("account.settings"),
         subtitle: "",
       };
     }

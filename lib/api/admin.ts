@@ -6,6 +6,9 @@ import type {
   AdminAgentDetail,
   AdminAgentListItem,
   AdminAgentsParams,
+  AdminLocationsParams,
+  AdminServiceType,
+  AdminServiceTypesParams,
   AdminClientDetail,
   AdminClientListItem,
   AdminClientPaymentsParams,
@@ -13,20 +16,40 @@ import type {
   AdminPaymentDetail,
   AdminPaymentListItem,
   AdminPaymentsParams,
+  AssignAgentAvenuesPayload,
+  Avenue,
+  AvenueMonthlyReportJob,
+  AvenueMonthlyReportStatus,
   ApiSuccess,
+  CommissionConfig,
+  CommissionDetailItem,
+  CommissionSummaryItem,
+  CommissionSummaryParams,
+  CreateAvenuePayload,
   CreateAdminUserPayload,
   CreateAgentPayload,
   CreateClientPayload,
+  CreateQuartierPayload,
+  CreateSerinePayload,
+  CreateServiceTypePayload,
   DashboardResponse,
+  GenerateAvenueMonthlyReportPayload,
   ImportReport,
   MarkPaymentCompletePayload,
   PageResponse,
   PaymentResponse,
+  Quartier,
   ReceiptData,
   ReceiptVerification,
+  Serine,
+  UpdateAvenuePayload,
+  UpdateCommissionConfigPayload,
   UpdateStatusPayload,
   UpdateAgentPayload,
   UpdateClientPayload,
+  UpdateQuartierPayload,
+  UpdateSerinePayload,
+  UpdateServiceTypePayload,
   UserSummary,
 } from "@/lib/api/types";
 
@@ -64,6 +87,100 @@ export const adminApi = {
       .then((res) => res.data),
   createAdmin: (payload: CreateAdminUserPayload) =>
     api.post<UserSummary>(endpoints.admin.admins, payload).then((res) => res.data),
+  serviceTypes: (params?: AdminServiceTypesParams, config?: RequestConfig) =>
+    api
+      .get<PageResponse<AdminServiceType>>(endpoints.admin.serviceTypes, {
+        params,
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  createServiceType: (payload: CreateServiceTypePayload) =>
+    api
+      .post<AdminServiceType>(endpoints.admin.serviceTypes, payload)
+      .then((res) => res.data),
+  updateServiceType: (serviceTypeId: string, payload: UpdateServiceTypePayload) =>
+    api
+      .patch<AdminServiceType>(endpoints.admin.serviceType(serviceTypeId), payload)
+      .then((res) => res.data),
+  deleteServiceType: (serviceTypeId: string) =>
+    api
+      .delete<ApiSuccess>(endpoints.admin.serviceType(serviceTypeId))
+      .then((res) => res.data),
+  quartiers: (params?: AdminLocationsParams, config?: RequestConfig) =>
+    api
+      .get<PageResponse<Quartier>>(endpoints.admin.quartiers, {
+        params,
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  createQuartier: (payload: CreateQuartierPayload) =>
+    api.post<Quartier>(endpoints.admin.quartiers, payload).then((res) => res.data),
+  updateQuartier: (quartierId: string, payload: UpdateQuartierPayload) =>
+    api
+      .patch<Quartier>(endpoints.admin.quartier(quartierId), payload)
+      .then((res) => res.data),
+  deleteQuartier: (quartierId: string) =>
+    api
+      .delete<ApiSuccess>(endpoints.admin.quartier(quartierId))
+      .then((res) => res.data),
+  serines: (params?: AdminLocationsParams, config?: RequestConfig) =>
+    api
+      .get<PageResponse<Serine>>(endpoints.admin.serines, {
+        params,
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  createSerine: (payload: CreateSerinePayload) =>
+    api.post<Serine>(endpoints.admin.serines, payload).then((res) => res.data),
+  updateSerine: (serineId: string, payload: UpdateSerinePayload) =>
+    api
+      .patch<Serine>(endpoints.admin.serine(serineId), payload)
+      .then((res) => res.data),
+  deleteSerine: (serineId: string) =>
+    api
+      .delete<ApiSuccess>(endpoints.admin.serine(serineId))
+      .then((res) => res.data),
+  avenues: (params?: AdminLocationsParams, config?: RequestConfig) =>
+    api
+      .get<PageResponse<Avenue>>(endpoints.admin.avenues, {
+        params,
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  createAvenue: (payload: CreateAvenuePayload) =>
+    api.post<Avenue>(endpoints.admin.avenues, payload).then((res) => res.data),
+  updateAvenue: (avenueId: string, payload: UpdateAvenuePayload) =>
+    api
+      .patch<Avenue>(endpoints.admin.avenue(avenueId), payload)
+      .then((res) => res.data),
+  deleteAvenue: (avenueId: string) =>
+    api
+      .delete<ApiSuccess>(endpoints.admin.avenue(avenueId))
+      .then((res) => res.data),
+  commissionConfig: (config?: RequestConfig) =>
+    api
+      .get<CommissionConfig>(endpoints.admin.commissionConfig, {
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  updateCommissionConfig: (payload: UpdateCommissionConfigPayload) =>
+    api
+      .patch<CommissionConfig>(endpoints.admin.commissionConfig, payload)
+      .then((res) => res.data),
+  commissionSummary: (params?: CommissionSummaryParams, config?: RequestConfig) =>
+    api
+      .get<PageResponse<CommissionSummaryItem>>(endpoints.admin.commissionSummary, {
+        params,
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  commissionDetails: (params?: CommissionSummaryParams, config?: RequestConfig) =>
+    api
+      .get<PageResponse<CommissionDetailItem>>(endpoints.admin.commissionDetails, {
+        params,
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
   createAgent: (payload: CreateAgentPayload) =>
     api.post<UserSummary>(endpoints.admin.createAgent, payload).then((res) => res.data),
   createClient: (payload: CreateClientPayload) =>
@@ -117,6 +234,10 @@ export const adminApi = {
         signal: config?.signal,
       })
       .then((res) => res.data),
+  assignAgentAvenues: (agentId: string, payload: AssignAgentAvenuesPayload) =>
+    api
+      .put<ApiSuccess>(endpoints.admin.agentAvenues(agentId), payload)
+      .then((res) => res.data),
   updateAgent: (agentId: string, payload: UpdateAgentPayload) =>
     api
       .patch<AdminAgentDetail>(endpoints.admin.agent(agentId), payload)
@@ -156,6 +277,26 @@ export const adminApi = {
     api
       .get<ReceiptVerification>(endpoints.publicReceipts.verify(receiptId), {
         signal: config?.signal,
+      })
+      .then((res) => res.data),
+  generateAvenueMonthlyReport: (payload: GenerateAvenueMonthlyReportPayload) =>
+    api
+      .post<AvenueMonthlyReportJob>(endpoints.admin.reportAvenueMonthly, payload)
+      .then((res) => res.data),
+  avenueMonthlyReportStatus: (reportId: string, config?: RequestConfig) =>
+    api
+      .get<AvenueMonthlyReportStatus>(endpoints.admin.reportAvenueMonthlyStatus(reportId), {
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  downloadAvenueMonthlyReport: (
+    reportId: string,
+    disposition: "inline" | "attachment" = "inline",
+  ) =>
+    api
+      .get<Blob>(endpoints.admin.reportAvenueMonthlyDownload(reportId), {
+        params: { disposition },
+        responseType: "blob",
       })
       .then((res) => res.data),
   downloadAgentTemplateCsv: () => downloadFile(endpoints.admin.importAgentTemplateCsv),

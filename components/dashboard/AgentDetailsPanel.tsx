@@ -163,6 +163,27 @@ export default function AgentDetailsPanel({ agentId }: Props) {
         </article>
       </section>
 
+      <section className="rounded-xl border border-border bg-surface p-5 shadow-card">
+        <p className="text-sm font-semibold uppercase tracking-wider text-text-muted">
+          {t("common.location")}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          {agent?.assignedAvenues?.length ? (
+            agent.assignedAvenues.map((assignedAvenue) => (
+              <div
+                className="rounded-md bg-surface-muted px-4 py-2 text-[14px] text-foreground"
+                key={assignedAvenue.avenueId}
+              >
+                {assignedAvenue.avenueName}
+                {assignedAvenue.quartierName ? `, ${assignedAvenue.quartierName}` : ""}
+              </div>
+            ))
+          ) : (
+            <p className="text-[14px] text-text-muted">-</p>
+          )}
+        </div>
+      </section>
+
       <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
         <TableScrollContainer minWidth={1080}>
           <Table className="min-w-full">

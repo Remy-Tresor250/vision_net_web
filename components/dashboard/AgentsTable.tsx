@@ -124,7 +124,7 @@ export default function AgentsTable() {
               { label: t("common.registeredDate"), value: "createdAt" },
               { label: t("common.fullNames"), value: "fullNames" },
               { label: t("common.phone"), value: "phone" },
-              { label: t("tables.thisMonthPerformance"), value: "currentMonthCollected" },
+              { label: t("tables.performance"), value: "currentMonthCollected" },
             ],
             type: "select",
           },
@@ -152,14 +152,14 @@ export default function AgentsTable() {
           t("common.phoneNumber"),
           t("common.registeredDate"),
           t("common.status"),
-          t("tables.thisMonthPerformance"),
+          t("tables.performance"),
           t("tables.action"),
         ]}
         onPageChange={setPage}
         page={page}
         total={totalPages}
       >
-        {agentsQuery.isLoading
+        {agentsQuery.isLoading || agentsQuery.isFetching
           ? <TableSkeletonRows columns={6} rows={PAGE_SIZE} />
           : agents.length === 0
           ? (

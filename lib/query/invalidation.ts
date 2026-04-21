@@ -6,6 +6,38 @@ export function invalidateDashboard(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
 }
 
+export function invalidateServiceTypes(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.admin.serviceTypes.all(),
+  });
+}
+
+export function invalidateLocations(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.admin.locations.all(),
+  });
+}
+
+export function invalidateCommissions(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    queryKey: queryKeys.admin.commissions.all(),
+  });
+}
+
+export function invalidateReports(queryClient: QueryClient, reportId?: string) {
+  queryClient.invalidateQueries({
+    queryKey: queryKeys.admin.reports.all(),
+  });
+
+  if (reportId) {
+    return queryClient.invalidateQueries({
+      queryKey: queryKeys.admin.reports.avenueMonthlyStatus(reportId),
+    });
+  }
+
+  return Promise.resolve();
+}
+
 export function invalidateClients(queryClient: QueryClient, clientId?: string) {
   queryClient.invalidateQueries({ queryKey: queryKeys.admin.clients.all() });
 

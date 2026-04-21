@@ -16,13 +16,23 @@ import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import type { AdminClientsParams } from "@/lib/api/types";
 import { getApiErrorMessage } from "@/lib/api/client";
-import { formatCurrency, formatDate, getPageCount } from "@/lib/format";
+import { formatDate, getPageCount } from "@/lib/format";
 import {
   useAdminClientsQuery,
   useUpdateClientStatusMutation,
 } from "@/lib/query/hooks";
 
 const PAGE_SIZE = 8;
+
+function formatClientLocation(client: {
+  avenueName?: string | null;
+  quartierName?: string | null;
+  serineName?: string | null;
+}) {
+  const parts = [client.quartierName, client.serineName, client.avenueName].filter(Boolean);
+
+  return parts.length ? parts.join(", ") : "-";
+}
 
 export default function ClientsTable() {
   const { t } = useTranslation();
@@ -37,7 +47,6 @@ export default function ClientsTable() {
     registeredDateTo: "",
     sortBy: "",
     sortDir: "desc",
-    type: "",
   });
   const [addOpened, setAddOpened] = useState(false);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
@@ -64,7 +73,6 @@ export default function ClientsTable() {
     skip,
     sortBy: filters.sortBy || undefined,
     sortDir: (filters.sortDir as "asc" | "desc") || undefined,
-    type: (filters.type as "NORMAL" | "POTENTIEL") || undefined,
   };
   const clientsQuery = useAdminClientsQuery(clientParams);
   const statusMutation = useUpdateClientStatusMutation("");
@@ -110,16 +118,6 @@ export default function ClientsTable() {
               { label: t("common.all"), value: "" },
               { label: t("common.active"), value: "true" },
               { label: t("common.inactive"), value: "false" },
-            ],
-            type: "select",
-          },
-          {
-            id: "type",
-            label: t("filters.type"),
-            options: [
-              { label: t("common.all"), value: "" },
-              { label: "NORMAL", value: "NORMAL" },
-              { label: "POTENTIEL", value: "POTENTIEL" },
             ],
             type: "select",
           },
@@ -170,23 +168,24 @@ export default function ClientsTable() {
       <DashboardTableShell
         headers={[
           t("common.client"),
+          t("common.code"),
           t("common.phone"),
-          t("common.address"),
+          t("common.location"),
           t("common.registeredDate"),
           t("common.status"),
-          t("common.subscription"),
+          t("common.service"),
           t("tables.action"),
         ]}
         onPageChange={setPage}
         page={page}
         total={totalPages}
       >
-        {clientsQuery.isLoading
-          ? <TableSkeletonRows columns={7} rows={PAGE_SIZE} />
+        {clientsQuery.isLoading || clientsQuery.isFetching
+          ? <TableSkeletonRows columns={8} rows={PAGE_SIZE} />
           : clients.length === 0
           ? (
               <TableEmptyRow
-                colSpan={7}
+                colSpan={8}
                 message={t("tables.createClientEmpty")}
                 title={t("tables.noClientsFound")}
               />
@@ -196,16 +195,19 @@ export default function ClientsTable() {
                 key={client.clientId}
                 className="border-b border-border last:border-b-0"
               >
-                <TableTd className="px-8 py-6 text-[14px] font-medium text-foreground">
+                <TableTd className="px-8 py-6 text-[12px] font-medium text-foreground">
                   {client.fullNames}
                 </TableTd>
-                <TableTd className="px-8 py-6 text-[14px] text-text-muted">
+                <TableTd className="px-8 py-6 text-[12px] text-text-muted">
+                  {client.code?.trim() ? client.code : "-"}
+                </TableTd>
+                <TableTd className="px-8 py-6 text-[12px] text-text-muted">
                   {client.phone}
                 </TableTd>
-                <TableTd className="px-8 py-6 text-[14px] text-text-muted">
-                  {client.address}
+                <TableTd className="px-8 py-6 text-[12px] text-text-muted">
+                  {formatClientLocation(client)}
                 </TableTd>
-                <TableTd className="px-8 py-6 text-[14px] text-text-muted">
+                <TableTd className="px-8 py-6 text-[12px] text-center text-text-muted">
                   {formatDate(client.registeredDate)}
                 </TableTd>
                 <TableTd className="px-8 py-6">
@@ -213,8 +215,8 @@ export default function ClientsTable() {
                     status={client.isActive ? t("common.active") : t("common.inactive")}
                   />
                 </TableTd>
-                <TableTd className="px-8 py-6 text-center text-[14px] text-text-muted">
-                  {formatCurrency(client.subscriptionAmount)}
+                <TableTd className="px-8 py-6 text-center text-[12px] text-text-muted">
+                  {client.serviceTypeName ?? "-"}
                 </TableTd>
                 <TableTd className="px-8 py-6 text-center">
                   <Menu position="bottom-end" shadow="md" width={160}>

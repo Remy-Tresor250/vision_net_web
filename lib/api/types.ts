@@ -2,6 +2,11 @@ export type UserRole = "ADMIN" | "AGENT" | "CLIENT";
 export type Language = "en" | "fr";
 export type SortDir = "asc" | "desc";
 export type ClientType = "NORMAL" | "POTENTIEL";
+export type ReportExportStatus =
+  | "QUEUED"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED";
 
 export interface PageParams {
   skip?: number;
@@ -60,10 +65,19 @@ export interface AdminClientListItem {
   userId: string;
   fullNames: string;
   phone: string;
-  address: string;
-  type: ClientType;
+  code?: string | null;
+  address?: string | null;
+  type?: ClientType;
+  quartierId?: string | null;
+  quartierName?: string | null;
+  serineId?: string | null;
+  serineName?: string | null;
+  avenueId?: string | null;
+  avenueName?: string | null;
+  serviceTypeId?: string | null;
+  serviceTypeName?: string | null;
   registeredDate: string;
-  subscriptionAmount: string;
+  subscriptionAmount?: string | null;
   dueMonths: number;
   totalDue: string;
   isActive: boolean;
@@ -94,10 +108,18 @@ export interface AdminAgentListItem {
   collectionsCount?: number;
   uniqueClientsCollectedFrom?: number;
   createdAt?: string;
+  assignedAvenues?: AssignedAvenue[];
 }
 
 export interface AdminAgentDetail extends AdminAgentListItem {
   language?: Language;
+}
+
+export interface AssignedAvenue {
+  avenueId: string;
+  avenueName: string;
+  quartierId?: string | null;
+  quartierName?: string | null;
 }
 
 export type PaymentStatus = "DUE" | "CONFIRMED" | "PENDING" | "READY" | string;
@@ -230,16 +252,20 @@ export interface UpdateAgentPayload {
 }
 
 export interface CreateClientPayload extends CreateAdminUserPayload {
-  address: string;
-  type: ClientType;
-  subscriptionAmount: string;
+  code?: string;
+  quartierId: string;
+  serineId: string;
+  avenueId: string;
+  serviceTypeId: string;
   registeredDate?: string;
 }
 
 export interface UpdateClientPayload extends UpdateAgentPayload {
-  address?: string;
-  type?: ClientType;
-  subscriptionAmount?: string;
+  code?: string;
+  quartierId?: string;
+  serineId?: string;
+  avenueId?: string;
+  serviceTypeId?: string;
   registeredDate?: string;
 }
 
@@ -254,7 +280,6 @@ export interface MarkPaymentCompletePayload {
 export interface AdminClientsParams extends PageParams {
   isActive?: boolean;
   is_due?: boolean;
-  type?: ClientType;
   hasDue?: boolean;
   minDueMonths?: number;
   maxDueMonths?: number;
@@ -297,4 +322,147 @@ export interface AdminClientPaymentsParams extends PageParams {
   dateTo?: string;
   status?: PaymentStatus;
   sortDir?: SortDir;
+}
+
+export interface AdminServiceTypesParams extends PageParams {}
+
+export interface AdminLocationsParams extends PageParams {
+  quartierId?: string;
+  serineId?: string;
+}
+
+export interface AdminServiceType {
+  id: string;
+  name: string;
+  subscriptionAmountMinor?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateServiceTypePayload {
+  name: string;
+  subscriptionAmount: string;
+}
+
+export interface UpdateServiceTypePayload {
+  name?: string;
+  subscriptionAmount?: string;
+}
+
+export interface Quartier {
+  id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Serine {
+  id: string;
+  name: string;
+  quartierId: string;
+  quartierName?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Avenue {
+  id: string;
+  name: string;
+  serineId: string;
+  serineName?: string | null;
+  quartierId?: string | null;
+  quartierName?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateQuartierPayload {
+  name: string;
+}
+
+export interface UpdateQuartierPayload {
+  name?: string;
+}
+
+export interface CreateSerinePayload {
+  quartierId: string;
+  name: string;
+}
+
+export interface UpdateSerinePayload {
+  quartierId?: string;
+  name?: string;
+}
+
+export interface CreateAvenuePayload {
+  serineId: string;
+  name: string;
+}
+
+export interface UpdateAvenuePayload {
+  serineId?: string;
+  name?: string;
+}
+
+export interface CommissionConfig {
+  ratePercent: number;
+}
+
+export interface UpdateCommissionConfigPayload {
+  ratePercent: number;
+}
+
+export interface CommissionSummaryItem {
+  agentId: string;
+  fullNames: string;
+  phone: string;
+  totalCollected: string;
+  commissionRatePercent: number;
+  totalCommission: string;
+  paymentsCount: number;
+}
+
+export interface CommissionDetailItem {
+  paymentId: string;
+  paymentDate: string;
+  agentId: string;
+  agentName: string;
+  clientId: string;
+  clientName: string;
+  amount: string;
+  commissionRatePercent: number;
+  commissionAmount: string;
+}
+
+export interface CommissionSummaryParams extends PageParams {
+  dateFrom?: string;
+  dateTo?: string;
+  agentId?: string;
+}
+
+export interface GenerateAvenueMonthlyReportPayload {
+  month: string;
+  avenueId: string;
+}
+
+export interface AvenueMonthlyReportJob {
+  reportId: string;
+  status: ReportExportStatus;
+  progressPercent: number;
+  createdAt: string;
+}
+
+export interface AvenueMonthlyReportStatus extends AvenueMonthlyReportJob {
+  month: string;
+  avenueId: string;
+  quartierName?: string | null;
+  avenueName?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  errorMessage?: string | null;
+  fileReady: boolean;
+}
+
+export interface AssignAgentAvenuesPayload {
+  avenueIds: string[];
 }

@@ -45,6 +45,16 @@ interface Props {
 
 const PAGE_SIZE = 7;
 
+function formatClientLocation(client: {
+  avenueName?: string | null;
+  quartierName?: string | null;
+  serineName?: string | null;
+}) {
+  const parts = [client.quartierName, client.serineName, client.avenueName].filter(Boolean);
+
+  return parts.length ? parts.join(", ") : "-";
+}
+
 function toReceiptPayment(
   payment: AdminPaymentListItem,
   client?: { clientId?: string; fullNames?: string; phone?: string },
@@ -141,12 +151,12 @@ export default function ClientDetailsPanel({ clientId }: Props) {
             </div>
             <div className="min-w-0">
               <p className="text-[16px] font-medium uppercase text-text-muted">
-                {t("common.address")}
+                {t("common.code")}
               </p>
               <p className="break-words text-[18px] font-medium tracking-tight text-foreground">
                 {clientQuery.isLoading
                   ? t("common.loading")
-                  : (client?.address ?? "-")}
+                  : (client?.code?.trim() || "-")}
               </p>
             </div>
             <div className="min-w-0">
@@ -157,6 +167,16 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                 {clientQuery.isLoading
                   ? t("common.loading")
                   : (client?.phone ?? "-")}
+              </p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[16px] font-medium uppercase text-text-muted">
+                {t("common.location")}
+              </p>
+              <p className="break-words text-[18px] font-medium tracking-tight text-foreground">
+                {clientQuery.isLoading
+                  ? t("common.loading")
+                  : formatClientLocation(client ?? {})}
               </p>
             </div>
           </div>

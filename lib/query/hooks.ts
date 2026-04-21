@@ -14,22 +14,37 @@ import {
 } from "@/lib/api/auth";
 import type {
   AdminAgentsParams,
+  AdminLocationsParams,
+  AdminServiceTypesParams,
   AdminClientPaymentsParams,
   AdminClientsParams,
   AdminPaymentsParams,
+  AssignAgentAvenuesPayload,
+  CreateAvenuePayload,
   CreateAdminUserPayload,
   CreateAgentPayload,
   CreateClientPayload,
+  CreateQuartierPayload,
+  CreateSerinePayload,
+  CreateServiceTypePayload,
+  GenerateAvenueMonthlyReportPayload,
   MarkPaymentCompletePayload,
+  UpdateAvenuePayload,
+  UpdateCommissionConfigPayload,
   UpdateAgentPayload,
   UpdateClientPayload,
+  UpdateServiceTypePayload,
   UpdateStatusPayload,
 } from "@/lib/api/types";
 import {
   invalidateAgents,
   invalidateClients,
+  invalidateCommissions,
   invalidateDashboard,
+  invalidateLocations,
   invalidatePayments,
+  invalidateReports,
+  invalidateServiceTypes,
 } from "@/lib/query/invalidation";
 import { queryKeys } from "@/lib/query/keys";
 import { useAuthStore } from "@/stores/auth-store";
@@ -100,6 +115,81 @@ export function useAdminDashboardQuery(params?: DashboardParams) {
   return useQuery({
     queryKey: queryKeys.admin.dashboard(params),
     queryFn: ({ signal }) => adminApi.dashboard(params, { signal }),
+  });
+}
+
+export function useAdminServiceTypesQuery(
+  params?: AdminServiceTypesParams,
+  config?: QueryConfig,
+) {
+  return useQuery({
+    enabled: config?.enabled,
+    queryKey: queryKeys.admin.serviceTypes.list(params),
+    queryFn: ({ signal }) => adminApi.serviceTypes(params, { signal }),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useAdminQuartiersQuery(
+  params?: AdminLocationsParams,
+  config?: QueryConfig,
+) {
+  return useQuery({
+    enabled: config?.enabled,
+    queryKey: queryKeys.admin.locations.quartiers(params),
+    queryFn: ({ signal }) => adminApi.quartiers(params, { signal }),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useAdminSerinesQuery(
+  params?: AdminLocationsParams,
+  config?: QueryConfig,
+) {
+  return useQuery({
+    enabled: config?.enabled,
+    queryKey: queryKeys.admin.locations.serines(params),
+    queryFn: ({ signal }) => adminApi.serines(params, { signal }),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useAdminAvenuesQuery(
+  params?: AdminLocationsParams,
+  config?: QueryConfig,
+) {
+  return useQuery({
+    enabled: config?.enabled,
+    queryKey: queryKeys.admin.locations.avenues(params),
+    queryFn: ({ signal }) => adminApi.avenues(params, { signal }),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useCommissionConfigQuery(config?: QueryConfig) {
+  return useQuery({
+    enabled: config?.enabled,
+    queryKey: queryKeys.admin.commissions.config(),
+    queryFn: ({ signal }) => adminApi.commissionConfig({ signal }),
+  });
+}
+
+export function useAvenueMonthlyReportStatusQuery(
+  reportId: string,
+  config?: QueryConfig,
+) {
+  return useQuery({
+    enabled: Boolean(reportId) && config?.enabled !== false,
+    queryKey: queryKeys.admin.reports.avenueMonthlyStatus(reportId),
+    queryFn: ({ signal }) => adminApi.avenueMonthlyReportStatus(reportId, { signal }),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+
+      if (!reportId) return false;
+      if (status === "COMPLETED" || status === "FAILED") return false;
+
+      return 2500;
+    },
   });
 }
 
@@ -197,6 +287,142 @@ export function useCreateAdminMutation() {
   return useMutation({
     mutationFn: (payload: CreateAdminUserPayload) => adminApi.createAdmin(payload),
     onSuccess: () => invalidateDashboard(queryClient),
+  });
+}
+
+export function useCreateServiceTypeMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateServiceTypePayload) =>
+      adminApi.createServiceType(payload),
+    onSuccess: () => invalidateServiceTypes(queryClient),
+  });
+}
+
+export function useUpdateServiceTypeMutation(serviceTypeId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (
+      payload: UpdateServiceTypePayload & {
+        serviceTypeId?: string;
+      },
+    ) => {
+      const targetServiceTypeId = payload.serviceTypeId ?? serviceTypeId;
+
+      if (!targetServiceTypeId) {
+        throw new Error("Missing service type id.");
+      }
+
+      const { serviceTypeId: _serviceTypeId, ...body } = payload;
+
+      return adminApi.updateServiceType(targetServiceTypeId, body);
+    },
+    onSuccess: () => invalidateServiceTypes(queryClient),
+  });
+}
+
+export function useDeleteServiceTypeMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (serviceTypeId: string) => adminApi.deleteServiceType(serviceTypeId),
+    onSuccess: () => invalidateServiceTypes(queryClient),
+  });
+}
+
+export function useCreateAvenueMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateAvenuePayload) => adminApi.createAvenue(payload),
+    onSuccess: () => invalidateLocations(queryClient),
+  });
+}
+
+export function useCreateQuartierMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateQuartierPayload) => adminApi.createQuartier(payload),
+    onSuccess: () => invalidateLocations(queryClient),
+  });
+}
+
+export function useCreateSerineMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateSerinePayload) => adminApi.createSerine(payload),
+    onSuccess: () => invalidateLocations(queryClient),
+  });
+}
+
+export function useUpdateAvenueMutation(avenueId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (
+      payload: UpdateAvenuePayload & {
+        avenueId?: string;
+      },
+    ) => {
+      const targetAvenueId = payload.avenueId ?? avenueId;
+
+      if (!targetAvenueId) {
+        throw new Error("Missing avenue id.");
+      }
+
+      const { avenueId: _avenueId, ...body } = payload;
+
+      return adminApi.updateAvenue(targetAvenueId, body);
+    },
+    onSuccess: () => invalidateLocations(queryClient),
+  });
+}
+
+export function useUpdateCommissionConfigMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: UpdateCommissionConfigPayload) =>
+      adminApi.updateCommissionConfig(payload),
+    onSuccess: () => invalidateCommissions(queryClient),
+  });
+}
+
+export function useAssignAgentAvenuesMutation(agentId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (
+      payload: AssignAgentAvenuesPayload & {
+        agentId?: string;
+      },
+    ) => {
+      const targetAgentId = payload.agentId ?? agentId;
+
+      if (!targetAgentId) {
+        throw new Error("Missing agent id.");
+      }
+
+      return adminApi.assignAgentAvenues(targetAgentId, {
+        avenueIds: payload.avenueIds,
+      });
+    },
+    onSuccess: (_, payload) =>
+      invalidateAgents(queryClient, payload.agentId ?? agentId),
+  });
+}
+
+export function useGenerateAvenueMonthlyReportMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: GenerateAvenueMonthlyReportPayload) =>
+      adminApi.generateAvenueMonthlyReport(payload),
+    onSuccess: (data) => invalidateReports(queryClient, data.reportId),
   });
 }
 
