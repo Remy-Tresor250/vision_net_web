@@ -324,7 +324,7 @@ export interface AdminClientPaymentsParams extends PageParams {
   sortDir?: SortDir;
 }
 
-export interface AdminServiceTypesParams extends PageParams {}
+export type AdminServiceTypesParams = PageParams;
 
 export interface AdminLocationsParams extends PageParams {
   quartierId?: string;

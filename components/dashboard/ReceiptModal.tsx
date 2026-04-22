@@ -39,7 +39,6 @@ function formatReceiptTotal(payment: Payment) {
 }
 
 export default function ReceiptModal({ opened, onClose, payment }: Props) {
-  console.log(payment)
   const { t } = useTranslation();
   const receiptDataQuery = useAdminPaymentReceiptDataQuery(
     opened ? (payment?.id ?? "") : "",
@@ -66,10 +65,10 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
       }
     : null;
   const qrValue =
+    receiptData?.qrCodeUrl ??
     resolvedPayment?.qrCodeUrl ??
-    (resolvedPayment
-      ? `${window.location.origin}/receipt/${resolvedPayment.id}/receipt/data`
-      : "");
+    resolvedPayment?.verificationUrl ??
+    "";
 
   return (
     <Modal
@@ -176,8 +175,12 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
                 <div className="mt-2 flex size-24 items-center justify-center rounded-md border border-border bg-white p-2">
                   {receiptDataQuery.isLoading && !receiptData ? (
                     <Skeleton className="size-full rounded-sm" />
-                  ) : (
+                  ) : qrValue ? (
                     <QRCode size={80} value={qrValue} />
+                  ) : (
+                    <p className="text-center text-[10px] leading-4 text-text-muted">
+                      {t("common.loading")}
+                    </p>
                   )}
                 </div>
               </div>

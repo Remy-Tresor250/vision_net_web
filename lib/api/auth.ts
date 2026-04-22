@@ -5,6 +5,7 @@ import { endpoints } from "@/lib/api/endpoints";
 import type {
   ApiSuccess,
   AuthTokenPayload,
+  Language,
   OtpStartResponse,
   OtpVerifyResponse,
 } from "@/lib/api/types";
@@ -44,6 +45,10 @@ export interface PushTokenPayload {
   expoPushToken: string;
 }
 
+export interface UpdateLanguagePayload {
+  language: Language;
+}
+
 export const authApi = {
   firstLoginStart: (payload: PhonePayload) =>
     api.post<OtpStartResponse>(endpoints.auth.firstLoginStart, payload).then((res) => res.data),
@@ -79,6 +84,8 @@ export const authApi = {
     api.post<OtpStartResponse>(endpoints.me.phoneChangeStart, payload).then((res) => res.data),
   phoneChangeVerify: (payload: VerifyOtpPayload) =>
     api.post<OtpVerifyResponse>(endpoints.me.phoneChangeVerify, payload).then((res) => res.data),
+  updateLanguage: (payload: UpdateLanguagePayload) =>
+    api.patch<unknown>(endpoints.me.language, payload).then((res) => res.data),
   updateMe: (payload: UpdateMePayload) =>
     api.patch<unknown>(endpoints.me.detail, payload).then((res) => res.data),
   pushToken: (payload: PushTokenPayload) =>

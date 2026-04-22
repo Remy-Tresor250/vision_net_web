@@ -9,6 +9,7 @@ import {
   type ForgotPasswordResetPayload,
   type PasswordLoginPayload,
   type PhonePayload,
+  type UpdateLanguagePayload,
   type UpdateMePayload,
   type VerifyOtpPayload,
 } from "@/lib/api/auth";
@@ -108,6 +109,15 @@ export function usePhoneChangeVerifyMutation() {
 export function useUpdateMeMutation() {
   return useMutation({
     mutationFn: (payload: UpdateMePayload) => authApi.updateMe(payload),
+  });
+}
+
+export function useUpdateMyLanguageMutation() {
+  const updateUser = useAuthStore((state) => state.updateUser);
+
+  return useMutation({
+    mutationFn: (payload: UpdateLanguagePayload) => authApi.updateLanguage(payload),
+    onSuccess: (_response, payload) => updateUser({ language: payload.language }),
   });
 }
 

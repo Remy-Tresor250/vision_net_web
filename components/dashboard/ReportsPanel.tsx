@@ -2,6 +2,7 @@
 
 import { Select } from "@mantine/core";
 import { MonthPickerInput } from "@mantine/dates";
+import { useDebouncedValue } from "@mantine/hooks";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { HiOutlineDocumentChartBar } from "react-icons/hi2";
@@ -17,8 +18,36 @@ import {
   useGenerateAvenueMonthlyReportMutation,
 } from "@/lib/query/hooks";
 
-function formatMonthPayload(value: Date | null) {
-  const date = value ?? new Date();
+type BillingMonthValue = Date | string | { toDate: () => Date } | null;
+
+function toBillingMonthDate(value: BillingMonthValue) {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === "string") {
+    const parsedDate = new Date(value);
+
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }
+
+  if (typeof value === "object" && "toDate" in value) {
+    const parsedDate = value.toDate();
+
+    return parsedDate instanceof Date && !Number.isNaN(parsedDate.getTime())
+      ? parsedDate
+      : null;
+  }
+
+  return null;
+}
+
+function formatMonthPayload(value: BillingMonthValue) {
+  const date = toBillingMonthDate(value) ?? new Date();
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
 
@@ -35,19 +64,43 @@ export default function ReportsPanel() {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   }, []);
-  const [billingMonth, setBillingMonth] = useState<Date | null>(new Date());
+  const [billingMonth, setBillingMonth] = useState<BillingMonthValue>(null);
+  const [avenueSearch, setAvenueSearch] = useState("");
   const [selectedAvenueId, setSelectedAvenueId] = useState("");
+  const [selectedAvenueLabel, setSelectedAvenueLabel] = useState("");
   const [reportId, setReportId] = useState("");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
+  const [debouncedAvenueSearch] = useDebouncedValue(avenueSearch, 350);
 
-  const avenuesQuery = useAdminAvenuesQuery({ limit: 100, skip: 0 });
+  const avenuesQuery = useAdminAvenuesQuery({
+    limit: 100,
+    search: debouncedAvenueSearch || undefined,
+    skip: 0,
+  });
   const generateReportMutation = useGenerateAvenueMonthlyReportMutation();
   const reportStatusQuery = useAvenueMonthlyReportStatusQuery(reportId, {
     enabled: Boolean(reportId),
   });
 
-  const avenueOptions = useMemo(
+  const avenueOptions = useMemo(() => {
+    const options = (avenuesQuery.data?.data ?? []).map((avenue) => ({
+      label: avenue.name,
+      value: avenue.id,
+    }));
+
+    if (
+      selectedAvenueId &&
+      selectedAvenueLabel &&
+      !options.some((option) => option.value === selectedAvenueId)
+    ) {
+      return [{ label: selectedAvenueLabel, value: selectedAvenueId }, ...options];
+    }
+
+    return options;
+  }, [avenuesQuery.data?.data, selectedAvenueId, selectedAvenueLabel]);
+
+  const currentSearchResults = useMemo(
     () =>
       (avenuesQuery.data?.data ?? []).map((avenue) => ({
         label: avenue.name,
@@ -56,12 +109,9 @@ export default function ReportsPanel() {
     [avenuesQuery.data?.data],
   );
 
-  const selectedAvenue =
-    avenuesQuery.data?.data.find((avenue) => avenue.id === selectedAvenueId) ??
-    null;
   const previewTitle =
     reportStatusQuery.data?.avenueName ??
-    selectedAvenue?.name ??
+    selectedAvenueLabel ??
     t("reports.selectAvenue");
   const previewSrc = pdfUrl ? buildPdfPreviewUrl(pdfUrl) : null;
   const isGenerating =
@@ -70,12 +120,22 @@ export default function ReportsPanel() {
     reportStatusQuery.data?.status === "PROCESSING" ||
     reportStatusQuery.data?.status === "QUEUED";
   const progressPercent = reportStatusQuery.data?.progressPercent ?? 0;
+  const resolvedBillingMonth = toBillingMonthDate(billingMonth);
+  const canGenerateReport = Boolean(selectedAvenueId && resolvedBillingMonth);
 
   useEffect(() => {
-    if (!selectedAvenueId && avenueOptions[0]) {
-      setSelectedAvenueId(avenueOptions[0].value);
+    if (!selectedAvenueId) {
+      return;
     }
-  }, [avenueOptions, selectedAvenueId]);
+
+    const selectedOption = currentSearchResults.find(
+      (option) => option.value === selectedAvenueId,
+    );
+
+    if (selectedOption && selectedOption.label !== selectedAvenueLabel) {
+      setSelectedAvenueLabel(selectedOption.label);
+    }
+  }, [currentSearchResults, selectedAvenueId, selectedAvenueLabel]);
 
   useEffect(() => {
     return () => {
@@ -146,6 +206,11 @@ export default function ReportsPanel() {
       return;
     }
 
+    if (!resolvedBillingMonth) {
+      toast.error(t("reports.selectBillingMonth"));
+      return;
+    }
+
     setReportId("");
     setPdfUrl((current) => {
       if (current) {
@@ -158,7 +223,7 @@ export default function ReportsPanel() {
     generateReportMutation.mutate(
       {
         avenueId: selectedAvenueId,
-        month: formatMonthPayload(billingMonth),
+        month: formatMonthPayload(resolvedBillingMonth),
       },
       {
         onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -235,16 +300,23 @@ export default function ReportsPanel() {
             data={avenueOptions}
             disabled={isGenerating}
             label={t("reports.selectAvenue")}
-            onChange={(value) => setSelectedAvenueId(value ?? "")}
+            nothingFoundMessage={t("reports.noAvenuesFound")}
+            onChange={(value, option) => {
+              setSelectedAvenueId(value ?? "");
+              setSelectedAvenueLabel(value ? option.label : "");
+              setAvenueSearch("");
+            }}
+            onSearchChange={setAvenueSearch}
             placeholder={t("reports.selectAvenuePlaceholder")}
             searchable
+            searchValue={avenueSearch}
             styles={appFieldStyles}
             value={selectedAvenueId}
           />
 
           <Button
             className="h-[54px] w-full rounded-sm text-[16px] font-medium"
-            disabled={isGenerating || !selectedAvenueId}
+            disabled={isGenerating || !canGenerateReport}
             onClick={handleGeneratePreview}
           >
             {generateReportMutation.isPending

@@ -5,8 +5,8 @@ import { Drawer, Menu } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import toast from "react-hot-toast";
 import {
-  HiBars3,
   HiOutlineBanknotes,
   HiOutlineCog6Tooth,
   HiOutlineArrowRightOnRectangle,
@@ -15,13 +15,19 @@ import {
   HiOutlineUserCircle,
   HiOutlineUsers,
 } from "react-icons/hi2";
+import { FiSidebar } from "react-icons/fi";
 
 import AppLogo from "@/components/dashboard/AppLogo";
 import Button from "@/components/ui/Button";
-import { useAdminDashboardQuery } from "@/lib/query/hooks";
+import { getApiErrorMessage } from "@/lib/api/client";
+import {
+  useAdminDashboardQuery,
+  useUpdateMyLanguageMutation,
+} from "@/lib/query/hooks";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useLanguageStore } from "@/stores/language-store";
+import type { Language } from "@/lib/api/types";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -61,17 +67,40 @@ const navigationItems = [
   },
 ] as const;
 
-function SidebarContent({ pathname }: { pathname: string }) {
+function SidebarContent({
+  pathname,
+  closeSidebar,
+}: {
+  pathname: string;
+  closeSidebar?: () => void;
+}) {
   const { t } = useTranslation();
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
+  const updateLanguageMutation = useUpdateMyLanguageMutation();
+
+  function handleLanguageChange(nextLanguage: Language) {
+    if (language === nextLanguage) {
+      return;
+    }
+
+    setLanguage(nextLanguage);
+    updateLanguageMutation.mutate(
+      { language: nextLanguage },
+      {
+        onError: (error) => {
+          toast.error(getApiErrorMessage(error));
+        },
+      },
+    );
+  }
 
   return (
-    <div className="flex h-full flex-col border-r border-border bg-surface">
+    <div className="flex lg:h-full min-h-[90vh] flex-col border-r border-border bg-surface">
       <div className="flex items-center justify-between gap-4 px-4 py-6">
         <AppLogo />
-        <div className="hidden size-11 items-center justify-center rounded-lg border border-border text-text-muted xl:flex">
-          <HiBars3 className="size-6" />
+        <div className="hidden size-11 items-center justify-center rounded-lg border border-border text-text-muted">
+          <FiSidebar className="size-6" />
         </div>
       </div>
       <nav className="flex-1 space-y-3 px-5 py-8">
@@ -84,9 +113,11 @@ function SidebarContent({ pathname }: { pathname: string }) {
               key={item.href}
               className={cn(
                 "flex items-center gap-4 rounded-sm px-5 py-4 text-lg font-medium text-text-muted transition-colors duration-200 ease-out hover:bg-surface-muted hover:text-foreground",
-                isActive && "bg-brand text-white hover:bg-brand hover:text-white"
+                isActive &&
+                  "bg-brand text-white hover:bg-brand hover:text-white",
               )}
               href={item.href}
+              onClick={() => closeSidebar?.()}
             >
               <item.icon className="size-6" />
               <span className="text-[14px] ">{t(`nav.${item.labelKey}`)}</span>
@@ -105,8 +136,12 @@ function SidebarContent({ pathname }: { pathname: string }) {
                 "h-9 rounded-sm text-[13px] font-medium text-text-muted",
                 language === option && "bg-brand text-white",
               )}
+              disabled={updateLanguageMutation.isPending}
               key={option}
-              onClick={() => setLanguage(option)}
+              onClick={() => {
+                handleLanguageChange(option);
+                closeSidebar?.();
+              }}
               type="button"
             >
               {option.toUpperCase()}
@@ -121,7 +156,7 @@ function SidebarContent({ pathname }: { pathname: string }) {
 export default function DashboardShell({ children }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const [opened, { close, open }] = useDisclosure(false);
+  const [opened, { close: closeSidebar, open }] = useDisclosure(false);
   const { t } = useTranslation();
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
@@ -135,12 +170,9 @@ export default function DashboardShell({ children }: Props) {
     hydrateLanguage();
   }, [hydrateLanguage]);
 
-  const currentNavigationItem =
-    navigationItems
-      .find(
-        (item) =>
-          pathname === item.href || pathname.startsWith(`${item.href}/`),
-      );
+  const currentNavigationItem = navigationItems.find(
+    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+  );
   const currentPage = (() => {
     const title = currentNavigationItem
       ? t(`nav.${currentNavigationItem.labelKey}`)
@@ -217,7 +249,7 @@ export default function DashboardShell({ children }: Props) {
         position="left"
         size="19rem"
       >
-        <SidebarContent pathname={pathname} />
+        <SidebarContent closeSidebar={closeSidebar} pathname={pathname} />
       </Drawer>
       <div className="flex min-h-screen">
         <aside className="hidden w-[23vw] shrink-0 xl:block fixed h-screen">
@@ -226,9 +258,14 @@ export default function DashboardShell({ children }: Props) {
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <header className="xl:w-[77vw] xl:self-end border-b border-border bg-surface px-5 py-2 md:px-6 xl:px-8">
             <div className="flex items-start justify-between gap-5">
-              <div className="flex items-start gap-4">
-                <Button className="xl:hidden" onClick={open} size="icon" variant="outline">
-                  <HiBars3 className="size-6" />
+              <div className="flex items-center gap-4">
+                <Button
+                  className="xl:hidden"
+                  onClick={open}
+                  size="icon"
+                  variant="outline"
+                >
+                  <FiSidebar className="size-6" />
                 </Button>
                 <div>
                   <p className="text-[27px] font-semibold text-foreground">
@@ -270,7 +307,9 @@ export default function DashboardShell({ children }: Props) {
                   </Menu.Item>
                   <Menu.Item
                     color="red"
-                    leftSection={<HiOutlineArrowRightOnRectangle className="size-4" />}
+                    leftSection={
+                      <HiOutlineArrowRightOnRectangle className="size-4" />
+                    }
                     onClick={handleLogout}
                   >
                     {t("account.logout")}
@@ -279,7 +318,9 @@ export default function DashboardShell({ children }: Props) {
               </Menu>
             </div>
           </header>
-          <main className="xl:w-[77vw] xl:self-end flex-1 px-2 py-7 md:px-4 xl:px-6 xl:py-4">{children}</main>
+          <main className="xl:w-[77vw] xl:self-end flex-1 px-2 py-7 md:px-4 xl:px-6 xl:py-4">
+            {children}
+          </main>
         </div>
       </div>
     </div>

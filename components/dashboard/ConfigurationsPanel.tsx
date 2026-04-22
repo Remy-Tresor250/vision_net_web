@@ -70,7 +70,7 @@ function ConfigurationTabs({
             onClick={() => onChange(tab.value)}
             type="button"
           >
-            <p className="text-[14px]">{tab.label}</p>
+            <p className="text-[14px] font-medium">{tab.label}</p>
           </button>
         );
       })}

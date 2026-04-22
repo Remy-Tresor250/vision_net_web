@@ -20,6 +20,7 @@ export const endpoints = {
   },
   me: {
     detail: "/me",
+    language: "/me/language",
     phoneChangeStart: "/me/phone-change/start",
     phoneChangeVerify: "/me/phone-change/verify",
   },
