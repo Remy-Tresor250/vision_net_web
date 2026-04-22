@@ -29,7 +29,11 @@ function formatClientLocation(client: {
   quartierName?: string | null;
   serineName?: string | null;
 }) {
-  const parts = [client.quartierName, client.serineName, client.avenueName].filter(Boolean);
+  const parts = [
+    client.quartierName,
+    client.serineName,
+    client.avenueName,
+  ].filter(Boolean);
 
   return parts.length ? parts.join(", ") : "-";
 }
@@ -99,7 +103,9 @@ export default function ClientsTable() {
         onError: (error) => toast.error(getApiErrorMessage(error)),
         onSuccess: () =>
           toast.success(
-            isActive ? t("tables.clientActivated") : t("tables.clientDeactivated"),
+            isActive
+              ? t("tables.clientActivated")
+              : t("tables.clientDeactivated"),
           ),
       },
     );
@@ -131,9 +137,21 @@ export default function ClientsTable() {
             ],
             type: "select",
           },
-          { id: "registeredDateFrom", label: t("filters.registeredDateFrom"), type: "date" },
-          { id: "registeredDateTo", label: t("filters.registeredDateTo"), type: "date" },
-          { id: "createdAtFrom", label: t("filters.createdAtFrom"), type: "date" },
+          {
+            id: "registeredDateFrom",
+            label: t("filters.registeredDateFrom"),
+            type: "date",
+          },
+          {
+            id: "registeredDateTo",
+            label: t("filters.registeredDateTo"),
+            type: "date",
+          },
+          {
+            id: "createdAtFrom",
+            label: t("filters.createdAtFrom"),
+            type: "date",
+          },
           { id: "createdAtTo", label: t("filters.createdAtTo"), type: "date" },
           {
             id: "sortBy",
@@ -168,85 +186,96 @@ export default function ClientsTable() {
       <DashboardTableShell
         headers={[
           t("common.client"),
+          t("common.service"),
           t("common.code"),
           t("common.phone"),
           t("common.location"),
           t("common.registeredDate"),
           t("common.status"),
-          t("common.service"),
           t("tables.action"),
         ]}
         onPageChange={setPage}
         page={page}
         total={totalPages}
       >
-        {clientsQuery.isLoading || clientsQuery.isFetching
-          ? <TableSkeletonRows columns={8} rows={PAGE_SIZE} />
-          : clients.length === 0
-          ? (
-              <TableEmptyRow
-                colSpan={8}
-                message={t("tables.createClientEmpty")}
-                title={t("tables.noClientsFound")}
-              />
-            )
-          : clients.map((client) => (
-              <TableTr
-                key={client.clientId}
-                className="border-b border-border last:border-b-0"
-              >
-                <TableTd className="px-8 py-6 text-[12px] font-medium text-foreground">
-                  {client.fullNames}
-                </TableTd>
-                <TableTd className="px-8 py-6 text-[12px] text-text-muted">
-                  {client.code?.trim() ? client.code : "-"}
-                </TableTd>
-                <TableTd className="px-8 py-6 text-[12px] text-text-muted">
-                  {client.phone}
-                </TableTd>
-                <TableTd className="px-8 py-6 text-[12px] text-text-muted">
-                  {formatClientLocation(client)}
-                </TableTd>
-                <TableTd className="px-8 py-6 text-[12px] text-center text-text-muted">
-                  {formatDate(client.registeredDate)}
-                </TableTd>
-                <TableTd className="px-8 py-6">
-                  <StatusBadge
-                    status={client.isActive ? t("common.active") : t("common.inactive")}
-                  />
-                </TableTd>
-                <TableTd className="px-8 py-6 text-center text-[12px] text-text-muted">
-                  {client.serviceTypeName ?? "-"}
-                </TableTd>
-                <TableTd className="px-8 py-6 text-center">
-                  <Menu position="bottom-end" shadow="md" width={160}>
-                    <Menu.Target>
-                      <Button
-                        aria-label={`Open actions for ${client.fullNames}`}
-                        size="icon"
-                        variant="subtle"
-                      >
-                        <HiEllipsisHorizontal className="size-6" />
-                      </Button>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Item component={Link} href={`/clients/${client.clientId}`}>
-                        {t("common.view")}
-                      </Menu.Item>
-                      <Menu.Item onClick={() => setEditingClientId(client.clientId)}>
-                        {t("forms.editClientTitle")}
-                      </Menu.Item>
-                      <Menu.Item
-                        color={client.isActive ? "red" : "green"}
-                        onClick={() => updateStatus(client.clientId, !client.isActive)}
-                      >
-                        {client.isActive ? t("tables.deactivate") : t("tables.activate")}
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
-                </TableTd>
-              </TableTr>
-            ))}
+        {clientsQuery.isLoading || clientsQuery.isFetching ? (
+          <TableSkeletonRows columns={8} rows={PAGE_SIZE} />
+        ) : clients.length === 0 ? (
+          <TableEmptyRow
+            colSpan={8}
+            message={t("tables.createClientEmpty")}
+            title={t("tables.noClientsFound")}
+          />
+        ) : (
+          clients.map((client) => (
+            <TableTr
+              key={client.clientId}
+              className="border-b border-border last:border-b-0"
+            >
+              <TableTd className="px-8 py-6 text-[12px] font-medium text-foreground">
+                {client.fullNames}
+              </TableTd>
+              <TableTd className="px-8 py-6 text-center text-[12px] text-text-muted">
+                {client.serviceTypeName ?? "-"}
+              </TableTd>
+              <TableTd className="px-8 py-6 text-[12px] text-text-muted">
+                {client.code?.trim() ? client.code : "-"}
+              </TableTd>
+              <TableTd className="px-8 py-6 text-[12px] text-text-muted">
+                {client.phone}
+              </TableTd>
+              <TableTd className="px-8 py-6 text-[12px] text-text-muted">
+                {formatClientLocation(client)}
+              </TableTd>
+              <TableTd className="px-8 py-6 text-[12px] text-center text-text-muted">
+                {formatDate(client.registeredDate)}
+              </TableTd>
+              <TableTd className="px-8 py-6">
+                <StatusBadge
+                  status={
+                    client.isActive ? t("common.active") : t("common.inactive")
+                  }
+                />
+              </TableTd>
+              <TableTd className="px-8 py-6 text-center">
+                <Menu position="bottom-end" shadow="md" width={160}>
+                  <Menu.Target>
+                    <Button
+                      aria-label={`Open actions for ${client.fullNames}`}
+                      size="icon"
+                      variant="subtle"
+                    >
+                      <HiEllipsisHorizontal className="size-6" />
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item
+                      component={Link}
+                      href={`/clients/${client.clientId}`}
+                    >
+                      {t("common.view")}
+                    </Menu.Item>
+                    <Menu.Item
+                      onClick={() => setEditingClientId(client.clientId)}
+                    >
+                      {t("forms.editClientTitle")}
+                    </Menu.Item>
+                    <Menu.Item
+                      color={client.isActive ? "red" : "green"}
+                      onClick={() =>
+                        updateStatus(client.clientId, !client.isActive)
+                      }
+                    >
+                      {client.isActive
+                        ? t("tables.deactivate")
+                        : t("tables.activate")}
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </TableTd>
+            </TableTr>
+          ))
+        )}
       </DashboardTableShell>
       <AddClientModal onClose={() => setAddOpened(false)} opened={addOpened} />
       <AddClientModal

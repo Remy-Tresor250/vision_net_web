@@ -125,7 +125,8 @@ export interface AssignedAvenue {
 export type PaymentStatus = "DUE" | "CONFIRMED" | "PENDING" | "READY" | string;
 
 export interface AdminPaymentListItem {
-  paymentId: string;
+  id?: string;
+  paymentId?: string;
   clientId?: string;
   clientName?: string;
   clientPhone?: string;

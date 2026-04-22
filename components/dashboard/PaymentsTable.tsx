@@ -15,6 +15,7 @@ import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
 import type { AdminPaymentListItem, AdminPaymentsParams } from "@/lib/api/types";
 import { formatCurrency, formatDate, formatMonths, getPageCount } from "@/lib/format";
+import { getAdminPaymentId } from "@/lib/payment";
 import { useAdminPaymentsQuery } from "@/lib/query/hooks";
 import type { Payment } from "@/types";
 
@@ -80,6 +81,8 @@ export default function PaymentsTable() {
   }
 
   function toReceiptPayment(payment: AdminPaymentListItem): Payment {
+    const paymentId = getAdminPaymentId(payment);
+
     return {
       agentId: payment.agentId ?? "admin",
       agentName: payment.agentName ?? "Admin",
@@ -88,7 +91,7 @@ export default function PaymentsTable() {
       clientId: payment.clientId ?? "",
       clientName: payment.clientName ?? "-",
       date: formatDate(payment.paymentDate ?? payment.createdAt),
-      id: payment.paymentId,
+      id: paymentId,
       receiptId: payment.receiptId ?? undefined,
       receiptNumber: payment.receiptNumber ?? "-",
       clientPhone: payment.clientPhone ?? undefined,
@@ -171,7 +174,7 @@ export default function PaymentsTable() {
             )
           : payments.map((payment) => (
               <TableTr
-                key={payment.paymentId}
+                key={getAdminPaymentId(payment) || payment.receiptId || payment.createdAt}
                 className="border-b border-border last:border-b-0"
               >
                 <TableTd className="px-8 py-6 text-[14px] font-medium text-foreground">

@@ -28,6 +28,7 @@ import {
   formatMonths,
   getPageCount,
 } from "@/lib/format";
+import { getAdminPaymentId } from "@/lib/payment";
 import { useAdminAgentQuery, useAdminPaymentsQuery } from "@/lib/query/hooks";
 import type { AdminPaymentListItem } from "@/lib/api/types";
 import type { Payment } from "@/types";
@@ -40,6 +41,8 @@ interface Props {
 const PAGE_SIZE = 7;
 
 function toReceiptPayment(payment: AdminPaymentListItem): Payment {
+  const paymentId = getAdminPaymentId(payment);
+
   return {
     agentId: payment.agentId ?? "admin",
     agentName: payment.agentName ?? "Admin",
@@ -48,7 +51,7 @@ function toReceiptPayment(payment: AdminPaymentListItem): Payment {
     clientId: payment.clientId ?? "",
     clientName: payment.clientName ?? "-",
     date: formatDate(payment.paymentDate ?? payment.createdAt),
-    id: payment.paymentId,
+    id: paymentId,
     months: String(payment.months?.length ?? 1),
     receiptNumber: payment.receiptNumber ?? "-",
     status: "Paid",
@@ -218,7 +221,7 @@ export default function AgentDetailsPanel({ agentId }: Props) {
               ) : (
                 payments.map((payment) => (
                   <TableTr
-                    key={payment.paymentId}
+                    key={getAdminPaymentId(payment) || payment.receiptId || payment.createdAt}
                     className="border-b border-border last:border-b-0"
                   >
                     <TableTd className="px-7 py-6 text-[14px] font-medium text-foreground">

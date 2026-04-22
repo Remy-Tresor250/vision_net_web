@@ -2,7 +2,7 @@ import leafLogo from "@/assets/svgs/leaf_logo.svg";
 import Image from "next/image";
 import { useTranslation } from "react-i18next";
 
-export default function AppLogo() {
+export default function AppLogo({ hideAdmin }: { hideAdmin?: boolean }) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center gap-2">
@@ -13,9 +13,11 @@ export default function AppLogo() {
         <p className="text-[18px] font-semibold -mb-[12px] text-foreground">
           Société Vision Net
         </p>
-        <p className="mt-2 text-[11px] text-text-muted">
-          {t("auth.adminPanel")}
-        </p>
+        {!hideAdmin && (
+          <p className="mt-2 text-[11px] text-text-muted">
+            {t("auth.adminPanel")}
+          </p>
+        )}
       </div>
     </div>
   );

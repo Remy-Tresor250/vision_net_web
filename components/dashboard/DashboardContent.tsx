@@ -21,6 +21,7 @@ import {
   useAdminDashboardQuery,
   useAdminPaymentsQuery,
 } from "@/lib/query/hooks";
+import { getAdminPaymentId } from "@/lib/payment";
 import type { MetricCard, RevenuePoint } from "@/types";
 
 function buildMetricCards(
@@ -248,7 +249,7 @@ export default function DashboardContent() {
       clientId: payment.clientId,
       clientName: payment.clientName ?? "-",
       date: formatDate(payment.paymentDate ?? payment.createdAt),
-      id: payment.paymentId,
+      id: getAdminPaymentId(payment),
       status:
         payment.status === "DUE"
           ? (t("common.overdue") as "Overdue")

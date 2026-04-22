@@ -28,6 +28,7 @@ import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { formatCurrency, formatDate, formatMonths } from "@/lib/format";
+import { getAdminPaymentId } from "@/lib/payment";
 import {
   useAdminClientPaymentsQuery,
   useAdminClientQuery,
@@ -59,6 +60,8 @@ function toReceiptPayment(
   payment: AdminPaymentListItem,
   client?: { clientId?: string; fullNames?: string; phone?: string },
 ): Payment {
+  const paymentId = getAdminPaymentId(payment);
+
   return {
     agentId: payment.agentId ?? "admin",
     agentName: payment.agentName ?? "Admin",
@@ -68,7 +71,7 @@ function toReceiptPayment(
     clientName: payment.clientName ?? client?.fullNames ?? "-",
     clientPhone: payment.clientPhone ?? client?.phone ?? undefined,
     date: formatDate(payment.paymentDate ?? payment.createdAt),
-    id: payment.paymentId,
+    id: paymentId,
     months: String(payment.months?.length ?? 1),
     receiptId: payment.receiptId ?? undefined,
     receiptNumber: payment.receiptNumber ?? "-",
@@ -251,11 +254,12 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                 />
               ) : (
                 payments.map((payment) => {
+                  const paymentId = getAdminPaymentId(payment);
                   const isOverdue = payment.status === "DUE";
 
                   return (
                     <TableTr
-                      key={payment.paymentId}
+                      key={paymentId || payment.receiptId || payment.createdAt}
                       className="border-b border-border last:border-b-0"
                     >
                       <TableTd className="px-7 py-6 text-[14px] font-medium uppercase text-text-muted">
@@ -294,7 +298,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                           <Menu position="bottom-end" shadow="md" width={180}>
                             <Menu.Target>
                               <Button
-                                aria-label={`Open payment actions for ${payment.paymentId}`}
+                                aria-label={`Open payment actions for ${paymentId || "payment"}`}
                                 size="icon"
                                 variant="subtle"
                               >
@@ -311,7 +315,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                           <Menu position="bottom-end" shadow="md" width={180}>
                             <Menu.Target>
                               <Button
-                                aria-label={`Open receipt actions for ${payment.paymentId}`}
+                                aria-label={`Open receipt actions for ${paymentId || "payment"}`}
                                 size="icon"
                                 variant="subtle"
                               >
