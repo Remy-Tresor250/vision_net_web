@@ -212,25 +212,25 @@ export default function ClientsTable() {
               key={client.clientId}
               className="border-b border-border last:border-b-0"
             >
-              <TableTd className="px-8 py-6 text-[12px] font-medium text-foreground">
+              <TableTd className="px-4 py-6 text-[12px] font-medium text-foreground">
                 {client.fullNames}
               </TableTd>
-              <TableTd className="px-8 py-6 text-center text-[12px] text-text-muted">
+              <TableTd className="px-4 py-6 text-center text-[12px] text-text-muted">
                 {client.serviceTypeName ?? "-"}
               </TableTd>
-              <TableTd className="px-8 py-6 text-[12px] text-text-muted">
+              <TableTd className="px-4 py-6 text-[12px] text-text-muted">
                 {client.code?.trim() ? client.code : "-"}
               </TableTd>
-              <TableTd className="px-8 py-6 text-[12px] text-text-muted">
+              <TableTd className="px-4 py-6 text-[12px] text-text-muted">
                 {client.phone}
               </TableTd>
-              <TableTd className="px-8 py-6 text-[12px] text-text-muted">
+              <TableTd className="px-4 py-6 text-[12px] text-text-muted">
                 {formatClientLocation(client)}
               </TableTd>
-              <TableTd className="px-8 py-6 text-[12px] text-center text-text-muted">
+              <TableTd className="px-4 py-6 text-[12px] text-center text-text-muted">
                 {formatDate(client.registeredDate)}
               </TableTd>
-              <TableTd className="px-8 py-6">
+              <TableTd className="px-4 py-6">
                 <StatusBadge
                   status={
                     client.isActive ? t("common.active") : t("common.inactive")

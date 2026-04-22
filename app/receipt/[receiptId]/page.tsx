@@ -10,8 +10,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { receiptId } = await params;
 
   return {
-    title: "Receipt Verification | Vision Net",
-    description: `Verify the authenticity of Vision Net receipt ${receiptId}.`,
+    title: "Vérification de reçu | Vision Net",
+    description: `Vérifiez l'authenticité du reçu Vision Net ${receiptId}.`,
   };
 }
 

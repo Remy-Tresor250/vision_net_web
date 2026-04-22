@@ -17,8 +17,8 @@ const receiptIdPattern = /^[A-Za-z0-9-]{8,}$/;
 
 function LoadingState() {
   return (
-    <div className="rounded-[2rem] border border-border bg-surface p-6 shadow-panel sm:p-8">
-      <div className="animate-pulse space-y-4">
+    <div className="rounded-sm w-full border border-border bg-surface p-6 shadow-panel sm:p-8">
+      <div className="animate-pulse space-y-4 w-full">
         <div className="h-4 w-32 rounded-full bg-surface-muted" />
         <div className="h-10 w-3/4 rounded-2xl bg-surface-muted" />
         <div className="h-24 rounded-[1.5rem] bg-surface-muted" />
@@ -43,12 +43,12 @@ export default function ReceiptVerificationPage({ receiptId }: Props) {
     ? getApiErrorMessage(verificationQuery.error)
     : null;
   const summaryMessage = !isReceiptIdValid
-    ? "The receipt link looks incomplete or malformed."
+    ? "Le lien du reçu semble incomplet ou mal formé."
     : errorMessage
       ? errorMessage
       : isValid
-        ? "This receipt was verified successfully against the public verification service."
-        : "The receipt ID may be incorrect, expired, or not recognized by the verification service.";
+        ? "Ce reçu a été vérifié avec succès par le service public de vérification."
+        : "L'identifiant du reçu est peut-être incorrect, expiré ou non reconnu par le service de vérification.";
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-background px-4 py-6 sm:px-6 sm:py-8">
@@ -59,7 +59,7 @@ export default function ReceiptVerificationPage({ receiptId }: Props) {
       </div>
 
       <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-6xl items-center justify-center">
-        <section className="flex flex-col items-center justify-center w-full overflow-hidden rounded-[2rem] border border-border bg-surface shadow-panel pt-4">
+        <section className="flex flex-col items-center justify-center w-full overflow-hidden rounded-md border border-border bg-surface shadow-panel pt-4">
           <AppLogo hideAdmin />
           <div className="relative p-6 sm:p-8 lg:p-10">
             {verificationQuery.isLoading && isReceiptIdValid ? (
@@ -67,7 +67,7 @@ export default function ReceiptVerificationPage({ receiptId }: Props) {
             ) : null}
 
             {!verificationQuery.isLoading || !isReceiptIdValid ? (
-              <div className="rounded-[2rem] border border-border bg-surface p-6 shadow-panel sm:p-8">
+              <div className="rounded-md border border-border bg-surface p-6 shadow-panel sm:p-8">
                 <div
                   className={`inline-flex items-center gap-2 rounded-full px-2 lg:px-4 py-2 text-[10px] lg:text-sm font-semibold ${
                     !isReceiptIdValid
@@ -83,16 +83,16 @@ export default function ReceiptVerificationPage({ receiptId }: Props) {
                     <HiOutlineExclamationTriangle className="size-5" />
                   )}
                   {isValid && isReceiptIdValid
-                    ? "Authentic receipt"
-                    : "Verification failed"}
+                    ? "Reçu authentique"
+                    : "Échec de la vérification"}
                 </div>
 
                 <h2 className="mt-5 text-md lg:text-3xl font-semibold leading-tight text-foreground">
                   {!isReceiptIdValid
-                    ? "This receipt link is not valid."
+                    ? "Ce lien de reçu n'est pas valide."
                     : isValid
-                      ? "This receipt is valid and was issued by Société Vision Net."
-                      : "We could not confirm this receipt."}
+                      ? "Ce reçu est valide et a été émis par Société Vision Net."
+                      : "Nous n'avons pas pu confirmer ce reçu."}
                 </h2>
 
                 <p className="mt-4 text-xs lg:text-sm lg:leading-7 text-text-muted sm:text-base">
@@ -100,7 +100,7 @@ export default function ReceiptVerificationPage({ receiptId }: Props) {
                 </p>
 
                 <div className="mt-8 rounded-2xl border border-border/80 bg-surface-muted/70 px-4 py-4 text-xs lg:text-sm lg:leading-6 text-text-muted">
-                  Reference:{" "}
+                  Référence :{" "}
                   <span className="font-semibold text-foreground">
                     {normalizedReceiptId}
                   </span>

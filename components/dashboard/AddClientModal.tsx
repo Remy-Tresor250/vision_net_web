@@ -158,7 +158,8 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
       fullNames: client?.fullNames ?? "",
       phone: client?.phone ?? "",
       quartierId: client?.quartierId ?? "",
-      registeredDate: client?.registeredDate ?? new Date().toISOString().slice(0, 10),
+      registeredDate:
+        client?.registeredDate ?? new Date().toISOString().slice(0, 10),
       serineId: client?.serineId ?? "",
       serviceTypeId: client?.serviceTypeId ?? "",
     });
@@ -233,12 +234,17 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
             <ImportUsersModal kind="clients" onImported={onClose} />
             <div className="flex items-center gap-5">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-[13px] text-text-muted">{t("common.or")}</span>
+              <span className="text-[13px] text-text-muted">
+                {t("common.or")}
+              </span>
               <div className="h-px flex-1 bg-border" />
             </div>
           </>
         ) : null}
-        <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(submit)}>
+        <form
+          className="grid gap-4 md:grid-cols-2"
+          onSubmit={handleSubmit(submit)}
+        >
           <Controller
             control={control}
             name="fullNames"
@@ -341,13 +347,14 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
             name="avenueId"
             render={({ field }) => (
               <Select
+                searchable
                 classNames={appFieldClassNames}
                 data={avenueOptions}
                 disabled={!watchedSerineId}
                 error={errors.avenueId?.message}
                 label="Avenue"
                 onChange={(value) => field.onChange(value ?? "")}
-                placeholder="Select avenue"
+                placeholder="Search avenue"
                 styles={appFieldStyles}
                 value={field.value}
               />

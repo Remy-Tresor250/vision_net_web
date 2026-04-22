@@ -235,7 +235,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                 ].map((header) => (
                   <TableTh
                     key={header}
-                    className="px-7 py-5 text-[14px] font-semibold uppercase tracking-wider text-text-muted"
+                    className="px-4 py-5 text-[14px] font-semibold uppercase tracking-wider text-text-muted"
                     styles={{ th: { padding: 12 } }}
                   >
                     {header}
@@ -262,18 +262,18 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                       key={paymentId || payment.receiptId || payment.createdAt}
                       className="border-b border-border last:border-b-0"
                     >
-                      <TableTd className="px-7 py-6 text-[14px] font-medium uppercase text-text-muted">
+                      <TableTd className="px-3 py-6 text-[14px] font-medium uppercase text-text-muted">
                         {formatMonths(payment.months ?? payment.month)}
                       </TableTd>
-                      <TableTd className="px-7 py-6 text-[14px] text-text-muted">
-                        {formatCurrency(payment.amount)}
+                      <TableTd className="px-3 py-6 text-[14px] text-text-muted">
+                        <p className="pl-[10px]">{formatCurrency(payment.amount)}</p>
                       </TableTd>
                       <TableTd
-                        className={`px-7 py-6 text-[14px] ${isOverdue ? "text-text-muted" : "text-foreground"}`}
+                        className={`px-3 py-6 text-[14px] ${isOverdue ? "text-text-muted" : "text-foreground"}`}
                       >
                         {isOverdue ? "-" : (payment.agentName ?? "Admin")}
                       </TableTd>
-                      <TableTd className="px-7 py-6 text-[14px]">
+                      <TableTd className="px-3 py-6 text-[14px]">
                         {isOverdue ? (
                           <span className="text-text-muted">-</span>
                         ) : (
@@ -282,7 +282,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                             onClick={() => openReceipt(payment)}
                             type="button"
                           >
-                            {t("common.view")}
+                            <p className="pl-[10px]">{t("common.view")}</p>
                           </button>
                         )}
                       </TableTd>
@@ -293,7 +293,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                           }
                         />
                       </TableTd>
-                      <TableTd className="px-3 py-6 text-center">
+                      <TableTd>
                         {isOverdue ? (
                           <Menu position="bottom-end" shadow="md" width={180}>
                             <Menu.Target>
@@ -301,6 +301,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                                 aria-label={`Open payment actions for ${paymentId || "payment"}`}
                                 size="icon"
                                 variant="subtle"
+                                className="!ml-3"
                               >
                                 <HiEllipsisHorizontal className="size-6" />
                               </Button>
@@ -318,6 +319,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                                 aria-label={`Open receipt actions for ${paymentId || "payment"}`}
                                 size="icon"
                                 variant="subtle"
+                                className="!ml-3"
                               >
                                 <HiEllipsisHorizontal className="size-6" />
                               </Button>

@@ -7,7 +7,6 @@ import { useEffect, useEffectEvent, useState } from "react";
 import {
   HiOutlineMagnifyingGlass,
   HiOutlineAdjustmentsHorizontal,
-  HiOutlineSparkles,
 } from "react-icons/hi2";
 import { useTranslation } from "react-i18next";
 
@@ -64,12 +63,13 @@ export default function FilterToolbar({
   onQueryChange,
   placeholder,
   query,
-  title
+  title,
 }: Props) {
   const { t, i18n } = useTranslation();
   const [searchValue, setSearchValue] = useState(query);
   const [popoverOpened, setPopoverOpened] = useState(false);
-  const [draftFilters, setDraftFilters] = useState<Record<string, string>>(filters);
+  const [draftFilters, setDraftFilters] =
+    useState<Record<string, string>>(filters);
   const [debouncedQuery] = useDebouncedValue(searchValue, 400);
   const emitQueryChange = useEffectEvent(onQueryChange);
 
@@ -119,7 +119,12 @@ export default function FilterToolbar({
   }
 
   return (
-    <div className={cn("w-full flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between", className)}>
+    <div
+      className={cn(
+        "w-full flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between",
+        className,
+      )}
+    >
       <h2 className="text-[27px] font-medium text-[#0A3B24]">{title}</h2>
       <div className="flex w-full flex-col gap-3 lg:flex-1 lg:flex-row lg:items-center lg:justify-end">
         <div className="w-full sm:w-[30vw]">
@@ -172,21 +177,6 @@ export default function FilterToolbar({
                 </button>
               </Popover.Target>
               <Popover.Dropdown className="overflow-hidden rounded-xl border border-border bg-surface p-0 shadow-panel">
-                <div className="border-b border-border bg-surface-muted px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-brand text-white shadow-card">
-                      <HiOutlineSparkles className="size-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        {t("actions.filter")}
-                      </p>
-                      <p className="text-xs text-text-muted">
-                        {t("filters.refineCurrentList")}
-                      </p>
-                    </div>
-                  </div>
-                </div>
                 <div className="grid gap-4 p-5 sm:grid-cols-2">
                   {filterFields.map((field) => {
                     if (field.type === "select") {
@@ -197,7 +187,9 @@ export default function FilterToolbar({
                           data={field.options ?? []}
                           key={field.id}
                           label={field.label}
-                          onChange={(value) => updateDraftFilter(field.id, value)}
+                          onChange={(value) =>
+                            updateDraftFilter(field.id, value)
+                          }
                           placeholder={field.placeholder ?? field.label}
                           styles={appFieldStyles}
                           value={draftFilters[field.id] || null}
@@ -214,17 +206,24 @@ export default function FilterToolbar({
                           label={field.label}
                           locale={i18n.language}
                           onChange={(value) =>
-                            updateDraftFilter(field.id, (() => {
-                              const parts = toDateParts(value);
+                            updateDraftFilter(
+                              field.id,
+                              (() => {
+                                const parts = toDateParts(value);
 
-                              return parts
-                                ? `${parts.year}-${parts.month}-${parts.day}`
-                                : "";
-                            })())
+                                return parts
+                                  ? `${parts.year}-${parts.month}-${parts.day}`
+                                  : "";
+                              })(),
+                            )
                           }
                           placeholder={field.placeholder ?? field.label}
                           styles={appFieldStyles}
-                          value={draftFilters[field.id] ? new Date(draftFilters[field.id]) : null}
+                          value={
+                            draftFilters[field.id]
+                              ? new Date(draftFilters[field.id])
+                              : null
+                          }
                           valueFormat="DD/MM/YYYY"
                         />
                       );
@@ -239,17 +238,24 @@ export default function FilterToolbar({
                           label={field.label}
                           locale={i18n.language}
                           onChange={(value) =>
-                            updateDraftFilter(field.id, (() => {
-                              const parts = toDateParts(value);
+                            updateDraftFilter(
+                              field.id,
+                              (() => {
+                                const parts = toDateParts(value);
 
-                              return parts
-                                ? `${parts.year}-${parts.month}`
-                                : "";
-                            })())
+                                return parts
+                                  ? `${parts.year}-${parts.month}`
+                                  : "";
+                              })(),
+                            )
                           }
                           placeholder={field.placeholder ?? field.label}
                           styles={appFieldStyles}
-                          value={draftFilters[field.id] ? new Date(`${draftFilters[field.id]}-01`) : null}
+                          value={
+                            draftFilters[field.id]
+                              ? new Date(`${draftFilters[field.id]}-01`)
+                              : null
+                          }
                           valueFormat="MMMM YYYY"
                         />
                       );
@@ -271,20 +277,20 @@ export default function FilterToolbar({
                     );
                   })}
                 </div>
-                <div className="flex justify-end gap-3 border-t border-border bg-surface-muted px-5 py-4">
+                <div className="flex justify-end gap-3 border-t border-border px-5 py-4">
                   <button
                     className="rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
                     onClick={clearFilters}
                     type="button"
                   >
-                    {t("filters.clear")}
+                    <p className="text-[14px]">{t("filters.clear")}</p>
                   </button>
                   <button
                     className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90"
                     onClick={applyFilters}
                     type="button"
                   >
-                    {t("filters.apply")}
+                    <p className="text-[14px]">{t("filters.apply")}</p>
                   </button>
                 </div>
               </Popover.Dropdown>
