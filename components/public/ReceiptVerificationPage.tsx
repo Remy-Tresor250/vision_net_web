@@ -59,12 +59,8 @@ export default function ReceiptVerificationPage({ receiptId }: Props) {
       </div>
 
       <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-6xl items-center justify-center">
-        <section className="grid w-full overflow-hidden rounded-[2rem] border border-border bg-surface shadow-panel lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="relative border-b border-border bg-surface-muted/80 p-6 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
-            <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-brand/30 to-transparent" />
-            <AppLogo />
-          </div>
-
+        <section className="flex flex-col items-center justify-center w-full overflow-hidden rounded-[2rem] border border-border bg-surface shadow-panel pt-4">
+          <AppLogo hideAdmin />
           <div className="relative p-6 sm:p-8 lg:p-10">
             {verificationQuery.isLoading && isReceiptIdValid ? (
               <LoadingState />
@@ -73,7 +69,7 @@ export default function ReceiptVerificationPage({ receiptId }: Props) {
             {!verificationQuery.isLoading || !isReceiptIdValid ? (
               <div className="rounded-[2rem] border border-border bg-surface p-6 shadow-panel sm:p-8">
                 <div
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
+                  className={`inline-flex items-center gap-2 rounded-full px-2 lg:px-4 py-2 text-[10px] lg:text-sm font-semibold ${
                     !isReceiptIdValid
                       ? "bg-danger-soft text-danger"
                       : isValid
@@ -91,19 +87,19 @@ export default function ReceiptVerificationPage({ receiptId }: Props) {
                     : "Verification failed"}
                 </div>
 
-                <h2 className="mt-5 text-3xl font-semibold leading-tight text-foreground">
+                <h2 className="mt-5 text-md lg:text-3xl font-semibold leading-tight text-foreground">
                   {!isReceiptIdValid
                     ? "This receipt link is not valid."
                     : isValid
-                      ? "This receipt is valid and was issued by Vision Net."
+                      ? "This receipt is valid and was issued by Société Vision Net."
                       : "We could not confirm this receipt."}
                 </h2>
 
-                <p className="mt-4 text-sm leading-7 text-text-muted sm:text-base">
+                <p className="mt-4 text-xs lg:text-sm lg:leading-7 text-text-muted sm:text-base">
                   {summaryMessage}
                 </p>
 
-                <div className="mt-8 rounded-2xl border border-border/80 bg-surface-muted/70 px-4 py-4 text-sm leading-6 text-text-muted">
+                <div className="mt-8 rounded-2xl border border-border/80 bg-surface-muted/70 px-4 py-4 text-xs lg:text-sm lg:leading-6 text-text-muted">
                   Reference:{" "}
                   <span className="font-semibold text-foreground">
                     {normalizedReceiptId}
