@@ -188,8 +188,8 @@ export default function AgentsTable() {
                     status={agent.isActive ? t("common.active") : t("common.inactive")}
                   />
                 </TableTd>
-                <TableTd className="px-8 py-6 text-center text-[14px] text-text-muted">
-                  {formatCurrency(agent.currentMonthCollected)}
+                <TableTd className="px-4 py-6 text-[14px] text-text-muted">
+                  <p className="pl-[25px]">{formatCurrency(agent.currentMonthCollected)}</p>
                 </TableTd>
                 <TableTd className="px-8 py-6 text-center">
                   <Menu position="bottom-end" shadow="md" width={160}>

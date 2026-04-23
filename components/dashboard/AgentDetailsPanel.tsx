@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Pagination,
   Table,
@@ -22,6 +22,7 @@ import ErrorState from "@/components/dashboard/ErrorState";
 import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
+import { adminApi } from "@/lib/api/admin";
 import {
   formatCurrency,
   formatDate,
@@ -39,6 +40,21 @@ interface Props {
 }
 
 const PAGE_SIZE = 7;
+
+function formatAssignedAvenueLocation(assignedAvenue: {
+  avenueName?: string | null;
+  name?: string | null;
+  quartierName?: string | null;
+  serineName?: string | null;
+}) {
+  const parts = [
+    assignedAvenue.quartierName,
+    assignedAvenue.serineName,
+    assignedAvenue.avenueName ?? assignedAvenue.name,
+  ].filter(Boolean);
+
+  return parts.length ? parts.join(", ") : "-";
+}
 
 function toReceiptPayment(payment: AdminPaymentListItem): Payment {
   const paymentId = getAdminPaymentId(payment);
@@ -63,6 +79,10 @@ export default function AgentDetailsPanel({ agentId }: Props) {
   const [page, setPage] = useState(1);
   const [selectedPayment, setSelectedPayment] =
     useState<AdminPaymentListItem | null>(null);
+  const [resolvedAssignedLabels, setResolvedAssignedLabels] = useState<{
+    agentId: string | null;
+    labels: Record<string, string>;
+  }>({ agentId: null, labels: {} });
   const agentQuery = useAdminAgentQuery(agentId);
   const paymentsQuery = useAdminPaymentsQuery({
     agentId,
@@ -73,6 +93,80 @@ export default function AgentDetailsPanel({ agentId }: Props) {
   const agent = agentQuery.data;
   const payments = paymentsQuery.data?.data ?? [];
   const totalPages = getPageCount(paymentsQuery.data?.total ?? 0, PAGE_SIZE);
+  const assignedAvenueLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        (agent?.assignedAvenues ?? []).map((assignedAvenue) => [
+          assignedAvenue.avenueId,
+          formatAssignedAvenueLocation(assignedAvenue),
+        ]),
+      ),
+    [agent?.assignedAvenues],
+  );
+  const currentResolvedAssignedLabels = useMemo(
+    () => (resolvedAssignedLabels.agentId === agent?.agentId ? resolvedAssignedLabels.labels : {}),
+    [agent?.agentId, resolvedAssignedLabels],
+  );
+
+  useEffect(() => {
+    if (!agent?.assignedAvenues?.length) {
+      return;
+    }
+
+    const missingAssignments = agent.assignedAvenues.filter(
+      (assignedAvenue) =>
+        !assignedAvenue.serineName && !currentResolvedAssignedLabels[assignedAvenue.avenueId],
+    );
+
+    if (!missingAssignments.length) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function resolveAssignedLabels() {
+      const nextEntries = await Promise.all(
+        missingAssignments.map(async (assignedAvenue) => {
+          try {
+            const response = await adminApi.avenues({
+              limit: 100,
+              search: assignedAvenue.avenueName,
+              skip: 0,
+            });
+            const exactMatch = response.data.find((avenue) => avenue.id === assignedAvenue.avenueId);
+
+            return [
+              assignedAvenue.avenueId,
+              exactMatch
+                ? formatAssignedAvenueLocation(exactMatch)
+                : formatAssignedAvenueLocation(assignedAvenue),
+            ] as const;
+          } catch {
+            return [
+              assignedAvenue.avenueId,
+              formatAssignedAvenueLocation(assignedAvenue),
+            ] as const;
+          }
+        }),
+      );
+
+      if (!cancelled) {
+        setResolvedAssignedLabels((current) => ({
+          agentId: agent.agentId,
+          labels:
+            current.agentId === agent.agentId
+              ? { ...current.labels, ...Object.fromEntries(nextEntries) }
+              : Object.fromEntries(nextEntries),
+        }));
+      }
+    }
+
+    void resolveAssignedLabels();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [agent, currentResolvedAssignedLabels]);
 
   if (agentQuery.isError) {
     return (
@@ -177,8 +271,9 @@ export default function AgentDetailsPanel({ agentId }: Props) {
                 className="rounded-md bg-surface-muted px-4 py-2 text-[14px] text-foreground"
                 key={assignedAvenue.avenueId}
               >
-                {assignedAvenue.avenueName}
-                {assignedAvenue.quartierName ? `, ${assignedAvenue.quartierName}` : ""}
+                {currentResolvedAssignedLabels[assignedAvenue.avenueId] ??
+                  assignedAvenueLabels[assignedAvenue.avenueId] ??
+                  "-"}
               </div>
             ))
           ) : (

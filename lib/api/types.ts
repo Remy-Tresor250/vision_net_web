@@ -120,6 +120,7 @@ export interface AssignedAvenue {
   avenueName: string;
   quartierId?: string | null;
   quartierName?: string | null;
+  serineName?: string | null;
 }
 
 export type PaymentStatus = "DUE" | "CONFIRMED" | "PENDING" | "READY" | string;

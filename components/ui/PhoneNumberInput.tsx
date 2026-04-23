@@ -31,7 +31,7 @@ function normalizeDigits(value: string) {
 }
 
 function detectCountryFromValue(value: string) {
-  const normalizedValue = normalizeDigits(value);
+  const normalizedValue = normalizeDigits(value).replace(/^00/, "");
 
   if (normalizedValue.startsWith(COUNTRY_DIAL_CODES.cd)) {
     return "cd" as const;
@@ -39,6 +39,14 @@ function detectCountryFromValue(value: string) {
 
   if (normalizedValue.startsWith(COUNTRY_DIAL_CODES.rw)) {
     return "rw" as const;
+  }
+
+  if (/^0?7\d{8}$/.test(normalizedValue)) {
+    return "rw" as const;
+  }
+
+  if (/^0?(8|9)\d{8}$/.test(normalizedValue)) {
+    return "cd" as const;
   }
 
   return null;
@@ -106,7 +114,6 @@ export default function PhoneNumberInput({
         disableCountryCode={false}
         disableCountryGuess
         disableDropdown={false}
-        disableInitialCountryGuess
         enableAreaCodes={false}
         enableLongNumbers
         disabled={disabled}
@@ -118,8 +125,10 @@ export default function PhoneNumberInput({
         }}
         onlyCountries={SUPPORTED_COUNTRIES}
         onChange={(nextValue, countryData) => {
-          const nextCountry = (countryData?.countryCode ??
-            activeCountry) as keyof typeof COUNTRY_DIAL_CODES;
+          const nextCountry = (
+            (countryData && "countryCode" in countryData && countryData.countryCode) ??
+            activeCountry
+          ) as keyof typeof COUNTRY_DIAL_CODES;
           const nextDialCode = COUNTRY_DIAL_CODES[nextCountry] ?? dialCode;
           const nationalNumber = stripSupportedCountryCode(nextValue, nextDialCode);
 
