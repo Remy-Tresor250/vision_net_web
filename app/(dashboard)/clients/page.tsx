@@ -1,16 +1,28 @@
 import type { Metadata } from "next";
 
 import ClientsTable from "@/components/dashboard/ClientsTable";
+import { normalizeClientType } from "@/lib/client-type";
 
 export const metadata: Metadata = {
   title: "Clients | Vision Net",
   description: "Manage all Vision Net clients.",
 };
 
-export default function ClientsPage() {
+interface ClientsPageProps {
+  searchParams: Promise<{ clientType?: string | string[] }>;
+}
+
+export default async function ClientsPage({
+  searchParams,
+}: ClientsPageProps) {
+  const params = await searchParams;
+  const initialClientType = normalizeClientType(
+    typeof params.clientType === "string" ? params.clientType : undefined,
+  );
+
   return (
     <div className="space-y-6">
-      <ClientsTable />
+      <ClientsTable initialClientType={initialClientType} />
     </div>
   );
 }

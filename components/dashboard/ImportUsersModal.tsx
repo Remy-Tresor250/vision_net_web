@@ -20,27 +20,34 @@ import { useTranslation } from "react-i18next";
 
 import { adminApi } from "@/lib/api/admin";
 import { getApiErrorMessage } from "@/lib/api/client";
+import type { ClientType } from "@/lib/api/types";
 import { previewCsvFile, type CsvPreview } from "@/lib/csv";
 import { downloadBlob } from "@/lib/download";
 import {
   useImportAgentsMutation,
   useImportClientsMutation,
 } from "@/lib/query/hooks";
+import { getClientTypeLabelKey } from "@/lib/client-type";
 
 interface Props {
   kind: "agents" | "clients";
+  clientType?: ClientType;
   onImported?: () => void;
 }
 
-export default function ImportUsersModal({ kind, onImported }: Props) {
+export default function ImportUsersModal({
+  clientType = "NORMAL",
+  kind,
+  onImported,
+}: Props) {
   const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<CsvPreview | null>(null);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const importAgents = useImportAgentsMutation();
   const importClients = useImportClientsMutation();
-  const mutation = kind === "agents" ? importAgents : importClients;
   const isClients = kind === "clients";
+  const isImporting = isClients ? importClients.isPending : importAgents.isPending;
 
   const dropzone = useDropzone({
     accept: {
@@ -72,10 +79,15 @@ export default function ImportUsersModal({ kind, onImported }: Props) {
 
     try {
       const blob = isClients
-        ? await adminApi.downloadClientTemplateCsv()
+        ? await adminApi.downloadClientTemplateCsv(clientType)
         : await adminApi.downloadAgentTemplateCsv();
 
-      downloadBlob(blob, `${kind}-template.csv`);
+      downloadBlob(
+        blob,
+        isClients
+          ? `clients-${clientType.toLowerCase()}-template.csv`
+          : `${kind}-template.csv`,
+      );
     } catch (error) {
       toast.error(getApiErrorMessage(error));
     } finally {
@@ -89,16 +101,23 @@ export default function ImportUsersModal({ kind, onImported }: Props) {
       return;
     }
 
-    mutation.mutate(file, {
-      onError: (error) => toast.error(getApiErrorMessage(error)),
-      onSuccess: (report) => {
+    const handlers = {
+      onError: (error: unknown) => toast.error(getApiErrorMessage(error)),
+      onSuccess: (report: { successCount: number; failedCount: number }) => {
         toast.success(
           `${report.successCount} imported, ${report.failedCount} failed.`,
         );
         close();
         onImported?.();
       },
-    });
+    };
+
+    if (isClients) {
+      importClients.mutate({ clientType, file }, handlers);
+      return;
+    }
+
+    importAgents.mutate(file, handlers);
   }
 
   return (
@@ -108,15 +127,19 @@ export default function ImportUsersModal({ kind, onImported }: Props) {
           {t("imports.bulk")}
         </p>
         <p className="mt-1 text-[13px] text-text-muted">
-          {isClients ? t("tables.createClientEmpty") : t("tables.createAgentEmpty")}
+          {isClients
+            ? t("imports.clientTypeHint", {
+                type: t(getClientTypeLabelKey(clientType)),
+              })
+            : t("tables.createAgentEmpty")}
         </p>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <button
           disabled={isDownloadingTemplate}
           onClick={downloadExample}
           type="button"
-          className="flex flex-row items-center gap-[4px] px-[12px] py-[6px] bg-brand rounded-[6px]"
+          className="flex w-full flex-row items-center justify-center gap-[4px] rounded-[6px] bg-brand px-[12px] py-[8px] sm:w-auto sm:py-[6px]"
         >
           <HiOutlineArrowDownTray className="size-4" color="white" />
           <p className="text-white text-[13px]">
@@ -186,13 +209,13 @@ export default function ImportUsersModal({ kind, onImported }: Props) {
 
       <div className="flex justify-end gap-3">
         <button
-          disabled={!file || mutation.isPending}
+          disabled={!file || isImporting}
           onClick={upload}
           type="button"
-          className="flex flex-row items-center gap-[4px] px-[12px] py-[6px] bg-brand rounded-[6px]"
+          className="flex w-full flex-row items-center justify-center gap-[4px] rounded-[6px] bg-brand px-[12px] py-[8px] sm:w-auto sm:py-[6px]"
         >
           <p className="text-[13px] text-white">
-            {mutation.isPending ? t("actions.importing") : t("actions.importFile")}
+            {isImporting ? t("actions.importing") : t("actions.importFile")}
           </p>
         </button>
       </div>

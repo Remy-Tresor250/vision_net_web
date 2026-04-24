@@ -325,7 +325,7 @@ export default function AgentDetailsPanel({ agentId }: Props) {
                     <TableTd className="px-7 py-6 text-[14px] text-text-muted">
                       {formatDate(payment.paymentDate ?? payment.createdAt)}
                     </TableTd>
-                    <TableTd className="px-7 py-6 text-[14px] text-text-muted">
+                    <TableTd className="px-7 py-6 text-[14px] text-text-muted max-w-[280px]">
                       {formatMonths(payment.months ?? payment.month)}
                     </TableTd>
                     <TableTd className="px-7 py-6 text-[14px] text-text-muted">

@@ -183,7 +183,7 @@ export default function PaymentsTable() {
                 <TableTd className="px-8 py-6 text-[14px] text-text-muted">
                   {payment.agentName ?? "Admin"}
                 </TableTd>
-                <TableTd className="px-8 py-6 text-[14px] text-text-muted">
+                <TableTd className="px-8 py-6 text-[14px] text-text-muted max-w-[200px]">
                   {formatMonths(payment.months ?? payment.month)}
                 </TableTd>
                 <TableTd className="px-8 py-6 text-[14px] text-text-muted">

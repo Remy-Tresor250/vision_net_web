@@ -49,7 +49,7 @@ export async function previewCsvFile(file: File, maxRows = 20): Promise<CsvPrevi
 export const clientExampleCsv = [
   "fullNames,phone,address,language,type,subscriptionAmount,registeredDate",
   "Aline Mutesi,0780000001,Kigali,en,NORMAL,20.00,2026-04-15",
-  "Jean Bosco,0780000002,Remera,fr,POTENTIEL,50.00,2026-04-15",
+  "Jean Bosco,0780000002,Remera,fr,POTENTIAL,50.00,2026-04-15",
 ].join("\n");
 
 export const agentExampleCsv = [

@@ -51,6 +51,7 @@ import type {
   UpdateSerinePayload,
   UpdateServiceTypePayload,
   UserSummary,
+  ClientType,
 } from "@/lib/api/types";
 
 export interface DashboardParams {
@@ -62,17 +63,20 @@ interface RequestConfig {
   signal?: AbortSignal;
 }
 
-function downloadFile(path: string) {
-  return api.get<Blob>(path, { responseType: "blob" }).then((res) => res.data);
+function downloadFile(path: string, params?: Record<string, string>) {
+  return api
+    .get<Blob>(path, { params, responseType: "blob" })
+    .then((res) => res.data);
 }
 
-function uploadFile(path: string, file: File) {
+function uploadFile(path: string, file: File, params?: Record<string, string>) {
   const formData = new FormData();
   formData.append("file", file);
 
   return api
     .post<ImportReport>(path, formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      params,
     })
     .then((res) => res.data);
 }
@@ -301,8 +305,11 @@ export const adminApi = {
       .then((res) => res.data),
   downloadAgentTemplateCsv: () => downloadFile(endpoints.admin.importAgentTemplateCsv),
   downloadAgentTemplateXlsx: () => downloadFile(endpoints.admin.importAgentTemplateXlsx),
-  downloadClientTemplateCsv: () => downloadFile(endpoints.admin.importClientTemplateCsv),
-  downloadClientTemplateXlsx: () => downloadFile(endpoints.admin.importClientTemplateXlsx),
+  downloadClientTemplateCsv: (clientType: ClientType) =>
+    downloadFile(endpoints.admin.importClientTemplateCsv, { clientType }),
+  downloadClientTemplateXlsx: (clientType: ClientType) =>
+    downloadFile(endpoints.admin.importClientTemplateXlsx, { clientType }),
   importAgents: (file: File) => uploadFile(endpoints.admin.importAgents, file),
-  importClients: (file: File) => uploadFile(endpoints.admin.importClients, file),
+  importClients: (file: File, clientType: ClientType) =>
+    uploadFile(endpoints.admin.importClients, file, { clientType }),
 };

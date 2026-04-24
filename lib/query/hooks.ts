@@ -36,6 +36,7 @@ import type {
   UpdateClientPayload,
   UpdateServiceTypePayload,
   UpdateStatusPayload,
+  ClientType,
 } from "@/lib/api/types";
 import {
   invalidateAgents,
@@ -572,7 +573,8 @@ export function useImportClientsMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (file: File) => adminApi.importClients(file),
+    mutationFn: ({ clientType, file }: { clientType: ClientType; file: File }) =>
+      adminApi.importClients(file, clientType),
     onSuccess: () => invalidateClients(queryClient),
   });
 }

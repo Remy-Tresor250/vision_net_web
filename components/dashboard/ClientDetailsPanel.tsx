@@ -262,7 +262,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                       key={paymentId || payment.receiptId || payment.createdAt}
                       className="border-b border-border last:border-b-0"
                     >
-                      <TableTd className="px-3 py-6 text-[14px] font-medium uppercase text-text-muted">
+                      <TableTd className="px-3 py-6 text-[14px] font-medium uppercase text-text-muted max-w-[280px]">
                         {formatMonths(payment.months ?? payment.month)}
                       </TableTd>
                       <TableTd className="px-3 py-6 text-[14px] text-text-muted">

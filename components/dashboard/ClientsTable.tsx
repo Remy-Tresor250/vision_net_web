@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Menu, TableTd, TableTr } from "@mantine/core";
 import { HiEllipsisHorizontal } from "react-icons/hi2";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
@@ -14,15 +15,20 @@ import FilterToolbar from "@/components/dashboard/FilterToolbar";
 import StatusBadge from "@/components/ui/StatusBadge";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
-import type { AdminClientsParams } from "@/lib/api/types";
+import { getClientTypeLabelKey } from "@/lib/client-type";
+import type { AdminClientsParams, ClientType } from "@/lib/api/types";
 import { getApiErrorMessage } from "@/lib/api/client";
-import { formatDate, getPageCount } from "@/lib/format";
+import { formatCurrency, formatDate, getPageCount } from "@/lib/format";
 import {
   useAdminClientsQuery,
   useUpdateClientStatusMutation,
 } from "@/lib/query/hooks";
 
 const PAGE_SIZE = 8;
+
+interface Props {
+  initialClientType: ClientType;
+}
 
 function formatClientLocation(client: {
   avenueName?: string | null;
@@ -38,10 +44,13 @@ function formatClientLocation(client: {
   return parts.length ? parts.join(", ") : "-";
 }
 
-export default function ClientsTable() {
+export default function ClientsTable({ initialClientType }: Props) {
   const { t } = useTranslation();
+  const pathname = usePathname();
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
+  const [clientType, setClientType] = useState<ClientType>(initialClientType);
   const [filters, setFilters] = useState<Record<string, string>>({
     createdAtFrom: "",
     createdAtTo: "",
@@ -56,6 +65,7 @@ export default function ClientsTable() {
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const skip = (page - 1) * PAGE_SIZE;
   const clientParams: AdminClientsParams = {
+    clientType,
     createdAtFrom: filters.createdAtFrom || undefined,
     createdAtTo: filters.createdAtTo || undefined,
     isActive:
@@ -85,6 +95,9 @@ export default function ClientsTable() {
   const totalPages = getPageCount(clientsQuery.data?.total ?? 0, PAGE_SIZE);
   const editingClient =
     clients.find((client) => client.clientId === editingClientId) ?? null;
+  useEffect(() => {
+    setClientType(initialClientType);
+  }, [initialClientType]);
 
   function handleQueryChange(value: string) {
     setQuery(value);
@@ -94,6 +107,16 @@ export default function ClientsTable() {
   function handleFiltersChange(value: Record<string, string>) {
     setFilters(value);
     setPage(1);
+  }
+
+  function handleClientTypeChange(nextClientType: ClientType) {
+    setClientType(nextClientType);
+    setPage(1);
+    setAddOpened(false);
+    setEditingClientId(null);
+    const params = new URLSearchParams();
+    params.set("clientType", nextClientType);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
   function updateStatus(clientId: string, isActive: boolean) {
@@ -111,10 +134,51 @@ export default function ClientsTable() {
     );
   }
 
+  function resolveClientType(client: {
+    clientType?: ClientType | null;
+    type?: ClientType | null;
+  }) {
+    return (client.clientType ?? client.type ?? clientType) as ClientType;
+  }
+
+  function formatAmount(client: {
+    subscriptionAmountMinor?: number | null;
+  }) {
+    return typeof client.subscriptionAmountMinor === "number"
+      ? formatCurrency(client.subscriptionAmountMinor / 100)
+      : "-";
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <FilterToolbar
-        title={t("tables.allClients")}
+        title={
+          <div className="">
+            <p className="text-[27px] font-medium text-[#0A3B24]">
+              {t("nav.clients")}
+            </p>
+            <div className="inline-grid w-full max-w-[420px] grid-cols-2 rounded-[14px] bg-surface-muted p-1.5">
+              {(["NORMAL", "POTENTIAL"] as const).map((value) => {
+                const isActive = clientType === value;
+
+                return (
+                  <button
+                    className={
+                      isActive
+                        ? "h-10 rounded-[12px] bg-surface text-brand shadow-card px-3 lg:px-5 py-2"
+                        : "h-10 rounded-[12px] text-text-muted hover:text-foreground"
+                    }
+                    key={value}
+                    onClick={() => handleClientTypeChange(value)}
+                    type="button"
+                  >
+                    <p className="text-[14px] font-medium">{t(getClientTypeLabelKey(value))}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        }
         addLabel={t("actions.addClient")}
         filterFields={[
           {
@@ -184,9 +248,11 @@ export default function ClientsTable() {
         query={query}
       />
       <DashboardTableShell
+        className="h-auto min-h-[32rem] md:h-[75vh]"
         headers={[
           t("common.client"),
-          t("common.service"),
+          t("common.type"),
+          t("common.amount"),
           t("common.code"),
           t("common.phone"),
           t("common.location"),
@@ -216,7 +282,14 @@ export default function ClientsTable() {
                 {client.fullNames}
               </TableTd>
               <TableTd className="px-4 py-6 text-center text-[12px] text-text-muted">
-                {client.serviceTypeName ?? "-"}
+                {t(
+                  getClientTypeLabelKey(
+                    resolveClientType(client),
+                  ),
+                )}
+              </TableTd>
+              <TableTd className="px-4 py-6 text-center text-[12px] text-text-muted">
+                {formatAmount(client)}
               </TableTd>
               <TableTd className="px-4 py-6 text-[12px] text-text-muted">
                 {client.code?.trim() ? client.code : "-"}
@@ -277,9 +350,14 @@ export default function ClientsTable() {
           ))
         )}
       </DashboardTableShell>
-      <AddClientModal onClose={() => setAddOpened(false)} opened={addOpened} />
+      <AddClientModal
+        defaultClientType={clientType}
+        onClose={() => setAddOpened(false)}
+        opened={addOpened}
+      />
       <AddClientModal
         client={editingClient}
+        defaultClientType={clientType}
         onClose={() => setEditingClientId(null)}
         opened={editingClient !== null}
       />

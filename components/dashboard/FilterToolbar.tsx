@@ -3,6 +3,7 @@
 import { Popover, Select, TextInput } from "@mantine/core";
 import { DatePickerInput, MonthPickerInput } from "@mantine/dates";
 import { useDebouncedValue } from "@mantine/hooks";
+import type { ReactNode } from "react";
 import { useEffect, useEffectEvent, useState } from "react";
 import {
   HiOutlineMagnifyingGlass,
@@ -28,7 +29,7 @@ export interface FilterField {
 
 interface Props {
   placeholder: string;
-  title: string;
+  title: ReactNode;
   query: string;
   onQueryChange: (value: string) => void;
   filters?: Record<string, string>;
@@ -125,7 +126,13 @@ export default function FilterToolbar({
         className,
       )}
     >
-      <h2 className="text-[27px] font-medium text-[#0A3B24]">{title}</h2>
+      <div className="min-w-0">
+        {typeof title === "string" ? (
+          <h2 className="text-[27px] font-medium text-[#0A3B24]">{title}</h2>
+        ) : (
+          title
+        )}
+      </div>
       <div className="flex w-full flex-col gap-3 lg:flex-1 lg:flex-row lg:items-center lg:justify-end">
         <div className="w-full sm:w-[30vw]">
           <TextInput

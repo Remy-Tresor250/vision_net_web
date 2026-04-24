@@ -21,7 +21,13 @@ import {
   useCreateClientMutation,
   useUpdateClientMutation,
 } from "@/lib/query/hooks";
-import type { AdminClientDetail, AdminClientListItem } from "@/lib/api/types";
+import type {
+  AdminClientDetail,
+  AdminClientListItem,
+  ClientType,
+  CreateClientPayload,
+  UpdateClientPayload,
+} from "@/lib/api/types";
 import {
   clientFormSchema,
   type ClientFormValues,
@@ -40,8 +46,12 @@ interface Props {
     | "quartierId"
     | "registeredDate"
     | "serineId"
+    | "type"
+    | "clientType"
     | "serviceTypeId"
+    | "subscriptionAmount"
   > | null;
+  defaultClientType?: ClientType;
 }
 
 function toDateValue(value: string | undefined) {
@@ -66,7 +76,39 @@ function toDateString(value: Date | string | null) {
   return `${year}-${month}-${day}`;
 }
 
-export default function AddClientModal({ client, onClose, opened }: Props) {
+function buildClientPayload(
+  values: ClientFormValues,
+): Omit<CreateClientPayload, "language"> | UpdateClientPayload {
+  const basePayload = {
+    avenueId: values.avenueId,
+    clientType: values.clientType,
+    code: values.code?.trim() || undefined,
+    fullNames: values.fullNames,
+    phone: values.phone,
+    quartierId: values.quartierId,
+    registeredDate: values.registeredDate || undefined,
+    serineId: values.serineId,
+  };
+
+  if (values.clientType === "POTENTIAL") {
+    return {
+      ...basePayload,
+      subscriptionAmount: values.subscriptionAmount || undefined,
+    };
+  }
+
+  return {
+    ...basePayload,
+    serviceTypeId: values.serviceTypeId || undefined,
+  };
+}
+
+export default function AddClientModal({
+  client,
+  defaultClientType = "NORMAL",
+  onClose,
+  opened,
+}: Props) {
   const { i18n, t } = useTranslation();
   const createMutation = useCreateClientMutation();
   const updateMutation = useUpdateClientMutation(client?.clientId);
@@ -80,6 +122,7 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
   } = useForm<ClientFormValues>({
     defaultValues: {
       avenueId: "",
+      clientType: defaultClientType,
       code: "",
       fullNames: "",
       phone: "",
@@ -87,12 +130,14 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
       registeredDate: new Date().toISOString().slice(0, 10),
       serineId: "",
       serviceTypeId: "",
+      subscriptionAmount: "",
     },
     resolver: zodResolver(clientFormSchema),
   });
 
   const watchedQuartierId = useWatch({ control, name: "quartierId" });
   const watchedSerineId = useWatch({ control, name: "serineId" });
+  const watchedClientType = useWatch({ control, name: "clientType" });
 
   const serviceTypesQuery = useAdminServiceTypesQuery({ limit: 100, skip: 0 });
   const quartiersQuery = useAdminQuartiersQuery({ limit: 100, skip: 0 });
@@ -154,6 +199,7 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
 
     reset({
       avenueId: client?.avenueId ?? "",
+      clientType: client?.clientType ?? client?.type ?? defaultClientType,
       code: client?.code ?? "",
       fullNames: client?.fullNames ?? "",
       phone: client?.phone ?? "",
@@ -162,20 +208,31 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
         client?.registeredDate ?? new Date().toISOString().slice(0, 10),
       serineId: client?.serineId ?? "",
       serviceTypeId: client?.serviceTypeId ?? "",
+      subscriptionAmount: client?.subscriptionAmount ?? "",
     });
-  }, [client, opened, reset]);
+  }, [client, defaultClientType, opened, reset]);
+
+  useEffect(() => {
+    if (!opened || isEditing) {
+      return;
+    }
+
+    reset({
+      avenueId: "",
+      clientType: defaultClientType,
+      code: "",
+      fullNames: "",
+      phone: "",
+      quartierId: "",
+      registeredDate: new Date().toISOString().slice(0, 10),
+      serineId: "",
+      serviceTypeId: "",
+      subscriptionAmount: "",
+    });
+  }, [defaultClientType, isEditing, opened, reset]);
 
   function submit(values: ClientFormValues) {
-    const payload = {
-      avenueId: values.avenueId,
-      code: values.code?.trim() || undefined,
-      fullNames: values.fullNames,
-      phone: values.phone,
-      quartierId: values.quartierId,
-      registeredDate: values.registeredDate || undefined,
-      serineId: values.serineId,
-      serviceTypeId: values.serviceTypeId,
-    };
+    const payload = buildClientPayload(values);
 
     if (isEditing) {
       updateMutation.mutate(payload, {
@@ -193,7 +250,7 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
     createMutation.mutate(
       {
         ...payload,
-        language: "fr",
+        language: i18n.language === "en" ? "en" : "fr",
       },
       {
         onError: (error) => toast.error(getApiErrorMessage(error)),
@@ -210,9 +267,9 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
     <Modal
       centered
       classNames={{
-        body: "px-8 pb-8",
+        body: "px-4 pb-6 sm:px-8 sm:pb-8",
         content: "rounded-sm",
-        header: "px-8 pt-8",
+        header: "px-4 pt-6 sm:px-8 sm:pt-8",
         title: "w-full text-center",
       }}
       closeButtonProps={{
@@ -231,7 +288,11 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
       <div className="space-y-3 lg:px-6">
         {!isEditing ? (
           <>
-            <ImportUsersModal kind="clients" onImported={onClose} />
+            <ImportUsersModal
+              clientType={watchedClientType}
+              kind="clients"
+              onImported={onClose}
+            />
             <div className="flex items-center gap-5">
               <div className="h-px flex-1 bg-border" />
               <span className="text-[13px] text-text-muted">
@@ -286,22 +347,39 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
               />
             )}
           />
-          <Controller
-            control={control}
-            name="serviceTypeId"
-            render={({ field }) => (
-              <Select
-                classNames={appFieldClassNames}
-                data={serviceTypeOptions}
-                error={errors.serviceTypeId?.message}
-                label={t("common.service")}
-                onChange={(value) => field.onChange(value ?? "")}
-                placeholder="Select service"
-                styles={appFieldStyles}
-                value={field.value}
-              />
-            )}
-          />
+          {watchedClientType === "NORMAL" ? (
+            <Controller
+              control={control}
+              name="serviceTypeId"
+              render={({ field }) => (
+                <Select
+                  classNames={appFieldClassNames}
+                  data={serviceTypeOptions}
+                  error={errors.serviceTypeId?.message}
+                  label={t("common.service")}
+                  onChange={(value) => field.onChange(value ?? "")}
+                  placeholder={t("forms.selectServicePlaceholder")}
+                  styles={appFieldStyles}
+                  value={field.value}
+                />
+              )}
+            />
+          ) : (
+            <Controller
+              control={control}
+              name="subscriptionAmount"
+              render={({ field }) => (
+                <TextInput
+                  {...field}
+                  classNames={appFieldClassNames}
+                  error={errors.subscriptionAmount?.message}
+                  label={t("forms.subscriptionAmount")}
+                  placeholder={t("forms.subscriptionAmountPlaceholder")}
+                  styles={appFieldStyles}
+                />
+              )}
+            />
+          )}
           <Controller
             control={control}
             name="quartierId"
@@ -310,13 +388,13 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
                 classNames={appFieldClassNames}
                 data={quartierOptions}
                 error={errors.quartierId?.message}
-                label="Quartier"
+                label={t("configurations.quartier")}
                 onChange={(value) => {
                   field.onChange(value ?? "");
                   setValue("serineId", "");
                   setValue("avenueId", "");
                 }}
-                placeholder="Select quartier"
+                placeholder={t("forms.selectQuartierPlaceholder")}
                 styles={appFieldStyles}
                 value={field.value}
               />
@@ -331,12 +409,12 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
                 data={serineOptions}
                 disabled={!watchedQuartierId}
                 error={errors.serineId?.message}
-                label="Cellule"
+                label={t("configurations.serine")}
                 onChange={(value) => {
                   field.onChange(value ?? "");
                   setValue("avenueId", "");
                 }}
-                placeholder="Select serine"
+                placeholder={t("forms.selectSerinePlaceholder")}
                 styles={appFieldStyles}
                 value={field.value}
               />
@@ -352,9 +430,9 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
                 data={avenueOptions}
                 disabled={!watchedSerineId}
                 error={errors.avenueId?.message}
-                label="Avenue"
+                label={t("configurations.avenues")}
                 onChange={(value) => field.onChange(value ?? "")}
-                placeholder="Search avenue"
+                placeholder={t("forms.searchAvenuePlaceholder")}
                 styles={appFieldStyles}
                 value={field.value}
               />
@@ -377,16 +455,16 @@ export default function AddClientModal({ client, onClose, opened }: Props) {
               />
             )}
           />
-          <div className="flex justify-end gap-3 py-4 md:col-span-2">
+          <div className="flex flex-col-reverse gap-3 py-4 sm:flex-row sm:justify-end md:col-span-2">
             <button
-              className="flex flex-row items-center gap-[4px] rounded-[6px] border-[1px] border-solid border-gray-500 bg-transparent px-[12px] py-[6px]"
+              className="flex w-full flex-row items-center justify-center gap-[4px] rounded-[6px] border-[1px] border-solid border-gray-500 bg-transparent px-[12px] py-[10px] sm:w-auto sm:py-[6px]"
               onClick={onClose}
               type="button"
             >
               <p className="text-[14px] text-black">{t("actions.cancel")}</p>
             </button>
             <button
-              className="flex flex-row items-center gap-[4px] rounded-[6px] bg-brand px-[12px] py-[6px]"
+              className="flex w-full flex-row items-center justify-center gap-[4px] rounded-[6px] bg-brand px-[12px] py-[10px] sm:w-auto sm:py-[6px]"
               disabled={createMutation.isPending || updateMutation.isPending}
               type="submit"
             >

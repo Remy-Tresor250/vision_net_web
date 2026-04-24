@@ -1,7 +1,7 @@
 export type UserRole = "ADMIN" | "AGENT" | "CLIENT";
 export type Language = "en" | "fr";
 export type SortDir = "asc" | "desc";
-export type ClientType = "NORMAL" | "POTENTIEL";
+export type ClientType = "NORMAL" | "POTENTIAL";
 export type ReportExportStatus =
   | "QUEUED"
   | "PROCESSING"
@@ -65,9 +65,11 @@ export interface AdminClientListItem {
   userId: string;
   fullNames: string;
   phone: string;
+  language?: Language;
   code?: string | null;
   address?: string | null;
-  type?: ClientType;
+  clientType?: ClientType | null;
+  type?: ClientType | null;
   quartierId?: string | null;
   quartierName?: string | null;
   serineId?: string | null;
@@ -78,8 +80,9 @@ export interface AdminClientListItem {
   serviceTypeName?: string | null;
   registeredDate: string;
   subscriptionAmount?: string | null;
-  dueMonths: number;
-  totalDue: string;
+  subscriptionAmountMinor?: number | null;
+  dueMonths?: number;
+  totalDue?: string;
   isActive: boolean;
   createdAt?: string;
 }
@@ -258,7 +261,9 @@ export interface CreateClientPayload extends CreateAdminUserPayload {
   quartierId: string;
   serineId: string;
   avenueId: string;
-  serviceTypeId: string;
+  clientType: ClientType;
+  serviceTypeId?: string;
+  subscriptionAmount?: string;
   registeredDate?: string;
 }
 
@@ -267,7 +272,9 @@ export interface UpdateClientPayload extends UpdateAgentPayload {
   quartierId?: string;
   serineId?: string;
   avenueId?: string;
+  clientType?: ClientType;
   serviceTypeId?: string;
+  subscriptionAmount?: string;
   registeredDate?: string;
 }
 
@@ -280,6 +287,7 @@ export interface MarkPaymentCompletePayload {
 }
 
 export interface AdminClientsParams extends PageParams {
+  clientType?: ClientType;
   isActive?: boolean;
   is_due?: boolean;
   hasDue?: boolean;
