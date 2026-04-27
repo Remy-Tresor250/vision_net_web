@@ -108,6 +108,12 @@ export const resources = {
         type: "Client type",
         refineCurrentList: "Refine the current list with API-backed filters.",
       },
+      permissions: {
+        limitedData: "You do not have permission to view this data.",
+        missingLocations: "You do not have permission to view location data needed for this action.",
+        pageMessage: "Your role does not allow access to this section.",
+        pageTitle: "Access restricted",
+      },
       dashboard: {
         allPayments: "All Payments",
         allPaymentsCount: "{{count}} payments recorded",
@@ -470,6 +476,12 @@ export const resources = {
         sortDir: "Sens du tri",
         type: "Type de client",
         refineCurrentList: "Affinez la liste actuelle avec les filtres de l'API.",
+      },
+      permissions: {
+        limitedData: "Vous n'avez pas la permission de voir ces donnees.",
+        missingLocations: "Vous n'avez pas la permission de voir les donnees de localisation requises pour cette action.",
+        pageMessage: "Votre role ne permet pas l'acces a cette section.",
+        pageTitle: "Acces restreint",
       },
       dashboard: {
         allPayments: "Tous les paiements",

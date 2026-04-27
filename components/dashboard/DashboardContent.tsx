@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import { HiOutlineAdjustmentsHorizontal } from "react-icons/hi2";
 
 import ErrorState from "@/components/dashboard/ErrorState";
+import NoDataCard from "@/components/dashboard/NoDataCard";
+import { hasAnyPermission } from "@/lib/auth/permissions";
 import {
   RecentTransactionsSkeleton,
   RevenueChartSkeleton,
@@ -23,6 +25,7 @@ import {
 } from "@/lib/query/hooks";
 import { getAdminPaymentId } from "@/lib/payment";
 import type { MetricCard, RevenuePoint } from "@/types";
+import { useAuthStore } from "@/stores/auth-store";
 
 function buildMetricCards(
   kpis:
@@ -181,6 +184,8 @@ function addMonths(date: Date, months: number) {
 
 export default function DashboardContent() {
   const { t, i18n } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canViewPayments = hasAnyPermission(permissions, ["payments.view"]);
   const now = new Date();
   const maxMonth = startOfMonth(now);
   const minMonth = addMonths(maxMonth, -5);
@@ -197,7 +202,7 @@ export default function DashboardContent() {
     limit: 6,
     skip: 0,
     sortDir: "desc",
-  });
+  }, { enabled: canViewPayments });
 
   const allRevenueSeries = useMemo(
     () => buildRevenueSeries(dashboardQuery.data?.graphs?.revenuePerMonth),
@@ -363,7 +368,13 @@ export default function DashboardContent() {
               <RevenueChart data={revenueSeries} />
             )}
           </article>
-          {paymentsQuery.isLoading ? (
+          {!canViewPayments ? (
+            <NoDataCard
+              className="min-h-[18rem]"
+              message={t("permissions.limitedData")}
+              title={t("dashboard.recentTransactions")}
+            />
+          ) : paymentsQuery.isLoading ? (
             <RecentTransactionsSkeleton />
           ) : (
             <RecentTransactionsCard transactions={recentTransactions} />

@@ -27,6 +27,7 @@ export default function LoginForm() {
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const logout = useAuthStore((state) => state.logout);
   const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
   const mutation = usePasswordLoginMutation();
   const next = searchParams.get("next") ?? "/dashboard";
 
@@ -47,10 +48,10 @@ export default function LoginForm() {
   }, [hydrate]);
 
   useEffect(() => {
-    if (hasHydrated && token) {
+    if (hasHydrated && token && user?.role === "ADMIN") {
       router.replace(next);
     }
-  }, [hasHydrated, next, router, token]);
+  }, [hasHydrated, next, router, token, user?.role]);
 
   function onSubmit(values: LoginFormValues) {
     mutation.mutate(values, {

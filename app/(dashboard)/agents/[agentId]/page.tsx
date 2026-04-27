@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import PermissionGuard from "@/components/auth/PermissionGuard";
 import AgentDetailsPanel from "@/components/dashboard/AgentDetailsPanel";
 
 interface Props {
@@ -16,5 +17,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AgentDetailsPage({ params }: Props) {
   const { agentId } = await params;
 
-  return <AgentDetailsPanel agentId={agentId} />;
+  return (
+    <PermissionGuard anyOf={["agents.view"]}>
+      <AgentDetailsPanel agentId={agentId} />
+    </PermissionGuard>
+  );
 }

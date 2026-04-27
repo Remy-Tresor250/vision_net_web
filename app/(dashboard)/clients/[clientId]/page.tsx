@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import PermissionGuard from "@/components/auth/PermissionGuard";
 import ClientDetailsPanel from "@/components/dashboard/ClientDetailsPanel";
 
 interface Props {
@@ -16,5 +17,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ClientDetailsPage({ params }: Props) {
   const { clientId } = await params;
 
-  return <ClientDetailsPanel clientId={clientId} />;
+  return (
+    <PermissionGuard anyOf={["clients.view"]}>
+      <ClientDetailsPanel clientId={clientId} />
+    </PermissionGuard>
+  );
 }

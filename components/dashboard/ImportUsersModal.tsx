@@ -28,6 +28,8 @@ import {
   useImportClientsMutation,
 } from "@/lib/query/hooks";
 import { getClientTypeLabelKey } from "@/lib/client-type";
+import { hasAnyPermission } from "@/lib/auth/permissions";
+import { useAuthStore } from "@/stores/auth-store";
 
 interface Props {
   kind: "agents" | "clients";
@@ -41,6 +43,9 @@ export default function ImportUsersModal({
   onImported,
 }: Props) {
   const { t } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canDownloadTemplate = hasAnyPermission(permissions, ["imports.view"]);
+  const canImport = hasAnyPermission(permissions, ["imports.create"]);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<CsvPreview | null>(null);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
@@ -56,6 +61,7 @@ export default function ImportUsersModal({
         ".xlsx",
       ],
     },
+    disabled: !canImport,
     maxFiles: 1,
     onDrop: async ([acceptedFile]) => {
       if (!acceptedFile) return;
@@ -68,6 +74,10 @@ export default function ImportUsersModal({
       }
     },
   });
+
+  if (!canDownloadTemplate && !canImport) {
+    return null;
+  }
 
   function close() {
     setFile(null);
@@ -136,7 +146,7 @@ export default function ImportUsersModal({
       </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         <button
-          disabled={isDownloadingTemplate}
+          disabled={!canDownloadTemplate || isDownloadingTemplate}
           onClick={downloadExample}
           type="button"
           className="flex w-full flex-row items-center justify-center gap-[4px] rounded-[6px] bg-brand px-[12px] py-[8px] sm:w-auto sm:py-[6px]"
@@ -150,7 +160,8 @@ export default function ImportUsersModal({
 
       <div
         {...dropzone.getRootProps()}
-        className="flex cursor-pointer flex-col items-center justify-center rounded-sm border border-dashed border-border bg-surface-muted px-6 py-6 text-center transition-colors hover:border-brand"
+        className="flex flex-col items-center justify-center rounded-sm border border-dashed border-border bg-surface-muted px-6 py-6 text-center transition-colors hover:border-brand data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-60"
+        data-disabled={!canImport}
       >
         <input {...dropzone.getInputProps()} />
         <div className="flex size-12 items-center justify-center rounded-md bg-surface text-text-muted">
@@ -160,7 +171,7 @@ export default function ImportUsersModal({
           {file ? file.name : t("imports.drop")}
         </p>
         <p className="mt-2 max-w-md text-[13px] leading-6 text-text-muted">
-          {t("imports.csvOnly")}
+          {canImport ? t("imports.csvOnly") : t("permissions.pageMessage")}
         </p>
       </div>
 
@@ -209,7 +220,7 @@ export default function ImportUsersModal({
 
       <div className="flex justify-end gap-3">
         <button
-          disabled={!file || isImporting}
+          disabled={!canImport || !file || isImporting}
           onClick={upload}
           type="button"
           className="flex w-full flex-row items-center justify-center gap-[4px] rounded-[6px] bg-brand px-[12px] py-[8px] sm:w-auto sm:py-[6px]"

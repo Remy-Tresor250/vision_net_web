@@ -36,6 +36,9 @@ export interface LocationTableGroup {
 }
 
 interface Props {
+  canCreateLocation: boolean;
+  canDeleteLocation: boolean;
+  canEditLocation: boolean;
   disabled?: boolean;
   groups: LocationTableGroup[];
   isLoading: boolean;
@@ -50,6 +53,9 @@ interface Props {
 }
 
 export default function LocationGroupsTable({
+  canCreateLocation,
+  canDeleteLocation,
+  canEditLocation,
   disabled = false,
   groups,
   isLoading,
@@ -148,20 +154,22 @@ export default function LocationGroupsTable({
                           </Button>
                         </Menu.Target>
                         <Menu.Dropdown>
-                          {row.serineId ? (
+                          {row.serineId && canEditLocation ? (
                             <Menu.Item disabled={disabled} onClick={() => onEditRow(group, row)}>
                               {t("configurations.edit")}
                             </Menu.Item>
                           ) : null}
-                          <Menu.Item disabled={disabled} onClick={() => onAddCell(group)}>
-                            {t("configurations.addCell")}
-                          </Menu.Item>
-                          {row.serineId ? (
+                          {canCreateLocation ? (
+                            <Menu.Item disabled={disabled} onClick={() => onAddCell(group)}>
+                              {t("configurations.addCell")}
+                            </Menu.Item>
+                          ) : null}
+                          {row.serineId && canCreateLocation ? (
                             <Menu.Item disabled={disabled} onClick={() => onAddAvenue(group, row)}>
                               {t("configurations.addAvenue")}
                             </Menu.Item>
                           ) : null}
-                          {row.serineId ? (
+                          {row.serineId && canDeleteLocation ? (
                             <Menu.Item
                               color="red"
                               disabled={disabled}
@@ -170,13 +178,15 @@ export default function LocationGroupsTable({
                               {t("configurations.deleteCell")}
                             </Menu.Item>
                           ) : null}
-                          <Menu.Item
-                            color="red"
-                            disabled={disabled}
-                            onClick={() => onDeleteQuartier(group)}
-                          >
-                            {t("configurations.deleteQuartier")}
-                          </Menu.Item>
+                          {canDeleteLocation ? (
+                            <Menu.Item
+                              color="red"
+                              disabled={disabled}
+                              onClick={() => onDeleteQuartier(group)}
+                            >
+                              {t("configurations.deleteQuartier")}
+                            </Menu.Item>
+                          ) : null}
                         </Menu.Dropdown>
                       </Menu>
                     </TableTd>

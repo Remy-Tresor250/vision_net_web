@@ -10,6 +10,9 @@ import type {
 import type { DashboardParams } from "@/lib/api/admin";
 
 export const queryKeys = {
+  me: {
+    detail: () => ["me", "detail"] as const,
+  },
   admin: {
     all: ["admin"] as const,
     dashboard: (params?: DashboardParams) =>

@@ -19,6 +19,7 @@ import { FiSidebar } from "react-icons/fi";
 
 import AppLogo from "@/components/dashboard/AppLogo";
 import Button from "@/components/ui/Button";
+import { hasAnyPermission } from "@/lib/auth/permissions";
 import { getApiErrorMessage } from "@/lib/api/client";
 import {
   useAdminDashboardQuery,
@@ -39,31 +40,37 @@ const navigationItems = [
     href: "/dashboard",
     labelKey: "dashboard",
     icon: HiOutlineSquares2X2,
+    permissions: ["dashboard.view"],
   },
   {
     href: "/clients",
     labelKey: "clients",
     icon: HiOutlineUsers,
+    permissions: ["clients.view"],
   },
   {
     href: "/agents",
     labelKey: "agents",
     icon: HiOutlineUserCircle,
+    permissions: ["agents.view"],
   },
   {
     href: "/payments",
     labelKey: "payment",
     icon: HiOutlineBanknotes,
+    permissions: ["payments.view"],
   },
   {
     href: "/configurations",
     labelKey: "configurations",
     icon: HiOutlineCog6Tooth,
+    permissions: ["locations.view", "service_types.view", "commissions.view", "commissions.edit"],
   },
   {
     href: "/reports",
     labelKey: "reports",
     icon: HiOutlineDocumentChartBar,
+    permissions: ["reports.view", "reports.create"],
   },
 ] as const;
 
@@ -76,8 +83,12 @@ function SidebarContent({
 }) {
   const { t } = useTranslation();
   const language = useLanguageStore((state) => state.language);
+  const permissions = useAuthStore((state) => state.user?.permissions);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const updateLanguageMutation = useUpdateMyLanguageMutation();
+  const visibleNavigationItems = navigationItems.filter((item) =>
+    hasAnyPermission(permissions, [...item.permissions]),
+  );
 
   function handleLanguageChange(nextLanguage: Language) {
     if (language === nextLanguage) {
@@ -104,7 +115,7 @@ function SidebarContent({
         </div>
       </div>
       <nav className="flex-1 space-y-3 px-5 py-8">
-        {navigationItems.map((item) => {
+        {visibleNavigationItems.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
 
@@ -159,16 +170,44 @@ export default function DashboardShell({ children }: Props) {
   const [opened, { close: closeSidebar, open }] = useDisclosure(false);
   const { t } = useTranslation();
   const logout = useAuthStore((state) => state.logout);
+  const permissions = useAuthStore((state) => state.user?.permissions);
   const user = useAuthStore((state) => state.user);
   const hydrateLanguage = useLanguageStore((state) => state.hydrate);
+  const canViewDashboard = hasAnyPermission(permissions, ["dashboard.view"]);
+  const shouldLoadDashboardSummary =
+    canViewDashboard &&
+    ["/dashboard", "/clients", "/agents"].some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    );
   const dashboardQuery = useAdminDashboardQuery({
     topAgentsLimit: 10,
     year: new Date().getFullYear(),
-  });
+  }, { enabled: shouldLoadDashboardSummary });
+  const visibleNavigationItems = navigationItems.filter((item) =>
+    hasAnyPermission(permissions, [...item.permissions]),
+  );
 
   useEffect(() => {
     hydrateLanguage();
   }, [hydrateLanguage]);
+
+  useEffect(() => {
+    if (!permissions?.length) {
+      return;
+    }
+
+    const currentItem = navigationItems.find(
+      (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+    );
+
+    if (
+      currentItem &&
+      !hasAnyPermission(permissions, [...currentItem.permissions]) &&
+      visibleNavigationItems.length
+    ) {
+      router.replace(visibleNavigationItems[0].href);
+    }
+  }, [pathname, permissions, router, visibleNavigationItems]);
 
   const currentNavigationItem = navigationItems.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
@@ -249,8 +288,8 @@ export default function DashboardShell({ children }: Props) {
         position="left"
         size="19rem"
       >
-        <SidebarContent closeSidebar={closeSidebar} pathname={pathname} />
-      </Drawer>
+          <SidebarContent closeSidebar={closeSidebar} pathname={pathname} />
+        </Drawer>
       <div className="flex min-h-screen">
         <aside className="hidden w-[23vw] shrink-0 xl:block fixed h-screen">
           <SidebarContent pathname={pathname} />

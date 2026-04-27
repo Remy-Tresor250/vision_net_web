@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import PermissionGuard from "@/components/auth/PermissionGuard";
 import ClientsTable from "@/components/dashboard/ClientsTable";
 import { normalizeClientType } from "@/lib/client-type";
 
@@ -21,8 +22,10 @@ export default async function ClientsPage({
   );
 
   return (
-    <div className="space-y-6">
-      <ClientsTable initialClientType={initialClientType} />
-    </div>
+    <PermissionGuard anyOf={["clients.view"]}>
+      <div className="space-y-6">
+        <ClientsTable initialClientType={initialClientType} />
+      </div>
+    </PermissionGuard>
   );
 }

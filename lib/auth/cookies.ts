@@ -39,6 +39,13 @@ export function setAuthCookies(
   Cookies.set(USER_COOKIE, JSON.stringify(user), { ...cookieOptions, expires });
 }
 
+export function setStoredUser(user: AuthUser, expires?: Date) {
+  Cookies.set(USER_COOKIE, JSON.stringify(user), {
+    ...cookieOptions,
+    expires,
+  });
+}
+
 export function removeAuthCookies() {
   Cookies.remove(ACCESS_TOKEN_COOKIE);
   Cookies.remove(USER_COOKIE);

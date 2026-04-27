@@ -14,6 +14,7 @@ import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
+import { hasAnyPermission } from "@/lib/auth/permissions";
 import type { AdminAgentsParams } from "@/lib/api/types";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { formatCurrency, formatDate, getPageCount } from "@/lib/format";
@@ -21,11 +22,15 @@ import {
   useAdminAgentsQuery,
   useUpdateAgentStatusMutation,
 } from "@/lib/query/hooks";
+import { useAuthStore } from "@/stores/auth-store";
 
 const PAGE_SIZE = 8;
 
 export default function AgentsTable() {
   const { t } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canCreateAgents = hasAnyPermission(permissions, ["agents.create"]);
+  const canEditAgents = hasAnyPermission(permissions, ["agents.edit"]);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, string>>({
@@ -140,7 +145,7 @@ export default function AgentsTable() {
           },
         ]}
         filters={filters}
-        onAdd={() => setAddOpened(true)}
+        onAdd={canCreateAgents ? () => setAddOpened(true) : undefined}
         onFiltersChange={handleFiltersChange}
         onQueryChange={handleQueryChange}
         placeholder={t("tables.searchAgents")}
@@ -206,15 +211,19 @@ export default function AgentsTable() {
                       <Menu.Item component={Link} href={`/agents/${agent.agentId}`}>
                         {t("common.view")}
                       </Menu.Item>
-                      <Menu.Item onClick={() => setEditingAgentId(agent.agentId)}>
-                        {t("forms.editAgentTitle")}
-                      </Menu.Item>
-                      <Menu.Item
-                        color={agent.isActive ? "red" : "green"}
-                        onClick={() => updateStatus(agent.agentId, !agent.isActive)}
-                      >
-                        {agent.isActive ? t("tables.deactivate") : t("tables.activate")}
-                      </Menu.Item>
+                      {canEditAgents ? (
+                        <Menu.Item onClick={() => setEditingAgentId(agent.agentId)}>
+                          {t("forms.editAgentTitle")}
+                        </Menu.Item>
+                      ) : null}
+                      {canEditAgents ? (
+                        <Menu.Item
+                          color={agent.isActive ? "red" : "green"}
+                          onClick={() => updateStatus(agent.agentId, !agent.isActive)}
+                        >
+                          {agent.isActive ? t("tables.deactivate") : t("tables.activate")}
+                        </Menu.Item>
+                      ) : null}
                     </Menu.Dropdown>
                   </Menu>
                 </TableTd>

@@ -19,10 +19,12 @@ import {
 } from "react-icons/hi2";
 
 import ErrorState from "@/components/dashboard/ErrorState";
+import NoDataCard from "@/components/dashboard/NoDataCard";
 import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import { adminApi } from "@/lib/api/admin";
+import { hasAnyPermission } from "@/lib/auth/permissions";
 import {
   formatCurrency,
   formatDate,
@@ -34,6 +36,7 @@ import { useAdminAgentQuery, useAdminPaymentsQuery } from "@/lib/query/hooks";
 import type { AdminPaymentListItem } from "@/lib/api/types";
 import type { Payment } from "@/types";
 import { useTranslation } from "react-i18next";
+import { useAuthStore } from "@/stores/auth-store";
 
 interface Props {
   agentId: string;
@@ -76,6 +79,8 @@ function toReceiptPayment(payment: AdminPaymentListItem): Payment {
 
 export default function AgentDetailsPanel({ agentId }: Props) {
   const { t } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canViewPayments = hasAnyPermission(permissions, ["payments.view"]);
   const [page, setPage] = useState(1);
   const [selectedPayment, setSelectedPayment] =
     useState<AdminPaymentListItem | null>(null);
@@ -84,12 +89,15 @@ export default function AgentDetailsPanel({ agentId }: Props) {
     labels: Record<string, string>;
   }>({ agentId: null, labels: {} });
   const agentQuery = useAdminAgentQuery(agentId);
-  const paymentsQuery = useAdminPaymentsQuery({
-    agentId,
-    limit: PAGE_SIZE,
-    skip: (page - 1) * PAGE_SIZE,
-    sortDir: "desc",
-  });
+  const paymentsQuery = useAdminPaymentsQuery(
+    {
+      agentId,
+      limit: PAGE_SIZE,
+      skip: (page - 1) * PAGE_SIZE,
+      sortDir: "desc",
+    },
+    { enabled: canViewPayments },
+  );
   const agent = agentQuery.data;
   const payments = paymentsQuery.data?.data ?? [];
   const totalPages = getPageCount(paymentsQuery.data?.total ?? 0, PAGE_SIZE);
@@ -282,7 +290,8 @@ export default function AgentDetailsPanel({ agentId }: Props) {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
+      {canViewPayments ? (
+        <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
         <TableScrollContainer minWidth={1080}>
           <Table className="min-w-full">
             <TableThead className="bg-surface-muted">
@@ -357,7 +366,14 @@ export default function AgentDetailsPanel({ agentId }: Props) {
             value={page}
           />
         </div>
-      </section>
+        </section>
+      ) : (
+        <NoDataCard
+          className="min-h-72"
+          message={t("permissions.limitedData")}
+          title={t("dashboard.allPayments")}
+        />
+      )}
       <ReceiptModal
         onClose={() => setSelectedPayment(null)}
         opened={selectedPayment !== null}

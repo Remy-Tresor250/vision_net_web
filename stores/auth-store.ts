@@ -15,6 +15,7 @@ interface AuthState {
   user: AuthUser | null;
   hasHydrated: boolean;
   hydrate: () => void;
+  setUser: (user: AuthUser | null) => void;
   setSession: (payload: AuthTokenPayload) => void;
   updateUser: (user: Partial<AuthUser>) => void;
   logout: () => void;
@@ -30,6 +31,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: getStoredUser(),
       hasHydrated: true,
     }),
+  setUser: (user) => set({ user }),
   setSession: (payload) => {
     setAuthCookies(payload.accessToken, payload.user, payload.expiresInSeconds);
     set({

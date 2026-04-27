@@ -22,10 +22,12 @@ import {
 
 import Button from "@/components/ui/Button";
 import ErrorState from "@/components/dashboard/ErrorState";
+import NoDataCard from "@/components/dashboard/NoDataCard";
 import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
+import { hasAnyPermission } from "@/lib/auth/permissions";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { formatCurrency, formatDate, formatMonths } from "@/lib/format";
 import { getAdminPaymentId } from "@/lib/payment";
@@ -39,6 +41,7 @@ import { getPageCount } from "@/lib/format";
 import type { Payment } from "@/types";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { useAuthStore } from "@/stores/auth-store";
 
 interface Props {
   clientId: string;
@@ -83,15 +86,22 @@ function toReceiptPayment(
 
 export default function ClientDetailsPanel({ clientId }: Props) {
   const { t } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canViewPayments = hasAnyPermission(permissions, ["payments.view"]);
+  const canEditPayments = hasAnyPermission(permissions, ["payments.edit"]);
   const [page, setPage] = useState(1);
   const [selectedPayment, setSelectedPayment] =
     useState<AdminPaymentListItem | null>(null);
   const clientQuery = useAdminClientQuery(clientId);
-  const paymentsQuery = useAdminClientPaymentsQuery(clientId, {
-    limit: PAGE_SIZE,
-    skip: (page - 1) * PAGE_SIZE,
-    sortDir: "desc",
-  });
+  const paymentsQuery = useAdminClientPaymentsQuery(
+    clientId,
+    {
+      limit: PAGE_SIZE,
+      skip: (page - 1) * PAGE_SIZE,
+      sortDir: "desc",
+    },
+    { enabled: canViewPayments },
+  );
   const markCompleteMutation = useMarkClientPaymentCompleteMutation(clientId);
   const client = clientQuery.data;
   const payments = paymentsQuery.data?.data ?? [];
@@ -220,7 +230,8 @@ export default function ClientDetailsPanel({ clientId }: Props) {
         </article>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
+      {canViewPayments ? (
+        <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
         <TableScrollContainer minWidth={1080}>
           <Table className="min-w-full">
             <TableThead className="bg-surface-muted">
@@ -294,7 +305,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                         />
                       </TableTd>
                       <TableTd>
-                        {isOverdue ? (
+                        {isOverdue && canEditPayments ? (
                           <Menu position="bottom-end" shadow="md" width={180}>
                             <Menu.Target>
                               <Button
@@ -312,7 +323,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                               </Menu.Item>
                             </Menu.Dropdown>
                           </Menu>
-                        ) : (
+                        ) : !isOverdue ? (
                           <Menu position="bottom-end" shadow="md" width={180}>
                             <Menu.Target>
                               <Button
@@ -332,6 +343,8 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                               </Menu.Item>
                             </Menu.Dropdown>
                           </Menu>
+                        ) : (
+                          <span className="px-3 text-text-muted">-</span>
                         )}
                       </TableTd>
                     </TableTr>
@@ -352,7 +365,14 @@ export default function ClientDetailsPanel({ clientId }: Props) {
             value={page}
           />
         </div>
-      </section>
+        </section>
+      ) : (
+        <NoDataCard
+          className="min-h-72"
+          message={t("permissions.limitedData")}
+          title={t("dashboard.allPayments")}
+        />
+      )}
       <ReceiptModal
         onClose={() => setSelectedPayment(null)}
         opened={selectedPayment !== null}

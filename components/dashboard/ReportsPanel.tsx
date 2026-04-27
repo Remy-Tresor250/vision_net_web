@@ -8,8 +8,10 @@ import toast from "react-hot-toast";
 import { HiOutlineDocumentChartBar } from "react-icons/hi2";
 import { useTranslation } from "react-i18next";
 
+import NoDataCard from "@/components/dashboard/NoDataCard";
 import Button from "@/components/ui/Button";
 import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
+import { hasAnyPermission } from "@/lib/auth/permissions";
 import { adminApi } from "@/lib/api/admin";
 import { getApiErrorMessage } from "@/lib/api/client";
 import {
@@ -17,6 +19,7 @@ import {
   useAvenueMonthlyReportStatusQuery,
   useGenerateAvenueMonthlyReportMutation,
 } from "@/lib/query/hooks";
+import { useAuthStore } from "@/stores/auth-store";
 
 type BillingMonthValue = Date | string | { toDate: () => Date } | null;
 
@@ -60,6 +63,10 @@ function buildPdfPreviewUrl(pdfUrl: string) {
 
 export default function ReportsPanel() {
   const { t } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canViewLocations = hasAnyPermission(permissions, ["locations.view"]);
+  const canViewReports = hasAnyPermission(permissions, ["reports.view"]);
+  const canCreateReports = hasAnyPermission(permissions, ["reports.create"]);
   const currentMonth = useMemo(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
@@ -73,14 +80,17 @@ export default function ReportsPanel() {
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [debouncedAvenueSearch] = useDebouncedValue(avenueSearch, 350);
 
-  const avenuesQuery = useAdminAvenuesQuery({
-    limit: 100,
-    search: debouncedAvenueSearch || undefined,
-    skip: 0,
-  });
+  const avenuesQuery = useAdminAvenuesQuery(
+    {
+      limit: 100,
+      search: debouncedAvenueSearch || undefined,
+      skip: 0,
+    },
+    { enabled: canViewLocations },
+  );
   const generateReportMutation = useGenerateAvenueMonthlyReportMutation();
   const reportStatusQuery = useAvenueMonthlyReportStatusQuery(reportId, {
-    enabled: Boolean(reportId),
+    enabled: Boolean(reportId) && canViewReports,
   });
 
   const avenueOptions = useMemo(() => {
@@ -121,7 +131,8 @@ export default function ReportsPanel() {
     reportStatusQuery.data?.status === "QUEUED";
   const progressPercent = reportStatusQuery.data?.progressPercent ?? 0;
   const resolvedBillingMonth = toBillingMonthDate(billingMonth);
-  const canGenerateReport = Boolean(selectedAvenueId && resolvedBillingMonth);
+  const canGenerateReport =
+    canCreateReports && canViewLocations && Boolean(selectedAvenueId && resolvedBillingMonth);
 
   useEffect(() => {
     if (!selectedAvenueId) {
@@ -295,24 +306,32 @@ export default function ReportsPanel() {
             valueFormat="MMMM YYYY"
           />
 
-          <Select
-            classNames={appFieldClassNames}
-            data={avenueOptions}
-            disabled={isGenerating}
-            label={t("reports.selectAvenue")}
-            nothingFoundMessage={t("reports.noAvenuesFound")}
-            onChange={(value, option) => {
-              setSelectedAvenueId(value ?? "");
-              setSelectedAvenueLabel(value ? option.label : "");
-              setAvenueSearch("");
-            }}
-            onSearchChange={setAvenueSearch}
-            placeholder={t("reports.selectAvenuePlaceholder")}
-            searchable
-            searchValue={avenueSearch}
-            styles={appFieldStyles}
-            value={selectedAvenueId}
-          />
+          {canViewLocations ? (
+            <Select
+              classNames={appFieldClassNames}
+              data={avenueOptions}
+              disabled={isGenerating}
+              label={t("reports.selectAvenue")}
+              nothingFoundMessage={t("reports.noAvenuesFound")}
+              onChange={(value, option) => {
+                setSelectedAvenueId(value ?? "");
+                setSelectedAvenueLabel(value ? option.label : "");
+                setAvenueSearch("");
+              }}
+              onSearchChange={setAvenueSearch}
+              placeholder={t("reports.selectAvenuePlaceholder")}
+              searchable
+              searchValue={avenueSearch}
+              styles={appFieldStyles}
+              value={selectedAvenueId}
+            />
+          ) : (
+            <NoDataCard
+              className="min-h-40"
+              message={t("permissions.missingLocations")}
+              title={t("reports.selectAvenue")}
+            />
+          )}
 
           <Button
             className="h-[54px] w-full rounded-sm text-[16px] font-medium"

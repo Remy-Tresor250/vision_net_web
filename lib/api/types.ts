@@ -33,6 +33,9 @@ export interface AuthUser {
   role: UserRole;
   language: Language;
   firstLoginCompleted: boolean;
+  adminId?: string;
+  adminRoleId?: string;
+  permissions?: string[];
 }
 
 export interface AuthTokenPayload {
@@ -40,6 +43,19 @@ export interface AuthTokenPayload {
   expiresInSeconds: number;
   tokenType: "Bearer";
   user: AuthUser;
+}
+
+export interface AuthMeResponse {
+  user: AuthUser & {
+    createdAt?: string;
+    isActive?: boolean;
+  };
+  profile?: {
+    type?: UserRole;
+    adminId?: string;
+    roleId?: string;
+    permissions?: string[];
+  };
 }
 
 export interface OtpStartResponse extends ApiSuccess {

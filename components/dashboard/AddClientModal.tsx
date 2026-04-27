@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import ImportUsersModal from "@/components/dashboard/ImportUsersModal";
 import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
 import PhoneNumberInput from "@/components/ui/PhoneNumberInput";
+import { hasAnyPermission } from "@/lib/auth/permissions";
 import { getApiErrorMessage } from "@/lib/api/client";
 import {
   useAdminAvenuesQuery,
@@ -32,6 +33,7 @@ import {
   clientFormSchema,
   type ClientFormValues,
 } from "@/lib/validation/admin-users";
+import { useAuthStore } from "@/stores/auth-store";
 
 interface Props {
   opened: boolean;
@@ -110,6 +112,10 @@ export default function AddClientModal({
   opened,
 }: Props) {
   const { i18n, t } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canImport = hasAnyPermission(permissions, ["imports.view", "imports.create"]);
+  const canViewLocations = hasAnyPermission(permissions, ["locations.view"]);
+  const canViewServices = hasAnyPermission(permissions, ["service_types.view"]);
   const createMutation = useCreateClientMutation();
   const updateMutation = useUpdateClientMutation(client?.clientId);
   const isEditing = Boolean(client);
@@ -139,15 +145,21 @@ export default function AddClientModal({
   const watchedSerineId = useWatch({ control, name: "serineId" });
   const watchedClientType = useWatch({ control, name: "clientType" });
 
-  const serviceTypesQuery = useAdminServiceTypesQuery({ limit: 100, skip: 0 });
-  const quartiersQuery = useAdminQuartiersQuery({ limit: 100, skip: 0 });
+  const serviceTypesQuery = useAdminServiceTypesQuery(
+    { limit: 100, skip: 0 },
+    { enabled: canViewServices },
+  );
+  const quartiersQuery = useAdminQuartiersQuery(
+    { limit: 100, skip: 0 },
+    { enabled: canViewLocations },
+  );
   const serinesQuery = useAdminSerinesQuery(
     {
       limit: 100,
       quartierId: watchedQuartierId || undefined,
       skip: 0,
     },
-    { enabled: Boolean(watchedQuartierId) },
+    { enabled: canViewLocations && Boolean(watchedQuartierId) },
   );
   const avenuesQuery = useAdminAvenuesQuery(
     {
@@ -156,7 +168,7 @@ export default function AddClientModal({
       serineId: watchedSerineId || undefined,
       skip: 0,
     },
-    { enabled: Boolean(watchedQuartierId && watchedSerineId) },
+    { enabled: canViewLocations && Boolean(watchedQuartierId && watchedSerineId) },
   );
 
   const quartierOptions = useMemo(
@@ -286,7 +298,7 @@ export default function AddClientModal({
       }
     >
       <div className="space-y-3 lg:px-6">
-        {!isEditing ? (
+        {!isEditing && canImport ? (
           <>
             <ImportUsersModal
               clientType={watchedClientType}

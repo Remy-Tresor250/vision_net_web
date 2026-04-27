@@ -18,8 +18,10 @@ import LocationConfigurationModal, {
   type LocationModalMode,
 } from "@/components/dashboard/LocationConfigurationModal";
 import ServiceConfigurationsSection from "@/components/dashboard/ServiceConfigurationsSection";
+import NoDataCard from "@/components/dashboard/NoDataCard";
 import Button from "@/components/ui/Button";
 import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
+import { hasAnyPermission } from "@/lib/auth/permissions";
 import { adminApi } from "@/lib/api/admin";
 import { getApiErrorMessage } from "@/lib/api/client";
 import {
@@ -35,27 +37,33 @@ import {
 } from "@/lib/query/hooks";
 import { invalidateLocations } from "@/lib/query/invalidation";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/auth-store";
 type ConfigurationTab = "location" | "service" | "commission";
 
 const LOCATION_PAGE_SIZE = 2;
 function ConfigurationTabs({
   activeTab,
   onChange,
+  tabs,
 }: {
   activeTab: ConfigurationTab;
   onChange: (tab: ConfigurationTab) => void;
+  tabs: ConfigurationTab[];
 }) {
   const { t } = useTranslation();
 
   return (
-    <div className="grid w-full max-w-[520px] grid-cols-3 rounded-[14px] bg-surface-muted p-1.5">
-      {(
-        [
-          { label: t("common.location"), value: "location" },
-          { label: t("common.service"), value: "service" },
-          { label: t("configurations.commission"), value: "commission" },
-        ] as const
-      ).map((tab) => {
+    <div
+      className="grid w-full max-w-[520px] rounded-[14px] bg-surface-muted p-1.5"
+      style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+    >
+      {tabs.map((tabValue) => {
+        const tab =
+          tabValue === "location"
+            ? { label: t("common.location"), value: "location" as const }
+            : tabValue === "service"
+              ? { label: t("common.service"), value: "service" as const }
+              : { label: t("configurations.commission"), value: "commission" as const };
         const isActive = activeTab === tab.value;
 
         return (
@@ -80,6 +88,17 @@ function ConfigurationTabs({
 
 export default function ConfigurationsPanel() {
   const { t } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canViewLocations = hasAnyPermission(permissions, ["locations.view"]);
+  const canCreateLocation = hasAnyPermission(permissions, ["locations.create"]);
+  const canEditLocation = hasAnyPermission(permissions, ["locations.edit"]);
+  const canDeleteLocation = hasAnyPermission(permissions, ["locations.delete"]);
+  const canViewServices = hasAnyPermission(permissions, ["service_types.view"]);
+  const canCreateService = hasAnyPermission(permissions, ["service_types.create"]);
+  const canEditService = hasAnyPermission(permissions, ["service_types.edit"]);
+  const canDeleteService = hasAnyPermission(permissions, ["service_types.delete"]);
+  const canViewCommissions = hasAnyPermission(permissions, ["commissions.view"]);
+  const canEditCommissions = hasAnyPermission(permissions, ["commissions.edit"]);
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<ConfigurationTab>("location");
   const [serviceName, setServiceName] = useState("");
@@ -99,11 +118,23 @@ export default function ConfigurationsPanel() {
   const [isLocationTablePending, setIsLocationTablePending] = useState(false);
   const locationTransitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const serviceTypesQuery = useAdminServiceTypesQuery({ limit: 100, skip: 0 });
-  const commissionConfigQuery = useCommissionConfigQuery();
-  const quartiersQuery = useAdminQuartiersQuery({ limit: 100, skip: 0 });
-  const serinesQuery = useAdminSerinesQuery({ limit: 100, skip: 0 });
-  const avenuesQuery = useAdminAvenuesQuery({ limit: 100, skip: 0 });
+  const serviceTypesQuery = useAdminServiceTypesQuery(
+    { limit: 100, skip: 0 },
+    { enabled: canViewServices },
+  );
+  const commissionConfigQuery = useCommissionConfigQuery({ enabled: canViewCommissions });
+  const quartiersQuery = useAdminQuartiersQuery(
+    { limit: 100, skip: 0 },
+    { enabled: canViewLocations },
+  );
+  const serinesQuery = useAdminSerinesQuery(
+    { limit: 100, skip: 0 },
+    { enabled: canViewLocations },
+  );
+  const avenuesQuery = useAdminAvenuesQuery(
+    { limit: 100, skip: 0 },
+    { enabled: canViewLocations },
+  );
 
   const createServiceTypeMutation = useCreateServiceTypeMutation();
   const updateServiceTypeMutation = useUpdateServiceTypeMutation(selectedServiceTypeId ?? undefined);
@@ -192,6 +223,13 @@ export default function ConfigurationsPanel() {
         : locationModalMode === "edit"
           ? t("configurations.editLocationTitle")
           : t("configurations.addAvenueTitle");
+  const availableTabs = (
+    [
+      canViewLocations ? "location" : null,
+      canViewServices ? "service" : null,
+      canViewCommissions ? "commission" : null,
+    ] as const
+  ).filter((tab): tab is ConfigurationTab => Boolean(tab));
 
   useEffect(() => {
     if (commissionConfigQuery.data?.ratePercent === undefined) {
@@ -206,6 +244,12 @@ export default function ConfigurationsPanel() {
       setLocationPage(totalLocationPages);
     }
   }, [locationPage, totalLocationPages]);
+
+  useEffect(() => {
+    if (availableTabs.length && !availableTabs.includes(activeTab)) {
+      setActiveTab(availableTabs[0]);
+    }
+  }, [activeTab, availableTabs]);
 
   useEffect(
     () => () => {
@@ -624,18 +668,22 @@ export default function ConfigurationsPanel() {
     <>
       <div className="space-y-4 py-3">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
-          <ConfigurationTabs activeTab={activeTab} onChange={setActiveTab} />
+          <ConfigurationTabs
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            tabs={availableTabs}
+          />
 
-          {activeTab === "service" ? (
+          {activeTab === "service" && canViewServices ? (
             <Button
               className="h-12 min-w-[188px] rounded-[14px] px-3 text-[14px] font-medium"
-              disabled={isSavingService}
+              disabled={isSavingService || !canCreateService}
               onClick={resetServiceForm}
             >
               <HiPlus className="size-4" />
               <p className="text-[14px]">{t("configurations.newService")}</p>
             </Button>
-          ) : activeTab === "location" ? (
+          ) : activeTab === "location" && canViewLocations ? (
             <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-end">
               <div className="w-full xl:max-w-[44rem]">
                 <TextInput
@@ -653,7 +701,7 @@ export default function ConfigurationsPanel() {
               </div>
               <Button
                 className="h-12 rounded-[14px] px-4 text-[14px] font-medium"
-                disabled={isSavingLocation}
+                disabled={isSavingLocation || !canCreateLocation}
                 onClick={openNewLocationModal}
               >
                 <HiPlus className="size-4" />
@@ -663,8 +711,11 @@ export default function ConfigurationsPanel() {
           ) : null}
         </div>
 
-        {activeTab === "service" ? (
+        {activeTab === "service" ? canViewServices ? (
           <ServiceConfigurationsSection
+            canCreateService={canCreateService}
+            canDeleteService={canDeleteService}
+            canEditService={canEditService}
             isLoading={serviceTypesQuery.isLoading || serviceTypesQuery.isFetching}
             isSaving={isSavingService}
             onDeleteService={handleDeleteService}
@@ -677,7 +728,9 @@ export default function ConfigurationsPanel() {
             setServiceName={setServiceName}
             setServiceSubscription={setServiceSubscription}
           />
-        ) : activeTab === "commission" ? (
+        ) : (
+          <NoDataCard message={t("permissions.limitedData")} title={t("common.service")} />
+        ) : activeTab === "commission" ? canViewCommissions ? (
           <section className="space-y-8 rounded-sm border border-border bg-surface p-6 shadow-card xl:p-8">
             <div className="max-w-[70%]">
               <h2 className="text-[28px] font-medium text-foreground">
@@ -687,7 +740,11 @@ export default function ConfigurationsPanel() {
                 <div className="flex-1">
                   <TextInput
                     classNames={appFieldClassNames}
-                    disabled={commissionConfigQuery.isLoading || isSavingCommission}
+                    disabled={
+                      commissionConfigQuery.isLoading ||
+                      isSavingCommission ||
+                      !canEditCommissions
+                    }
                     label={t("configurations.commission")}
                     onChange={(event) => setCommissionValue(event.currentTarget.value)}
                     placeholder="10"
@@ -697,7 +754,11 @@ export default function ConfigurationsPanel() {
                 </div>
                 <Button
                   className="h-12 min-w-[135px] rounded-sm px-8 text-[16px] font-medium"
-                  disabled={commissionConfigQuery.isLoading || isSavingCommission}
+                  disabled={
+                    commissionConfigQuery.isLoading ||
+                    isSavingCommission ||
+                    !canEditCommissions
+                  }
                   onClick={handleSaveCommission}
                 >
                   <p className="text-[14px]">
@@ -708,7 +769,15 @@ export default function ConfigurationsPanel() {
             </div>
           </section>
         ) : (
+          <NoDataCard
+            message={t("permissions.limitedData")}
+            title={t("configurations.commission")}
+          />
+        ) : canViewLocations ? (
           <LocationGroupsTable
+            canCreateLocation={canCreateLocation}
+            canDeleteLocation={canDeleteLocation}
+            canEditLocation={canEditLocation}
             disabled={isSavingLocation}
             groups={visibleLocationGroups}
             isLoading={isLocationsLoading}
@@ -721,6 +790,8 @@ export default function ConfigurationsPanel() {
             page={locationPage}
             totalPages={totalLocationPages}
           />
+        ) : (
+          <NoDataCard message={t("permissions.limitedData")} title={t("common.location")} />
         )}
       </div>
 

@@ -20,6 +20,9 @@ import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
 import type { AdminServiceType } from "@/lib/api/types";
 
 interface Props {
+  canCreateService: boolean;
+  canDeleteService: boolean;
+  canEditService: boolean;
   isLoading: boolean;
   isSaving: boolean;
   onDeleteService: (serviceTypeId: string) => void;
@@ -34,6 +37,9 @@ interface Props {
 }
 
 export default function ServiceConfigurationsSection({
+  canCreateService,
+  canDeleteService,
+  canEditService,
   isLoading,
   isSaving,
   onDeleteService,
@@ -47,6 +53,7 @@ export default function ServiceConfigurationsSection({
   setServiceSubscription,
 }: Props) {
   const { t } = useTranslation();
+  const canSaveService = selectedServiceType ? canEditService : canCreateService;
 
   return (
     <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr] xl:items-start">
@@ -100,12 +107,16 @@ export default function ServiceConfigurationsSection({
                           </Button>
                         </Menu.Target>
                         <Menu.Dropdown>
-                          <Menu.Item onClick={() => onEditService(serviceType.id)}>
-                            {t("configurations.edit")}
-                          </Menu.Item>
-                          <Menu.Item color="red" onClick={() => onDeleteService(serviceType.id)}>
-                            {t("configurations.delete")}
-                          </Menu.Item>
+                          {canEditService ? (
+                            <Menu.Item onClick={() => onEditService(serviceType.id)}>
+                              {t("configurations.edit")}
+                            </Menu.Item>
+                          ) : null}
+                          {canDeleteService ? (
+                            <Menu.Item color="red" onClick={() => onDeleteService(serviceType.id)}>
+                              {t("configurations.delete")}
+                            </Menu.Item>
+                          ) : null}
                         </Menu.Dropdown>
                       </Menu>
                     </TableTd>
@@ -128,7 +139,7 @@ export default function ServiceConfigurationsSection({
           <div className="mt-10 space-y-7">
             <TextInput
               classNames={appFieldClassNames}
-              disabled={isSaving}
+              disabled={isSaving || !canSaveService}
               label={t("configurations.serviceName")}
               onChange={(event) => setServiceName(event.currentTarget.value)}
               placeholder={t("configurations.serviceName")}
@@ -137,7 +148,7 @@ export default function ServiceConfigurationsSection({
             />
             <TextInput
               classNames={appFieldClassNames}
-              disabled={isSaving}
+              disabled={isSaving || !canSaveService}
               label={t("configurations.subscription")}
               onChange={(event) => setServiceSubscription(Number(event.currentTarget.value))}
               placeholder="ex. 25"
@@ -147,7 +158,7 @@ export default function ServiceConfigurationsSection({
 
             <Button
               className="mt-4 h-[61px] w-full rounded-sm font-medium"
-              disabled={isSaving}
+              disabled={isSaving || !canSaveService}
               onClick={onSaveService}
             >
               <p className="text-[14px]">

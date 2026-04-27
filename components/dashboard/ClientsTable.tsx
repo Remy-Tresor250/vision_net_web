@@ -15,6 +15,7 @@ import FilterToolbar from "@/components/dashboard/FilterToolbar";
 import StatusBadge from "@/components/ui/StatusBadge";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
+import { hasAnyPermission } from "@/lib/auth/permissions";
 import { getClientTypeLabelKey } from "@/lib/client-type";
 import type { AdminClientsParams, ClientType } from "@/lib/api/types";
 import { getApiErrorMessage } from "@/lib/api/client";
@@ -23,6 +24,7 @@ import {
   useAdminClientsQuery,
   useUpdateClientStatusMutation,
 } from "@/lib/query/hooks";
+import { useAuthStore } from "@/stores/auth-store";
 
 const PAGE_SIZE = 8;
 
@@ -46,6 +48,9 @@ function formatClientLocation(client: {
 
 export default function ClientsTable({ initialClientType }: Props) {
   const { t } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canCreateClients = hasAnyPermission(permissions, ["clients.create"]);
+  const canEditClients = hasAnyPermission(permissions, ["clients.edit"]);
   const pathname = usePathname();
   const router = useRouter();
   const [page, setPage] = useState(1);
@@ -241,7 +246,7 @@ export default function ClientsTable({ initialClientType }: Props) {
           },
         ]}
         filters={filters}
-        onAdd={() => setAddOpened(true)}
+        onAdd={canCreateClients ? () => setAddOpened(true) : undefined}
         onFiltersChange={handleFiltersChange}
         onQueryChange={handleQueryChange}
         placeholder={t("tables.searchClients")}
@@ -328,21 +333,25 @@ export default function ClientsTable({ initialClientType }: Props) {
                     >
                       {t("common.view")}
                     </Menu.Item>
-                    <Menu.Item
-                      onClick={() => setEditingClientId(client.clientId)}
-                    >
-                      {t("forms.editClientTitle")}
-                    </Menu.Item>
-                    <Menu.Item
-                      color={client.isActive ? "red" : "green"}
-                      onClick={() =>
-                        updateStatus(client.clientId, !client.isActive)
-                      }
-                    >
-                      {client.isActive
-                        ? t("tables.deactivate")
-                        : t("tables.activate")}
-                    </Menu.Item>
+                    {canEditClients ? (
+                      <Menu.Item
+                        onClick={() => setEditingClientId(client.clientId)}
+                      >
+                        {t("forms.editClientTitle")}
+                      </Menu.Item>
+                    ) : null}
+                    {canEditClients ? (
+                      <Menu.Item
+                        color={client.isActive ? "red" : "green"}
+                        onClick={() =>
+                          updateStatus(client.clientId, !client.isActive)
+                        }
+                      >
+                        {client.isActive
+                          ? t("tables.deactivate")
+                          : t("tables.activate")}
+                      </Menu.Item>
+                    ) : null}
                   </Menu.Dropdown>
                 </Menu>
               </TableTd>

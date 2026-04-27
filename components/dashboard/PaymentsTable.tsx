@@ -13,16 +13,21 @@ import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import Button from "@/components/ui/Button";
 import StatusBadge from "@/components/ui/StatusBadge";
+import { hasAnyPermission } from "@/lib/auth/permissions";
 import type { AdminPaymentListItem, AdminPaymentsParams } from "@/lib/api/types";
 import { formatCurrency, formatDate, formatMonths, getPageCount } from "@/lib/format";
 import { getAdminPaymentId } from "@/lib/payment";
 import { useAdminPaymentsQuery } from "@/lib/query/hooks";
+import { useAuthStore } from "@/stores/auth-store";
 import type { Payment } from "@/types";
 
 const PAGE_SIZE = 8;
 
 export default function PaymentsTable() {
   const { t } = useTranslation();
+  const permissions = useAuthStore((state) => state.user?.permissions);
+  const canViewClients = hasAnyPermission(permissions, ["clients.view"]);
+  const canViewAgents = hasAnyPermission(permissions, ["agents.view"]);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, string>>({
@@ -207,12 +212,12 @@ export default function PaymentsTable() {
                       </Button>
                     </Menu.Target>
                     <Menu.Dropdown>
-                      {payment.clientId ? (
+                      {canViewClients && payment.clientId ? (
                         <Menu.Item component={Link} href={`/clients/${payment.clientId}`}>
                           {t("tables.viewClient")}
                         </Menu.Item>
                       ) : null}
-                      {payment.agentId ? (
+                      {canViewAgents && payment.agentId ? (
                         <Menu.Item component={Link} href={`/agents/${payment.agentId}`}>
                           {t("tables.viewAgent")}
                         </Menu.Item>

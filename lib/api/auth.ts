@@ -4,7 +4,9 @@ import { api } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type {
   ApiSuccess,
+  AuthMeResponse,
   AuthTokenPayload,
+  AuthUser,
   Language,
   OtpStartResponse,
   OtpVerifyResponse,
@@ -49,6 +51,15 @@ export interface UpdateLanguagePayload {
   language: Language;
 }
 
+function normalizeAuthMeResponse(payload: AuthMeResponse): AuthUser {
+  return {
+    ...payload.user,
+    adminId: payload.profile?.adminId,
+    adminRoleId: payload.profile?.roleId,
+    permissions: payload.profile?.permissions ?? [],
+  };
+}
+
 export const authApi = {
   firstLoginStart: (payload: PhonePayload) =>
     api.post<OtpStartResponse>(endpoints.auth.firstLoginStart, payload).then((res) => res.data),
@@ -84,6 +95,10 @@ export const authApi = {
     api.post<OtpStartResponse>(endpoints.me.phoneChangeStart, payload).then((res) => res.data),
   phoneChangeVerify: (payload: VerifyOtpPayload) =>
     api.post<OtpVerifyResponse>(endpoints.me.phoneChangeVerify, payload).then((res) => res.data),
+  me: () =>
+    api
+      .get<AuthMeResponse>(endpoints.me.detail)
+      .then((res) => normalizeAuthMeResponse(res.data)),
   updateLanguage: (payload: UpdateLanguagePayload) =>
     api.patch<unknown>(endpoints.me.language, payload).then((res) => res.data),
   updateMe: (payload: UpdateMePayload) =>

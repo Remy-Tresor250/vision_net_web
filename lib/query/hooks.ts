@@ -122,8 +122,20 @@ export function useUpdateMyLanguageMutation() {
   });
 }
 
-export function useAdminDashboardQuery(params?: DashboardParams) {
+export function useAuthMeQuery(config?: QueryConfig) {
   return useQuery({
+    enabled: config?.enabled,
+    queryKey: queryKeys.me.detail(),
+    queryFn: () => authApi.me(),
+  });
+}
+
+export function useAdminDashboardQuery(
+  params?: DashboardParams,
+  config?: QueryConfig,
+) {
+  return useQuery({
+    enabled: config?.enabled,
     queryKey: queryKeys.admin.dashboard(params),
     queryFn: ({ signal }) => adminApi.dashboard(params, { signal }),
   });
@@ -216,9 +228,9 @@ export function useAdminClientsQuery(
   });
 }
 
-export function useAdminClientQuery(clientId: string) {
+export function useAdminClientQuery(clientId: string, config?: QueryConfig) {
   return useQuery({
-    enabled: Boolean(clientId),
+    enabled: Boolean(clientId) && config?.enabled !== false,
     queryKey: queryKeys.admin.clients.detail(clientId),
     queryFn: ({ signal }) => adminApi.client(clientId, { signal }),
   });
@@ -227,9 +239,10 @@ export function useAdminClientQuery(clientId: string) {
 export function useAdminClientPaymentsQuery(
   clientId: string,
   params?: AdminClientPaymentsParams,
+  config?: QueryConfig,
 ) {
   return useQuery({
-    enabled: Boolean(clientId),
+    enabled: Boolean(clientId) && config?.enabled !== false,
     queryKey: queryKeys.admin.clients.payments(clientId, params),
     queryFn: ({ signal }) => adminApi.clientPayments(clientId, params, { signal }),
     placeholderData: (previousData) => previousData,
@@ -248,9 +261,9 @@ export function useAdminAgentsQuery(
   });
 }
 
-export function useAdminAgentQuery(agentId: string) {
+export function useAdminAgentQuery(agentId: string, config?: QueryConfig) {
   return useQuery({
-    enabled: Boolean(agentId),
+    enabled: Boolean(agentId) && config?.enabled !== false,
     queryKey: queryKeys.admin.agents.detail(agentId),
     queryFn: ({ signal }) => adminApi.agent(agentId, { signal }),
   });
@@ -326,7 +339,8 @@ export function useUpdateServiceTypeMutation(serviceTypeId?: string) {
         throw new Error("Missing service type id.");
       }
 
-      const { serviceTypeId: _serviceTypeId, ...body } = payload;
+      const body = { ...payload };
+      delete body.serviceTypeId;
 
       return adminApi.updateServiceType(targetServiceTypeId, body);
     },
@@ -385,7 +399,8 @@ export function useUpdateAvenueMutation(avenueId?: string) {
         throw new Error("Missing avenue id.");
       }
 
-      const { avenueId: _avenueId, ...body } = payload;
+      const body = { ...payload };
+      delete body.avenueId;
 
       return adminApi.updateAvenue(targetAvenueId, body);
     },
@@ -490,7 +505,8 @@ export function useUpdateClientMutation(clientId?: string) {
         throw new Error("Missing client id.");
       }
 
-      const { clientId: _clientId, ...body } = payload;
+      const body = { ...payload };
+      delete body.clientId;
       return adminApi.updateClient(targetClientId, body);
     },
     onSuccess: (_, payload) =>
@@ -533,7 +549,8 @@ export function useUpdateAgentMutation(agentId?: string) {
         throw new Error("Missing agent id.");
       }
 
-      const { agentId: _agentId, ...body } = payload;
+      const body = { ...payload };
+      delete body.agentId;
       return adminApi.updateAgent(targetAgentId, body);
     },
     onSuccess: (_, payload) =>
