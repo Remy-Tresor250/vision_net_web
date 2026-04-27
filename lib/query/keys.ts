@@ -4,7 +4,9 @@ import type {
   AdminClientsParams,
   AdminLocationsParams,
   AdminPaymentsParams,
+  AdminRoleListParams,
   AdminServiceTypesParams,
+  AdminUsersParams,
   CommissionSummaryParams,
 } from "@/lib/api/types";
 import type { DashboardParams } from "@/lib/api/admin";
@@ -17,6 +19,20 @@ export const queryKeys = {
     all: ["admin"] as const,
     dashboard: (params?: DashboardParams) =>
       [...queryKeys.admin.all, "dashboard", params ?? {}] as const,
+    roles: {
+      all: () => [...queryKeys.admin.all, "roles"] as const,
+      list: (params?: AdminRoleListParams) =>
+        [...queryKeys.admin.roles.all(), "list", params ?? {}] as const,
+      detail: (roleId: string) =>
+        [...queryKeys.admin.roles.all(), "detail", roleId] as const,
+    },
+    users: {
+      all: () => [...queryKeys.admin.all, "users"] as const,
+      list: (params?: AdminUsersParams) =>
+        [...queryKeys.admin.users.all(), "list", params ?? {}] as const,
+      detail: (adminId: string) =>
+        [...queryKeys.admin.users.all(), "detail", adminId] as const,
+    },
     serviceTypes: {
       all: () => [...queryKeys.admin.all, "service-types"] as const,
       list: (params?: AdminServiceTypesParams) =>

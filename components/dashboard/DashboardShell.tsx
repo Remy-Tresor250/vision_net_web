@@ -13,6 +13,7 @@ import {
   HiOutlineDocumentChartBar,
   HiOutlineSquares2X2,
   HiOutlineUserCircle,
+  HiOutlineUserGroup,
   HiOutlineUsers,
 } from "react-icons/hi2";
 import { FiSidebar } from "react-icons/fi";
@@ -53,6 +54,12 @@ const navigationItems = [
     labelKey: "agents",
     icon: HiOutlineUserCircle,
     permissions: ["agents.view"],
+  },
+  {
+    href: "/users",
+    labelKey: "users",
+    icon: HiOutlineUserGroup,
+    permissions: ["admin_users.view", "roles.view"],
   },
   {
     href: "/payments",
@@ -114,14 +121,14 @@ function SidebarContent({
           <FiSidebar className="size-6" />
         </div>
       </div>
-      <nav className="flex-1 space-y-3 px-5 py-8">
-        {visibleNavigationItems.map((item) => {
+      <nav className="flex-1 space-y-1 px-5 py-8">
+        {visibleNavigationItems.map((item, index) => {
           const isActive =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
-              key={item.href}
+              key={index}
               className={cn(
                 "flex items-center gap-4 rounded-sm px-5 py-4 text-lg font-medium text-text-muted transition-colors duration-200 ease-out hover:bg-surface-muted hover:text-foreground",
                 isActive &&
@@ -236,6 +243,13 @@ export default function DashboardShell({ children }: Props) {
     }
 
     if (pathname === "/payments") {
+      return {
+        title,
+        subtitle: "",
+      };
+    }
+
+    if (pathname === "/users") {
       return {
         title,
         subtitle: "",

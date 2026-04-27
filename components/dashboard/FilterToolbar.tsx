@@ -40,6 +40,8 @@ interface Props {
   className?: string;
 }
 
+const EMPTY_FILTERS: Record<string, string> = {};
+
 function toDateParts(value: string | Date | null | undefined) {
   if (!value) return null;
 
@@ -58,7 +60,7 @@ export default function FilterToolbar({
   addLabel,
   className,
   filterFields = [],
-  filters = {},
+  filters = EMPTY_FILTERS,
   onAdd,
   onFiltersChange,
   onQueryChange,
@@ -79,7 +81,12 @@ export default function FilterToolbar({
   }, [query]);
 
   useEffect(() => {
-    setDraftFilters(filters);
+    setDraftFilters((currentDraftFilters) => {
+      const nextFilters = JSON.stringify(filters);
+      const currentFilters = JSON.stringify(currentDraftFilters);
+
+      return nextFilters === currentFilters ? currentDraftFilters : filters;
+    });
   }, [filters]);
 
   useEffect(() => {
@@ -88,22 +95,18 @@ export default function FilterToolbar({
     emitQueryChange(debouncedQuery);
   }, [debouncedQuery, query]);
 
-  useEffect(() => {
-    const currentFilters = JSON.stringify(filters);
-    const pendingFilters = JSON.stringify(draftFilters);
-
-    if (currentFilters === pendingFilters) return;
-
-    onFiltersChange?.(draftFilters);
-  }, [draftFilters, filters, onFiltersChange]);
-
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   function updateDraftFilter(id: string, value: string | null) {
-    setDraftFilters((current) => ({
-      ...current,
-      [id]: value ?? "",
-    }));
+    setDraftFilters((current) => {
+      const nextFilters = {
+        ...current,
+        [id]: value ?? "",
+      };
+
+      onFiltersChange?.(nextFilters);
+      return nextFilters;
+    });
   }
 
   function applyFilters() {

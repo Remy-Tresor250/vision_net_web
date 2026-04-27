@@ -261,6 +261,56 @@ export interface CreateAdminUserPayload {
   fullNames: string;
   phone: string;
   language: Language;
+  roleId?: string;
+}
+
+export interface AdminRole {
+  id: string;
+  name: string;
+  description?: string | null;
+  permissions: string[];
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AdminRoleListParams = PageParams;
+
+export interface CreateAdminRolePayload {
+  name: string;
+  description?: string;
+  permissions: string[];
+}
+
+export interface UpdateAdminRolePayload {
+  name?: string;
+  description?: string;
+  permissions?: string[];
+}
+
+export interface AdminUserListItem {
+  adminId: string;
+  userId: string;
+  fullNames: string;
+  phone: string;
+  language: Language;
+  isActive: boolean;
+  firstLoginCompleted: boolean;
+  createdAt: string;
+  role?: AdminRole | null;
+}
+
+export interface AdminUsersParams extends PageParams {
+  isActive?: boolean;
+}
+
+export interface UpdateAdminUserPayload {
+  fullNames?: string;
+  language?: Language;
+}
+
+export interface UpdateAdminRoleAssignmentPayload {
+  roleId: string;
 }
 
 export type CreateAgentPayload = CreateAdminUserPayload;

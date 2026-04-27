@@ -6,6 +6,30 @@ export function invalidateDashboard(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
 }
 
+export function invalidateAdminRoles(queryClient: QueryClient, roleId?: string) {
+  queryClient.invalidateQueries({ queryKey: queryKeys.admin.roles.all() });
+
+  if (roleId) {
+    return queryClient.invalidateQueries({
+      queryKey: queryKeys.admin.roles.detail(roleId),
+    });
+  }
+
+  return Promise.resolve();
+}
+
+export function invalidateAdminUsers(queryClient: QueryClient, adminId?: string) {
+  queryClient.invalidateQueries({ queryKey: queryKeys.admin.users.all() });
+
+  if (adminId) {
+    return queryClient.invalidateQueries({
+      queryKey: queryKeys.admin.users.detail(adminId),
+    });
+  }
+
+  return Promise.resolve();
+}
+
 export function invalidateServiceTypes(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     queryKey: queryKeys.admin.serviceTypes.all(),

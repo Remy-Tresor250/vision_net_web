@@ -6,6 +6,8 @@ import type {
   AdminAgentDetail,
   AdminAgentListItem,
   AdminAgentsParams,
+  AdminRole,
+  AdminRoleListParams,
   AdminLocationsParams,
   AdminServiceType,
   AdminServiceTypesParams,
@@ -16,6 +18,8 @@ import type {
   AdminPaymentDetail,
   AdminPaymentListItem,
   AdminPaymentsParams,
+  AdminUserListItem,
+  AdminUsersParams,
   AssignAgentAvenuesPayload,
   Avenue,
   AvenueMonthlyReportJob,
@@ -26,6 +30,7 @@ import type {
   CommissionSummaryItem,
   CommissionSummaryParams,
   CreateAvenuePayload,
+  CreateAdminRolePayload,
   CreateAdminUserPayload,
   CreateAgentPayload,
   CreateClientPayload,
@@ -42,6 +47,9 @@ import type {
   ReceiptData,
   ReceiptVerification,
   Serine,
+  UpdateAdminRoleAssignmentPayload,
+  UpdateAdminRolePayload,
+  UpdateAdminUserPayload,
   UpdateAvenuePayload,
   UpdateCommissionConfigPayload,
   UpdateStatusPayload,
@@ -89,8 +97,60 @@ export const adminApi = {
         signal: config?.signal,
       })
       .then((res) => res.data),
+  roles: (params?: AdminRoleListParams, config?: RequestConfig) =>
+    api
+      .get<AdminRole[] | PageResponse<AdminRole>>(endpoints.admin.roles, {
+        params,
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  role: (roleId: string, config?: RequestConfig) =>
+    api
+      .get<AdminRole>(endpoints.admin.role(roleId), {
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  createRole: (payload: CreateAdminRolePayload) =>
+    api.post<AdminRole>(endpoints.admin.roles, payload).then((res) => res.data),
+  updateRole: (roleId: string, payload: UpdateAdminRolePayload) =>
+    api
+      .patch<AdminRole>(endpoints.admin.role(roleId), payload)
+      .then((res) => res.data),
+  deleteRole: (roleId: string) =>
+    api
+      .delete<ApiSuccess>(endpoints.admin.role(roleId))
+      .then((res) => res.data),
+  admins: (params?: AdminUsersParams, config?: RequestConfig) =>
+    api
+      .get<PageResponse<AdminUserListItem>>(endpoints.admin.admins, {
+        params,
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
+  admin: (adminId: string, config?: RequestConfig) =>
+    api
+      .get<AdminUserListItem>(endpoints.admin.admin(adminId), {
+        signal: config?.signal,
+      })
+      .then((res) => res.data),
   createAdmin: (payload: CreateAdminUserPayload) =>
     api.post<UserSummary>(endpoints.admin.admins, payload).then((res) => res.data),
+  updateAdmin: (adminId: string, payload: UpdateAdminUserPayload) =>
+    api
+      .patch<AdminUserListItem>(endpoints.admin.admin(adminId), payload)
+      .then((res) => res.data),
+  updateAdminStatus: (adminId: string, payload: UpdateStatusPayload) =>
+    api
+      .patch<ApiSuccess>(endpoints.admin.adminStatus(adminId), payload)
+      .then((res) => res.data),
+  assignAdminRole: (adminId: string, payload: UpdateAdminRoleAssignmentPayload) =>
+    api
+      .put<AdminUserListItem>(endpoints.admin.adminRole(adminId), payload)
+      .then((res) => res.data),
+  deleteAdmin: (adminId: string) =>
+    api
+      .delete<ApiSuccess>(endpoints.admin.admin(adminId))
+      .then((res) => res.data),
   serviceTypes: (params?: AdminServiceTypesParams, config?: RequestConfig) =>
     api
       .get<PageResponse<AdminServiceType>>(endpoints.admin.serviceTypes, {

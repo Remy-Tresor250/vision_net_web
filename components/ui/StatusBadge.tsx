@@ -16,6 +16,8 @@ export default function StatusBadge({ status, className }: Props) {
     "Paid",
     t("common.active"),
     t("common.paid"),
+    t("common.yes"),
+    t("userManagement.completed"),
   ];
   const pendingStatuses = ["Pending", t("tables.receiptPending")];
   const isPositive = positiveStatuses.includes(status);

@@ -26,7 +26,12 @@ export const endpoints = {
   },
   admin: {
     dashboard: "/admin/dashboard",
+    roles: "/admin/roles",
+    role: (roleId: string) => `/admin/roles/${roleId}`,
     admins: "/admin/users/admins",
+    admin: (adminId: string) => `/admin/users/admins/${adminId}`,
+    adminStatus: (adminId: string) => `/admin/users/admins/${adminId}/status`,
+    adminRole: (adminId: string) => `/admin/users/admins/${adminId}/role`,
     serviceTypes: "/admin/service-types",
     serviceType: (serviceTypeId: string) => `/admin/service-types/${serviceTypeId}`,
     commissionConfig: "/admin/commissions/config",

@@ -9,6 +9,7 @@ import {
   type ForgotPasswordResetPayload,
   type PasswordLoginPayload,
   type PhonePayload,
+  type SetPasswordPayload,
   type UpdateLanguagePayload,
   type UpdateMePayload,
   type VerifyOtpPayload,
@@ -16,12 +17,15 @@ import {
 import type {
   AdminAgentsParams,
   AdminLocationsParams,
+  AdminRoleListParams,
   AdminServiceTypesParams,
   AdminClientPaymentsParams,
   AdminClientsParams,
   AdminPaymentsParams,
+  AdminUsersParams,
   AssignAgentAvenuesPayload,
   CreateAvenuePayload,
+  CreateAdminRolePayload,
   CreateAdminUserPayload,
   CreateAgentPayload,
   CreateClientPayload,
@@ -30,6 +34,9 @@ import type {
   CreateServiceTypePayload,
   GenerateAvenueMonthlyReportPayload,
   MarkPaymentCompletePayload,
+  UpdateAdminRoleAssignmentPayload,
+  UpdateAdminRolePayload,
+  UpdateAdminUserPayload,
   UpdateAvenuePayload,
   UpdateCommissionConfigPayload,
   UpdateAgentPayload,
@@ -40,6 +47,8 @@ import type {
 } from "@/lib/api/types";
 import {
   invalidateAgents,
+  invalidateAdminRoles,
+  invalidateAdminUsers,
   invalidateClients,
   invalidateCommissions,
   invalidateDashboard,
@@ -67,6 +76,36 @@ export function usePasswordLoginMutation() {
 export function useForgotPasswordStartMutation() {
   return useMutation({
     mutationFn: (payload: PhonePayload) => authApi.forgotPasswordStart(payload),
+  });
+}
+
+export function useFirstLoginStartMutation() {
+  return useMutation({
+    mutationFn: (payload: PhonePayload) => authApi.firstLoginStart(payload),
+  });
+}
+
+export function useFirstLoginVerifyMutation() {
+  return useMutation({
+    mutationFn: (payload: VerifyOtpPayload) => authApi.firstLoginVerify(payload),
+  });
+}
+
+export function useFirstLoginSetPasswordMutation() {
+  return useMutation({
+    mutationFn: (payload: SetPasswordPayload) => authApi.firstLoginSetPassword(payload),
+  });
+}
+
+export function useOtpLoginStartMutation() {
+  return useMutation({
+    mutationFn: (payload: PhonePayload) => authApi.otpLoginStart(payload),
+  });
+}
+
+export function useOtpLoginVerifyMutation() {
+  return useMutation({
+    mutationFn: (payload: VerifyOtpPayload) => authApi.otpLoginVerify(payload),
   });
 }
 
@@ -138,6 +177,46 @@ export function useAdminDashboardQuery(
     enabled: config?.enabled,
     queryKey: queryKeys.admin.dashboard(params),
     queryFn: ({ signal }) => adminApi.dashboard(params, { signal }),
+  });
+}
+
+export function useAdminRolesQuery(
+  params?: AdminRoleListParams,
+  config?: QueryConfig,
+) {
+  return useQuery({
+    enabled: config?.enabled,
+    queryKey: queryKeys.admin.roles.list(params),
+    queryFn: ({ signal }) => adminApi.roles(params, { signal }),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useAdminRoleQuery(roleId: string, config?: QueryConfig) {
+  return useQuery({
+    enabled: Boolean(roleId) && config?.enabled !== false,
+    queryKey: queryKeys.admin.roles.detail(roleId),
+    queryFn: ({ signal }) => adminApi.role(roleId, { signal }),
+  });
+}
+
+export function useAdminUsersQuery(
+  params?: AdminUsersParams,
+  config?: QueryConfig,
+) {
+  return useQuery({
+    enabled: config?.enabled,
+    queryKey: queryKeys.admin.users.list(params),
+    queryFn: ({ signal }) => adminApi.admins(params, { signal }),
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useAdminUserQuery(adminId: string, config?: QueryConfig) {
+  return useQuery({
+    enabled: Boolean(adminId) && config?.enabled !== false,
+    queryKey: queryKeys.admin.users.detail(adminId),
+    queryFn: ({ signal }) => adminApi.admin(adminId, { signal }),
   });
 }
 
@@ -310,7 +389,128 @@ export function useCreateAdminMutation() {
 
   return useMutation({
     mutationFn: (payload: CreateAdminUserPayload) => adminApi.createAdmin(payload),
-    onSuccess: () => invalidateDashboard(queryClient),
+    onSuccess: () => invalidateAdminUsers(queryClient),
+  });
+}
+
+export function useUpdateAdminMutation(adminId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (
+      payload: UpdateAdminUserPayload & {
+        adminId?: string;
+      },
+    ) => {
+      const targetAdminId = payload.adminId ?? adminId;
+
+      if (!targetAdminId) {
+        throw new Error("Missing admin id.");
+      }
+
+      const body = { ...payload };
+      delete body.adminId;
+
+      return adminApi.updateAdmin(targetAdminId, body);
+    },
+    onSuccess: (_, payload) =>
+      invalidateAdminUsers(queryClient, payload.adminId ?? adminId),
+  });
+}
+
+export function useUpdateAdminStatusMutation(adminId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: UpdateStatusPayload & { adminId?: string }) => {
+      const targetAdminId = payload.adminId ?? adminId;
+
+      if (!targetAdminId) {
+        throw new Error("Missing admin id.");
+      }
+
+      return adminApi.updateAdminStatus(targetAdminId, {
+        isActive: payload.isActive,
+      });
+    },
+    onSuccess: (_, payload) =>
+      invalidateAdminUsers(queryClient, payload.adminId ?? adminId),
+  });
+}
+
+export function useAssignAdminRoleMutation(adminId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (
+      payload: UpdateAdminRoleAssignmentPayload & {
+        adminId?: string;
+      },
+    ) => {
+      const targetAdminId = payload.adminId ?? adminId;
+
+      if (!targetAdminId) {
+        throw new Error("Missing admin id.");
+      }
+
+      return adminApi.assignAdminRole(targetAdminId, {
+        roleId: payload.roleId,
+      });
+    },
+    onSuccess: (_, payload) =>
+      invalidateAdminUsers(queryClient, payload.adminId ?? adminId),
+  });
+}
+
+export function useDeleteAdminMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (adminId: string) => adminApi.deleteAdmin(adminId),
+    onSuccess: () => invalidateAdminUsers(queryClient),
+  });
+}
+
+export function useCreateAdminRoleMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateAdminRolePayload) => adminApi.createRole(payload),
+    onSuccess: () => invalidateAdminRoles(queryClient),
+  });
+}
+
+export function useUpdateAdminRoleMutation(roleId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (
+      payload: UpdateAdminRolePayload & {
+        roleId?: string;
+      },
+    ) => {
+      const targetRoleId = payload.roleId ?? roleId;
+
+      if (!targetRoleId) {
+        throw new Error("Missing role id.");
+      }
+
+      const body = { ...payload };
+      delete body.roleId;
+
+      return adminApi.updateRole(targetRoleId, body);
+    },
+    onSuccess: (_, payload) =>
+      invalidateAdminRoles(queryClient, payload.roleId ?? roleId),
+  });
+}
+
+export function useDeleteAdminRoleMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (roleId: string) => adminApi.deleteRole(roleId),
+    onSuccess: () => invalidateAdminRoles(queryClient),
   });
 }
 

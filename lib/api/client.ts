@@ -9,6 +9,8 @@ const baseURL =
   process.env.API_BASE_URL?.replace(/\/$/, "") ?? API_PREFIX;
 
 export interface ApiErrorPayload {
+  code?: string;
+  firstLoginRequired?: boolean;
   message?: string | string[];
   error?: string;
   statusCode?: number;
@@ -63,4 +65,12 @@ export function getApiErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
 
   return "Something went wrong. Please try again.";
+}
+
+export function getApiErrorPayload(error: unknown) {
+  if (axios.isAxiosError<ApiErrorPayload>(error)) {
+    return error.response?.data;
+  }
+
+  return undefined;
 }
