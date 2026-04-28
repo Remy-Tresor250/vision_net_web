@@ -71,7 +71,12 @@ const navigationItems = [
     href: "/configurations",
     labelKey: "configurations",
     icon: HiOutlineCog6Tooth,
-    permissions: ["locations.view", "service_types.view", "commissions.view", "commissions.edit"],
+    permissions: [
+      "locations.view",
+      "service_types.view",
+      "commissions.view",
+      "commissions.edit",
+    ],
   },
   {
     href: "/reports",
@@ -179,8 +184,7 @@ export default function DashboardShell({ children }: Props) {
   const logout = useAuthStore((state) => state.logout);
   const permissions = useAuthStore((state) => state.user?.permissions);
   const user = useAuthStore((state) => state.user);
-  console.log(user);
-  
+
   const hydrateLanguage = useLanguageStore((state) => state.hydrate);
   const canViewDashboard = hasAnyPermission(permissions, ["dashboard.view"]);
   const shouldLoadDashboardSummary =
@@ -188,10 +192,13 @@ export default function DashboardShell({ children }: Props) {
     ["/dashboard", "/clients", "/agents"].some(
       (route) => pathname === route || pathname.startsWith(`${route}/`),
     );
-  const dashboardQuery = useAdminDashboardQuery({
-    topAgentsLimit: 10,
-    year: new Date().getFullYear(),
-  }, { enabled: shouldLoadDashboardSummary });
+  const dashboardQuery = useAdminDashboardQuery(
+    {
+      topAgentsLimit: 10,
+      year: new Date().getFullYear(),
+    },
+    { enabled: shouldLoadDashboardSummary },
+  );
   const visibleNavigationItems = navigationItems.filter((item) =>
     hasAnyPermission(permissions, [...item.permissions]),
   );
@@ -304,8 +311,8 @@ export default function DashboardShell({ children }: Props) {
         position="left"
         size="19rem"
       >
-          <SidebarContent closeSidebar={closeSidebar} pathname={pathname} />
-        </Drawer>
+        <SidebarContent closeSidebar={closeSidebar} pathname={pathname} />
+      </Drawer>
       <div className="flex min-h-screen">
         <aside className="hidden w-[23vw] shrink-0 xl:block fixed h-screen">
           <SidebarContent pathname={pathname} />
@@ -344,7 +351,7 @@ export default function DashboardShell({ children }: Props) {
                         {user?.fullNames ?? "Admin User"}
                       </p>
                       <p className="-mt-1 text-xs uppercase text-text-muted">
-                        {user?.role}
+                        {user?.roleName ?? user?.role}
                       </p>
                     </div>
                     <div className="flex size-12 items-center justify-center rounded-xl bg-foreground text-white">

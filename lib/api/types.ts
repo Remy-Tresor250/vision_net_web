@@ -33,9 +33,14 @@ export interface AuthUser {
   role: UserRole;
   language: Language;
   firstLoginCompleted: boolean;
+  isActive?: boolean;
+  createdAt?: string;
   adminId?: string;
   adminRoleId?: string;
+  profileType?: UserRole;
   permissions?: string[];
+  roleName?: string;
+  profile?: AuthProfile;
 }
 
 export interface AuthTokenPayload {
@@ -45,17 +50,28 @@ export interface AuthTokenPayload {
   user: AuthUser;
 }
 
+export interface AuthProfile {
+  type?: UserRole;
+  adminId?: string;
+  roleId?: string;
+  roleName?: string;
+  permissions?: string[];
+  agentId?: string;
+  clientId?: string;
+  address?: string;
+  registeredDate?: string;
+  subscriptionAmount?: string;
+  clientType?: ClientType;
+  currentMonthCollected?: string;
+  totalAmountCollected?: string;
+  collectionsCount?: number;
+  uniqueClientsCollectedFrom?: number;
+  [key: string]: unknown;
+}
+
 export interface AuthMeResponse {
-  user: AuthUser & {
-    createdAt?: string;
-    isActive?: boolean;
-  };
-  profile?: {
-    type?: UserRole;
-    adminId?: string;
-    roleId?: string;
-    permissions?: string[];
-  };
+  user: AuthUser;
+  profile?: AuthProfile;
 }
 
 export interface OtpStartResponse extends ApiSuccess {

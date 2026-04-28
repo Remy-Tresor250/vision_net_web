@@ -8,6 +8,7 @@ import {
   getStoredUser,
   removeAuthCookies,
   setAuthCookies,
+  setStoredUser,
 } from "@/lib/auth/cookies";
 
 interface AuthState {
@@ -31,7 +32,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: getStoredUser(),
       hasHydrated: true,
     }),
-  setUser: (user) => set({ user }),
+  setUser: (user) => {
+    if (user) {
+      setStoredUser(user);
+    }
+
+    set({ user });
+  },
   setSession: (payload) => {
     setAuthCookies(payload.accessToken, payload.user, payload.expiresInSeconds);
     set({
@@ -41,9 +48,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
   updateUser: (user) =>
-    set((state) => ({
-      user: state.user ? { ...state.user, ...user } : state.user,
-    })),
+    set((state) => {
+      if (!state.user) {
+        return { user: state.user };
+      }
+
+      const nextUser = { ...state.user, ...user };
+      setStoredUser(nextUser);
+
+      return { user: nextUser };
+    }),
   logout: () => {
     removeAuthCookies();
     set({ token: null, user: null, hasHydrated: true });

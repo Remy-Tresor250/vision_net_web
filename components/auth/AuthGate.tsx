@@ -4,7 +4,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import PageSkeleton from "@/components/dashboard/PageSkeleton";
-import { setStoredUser } from "@/lib/auth/cookies";
 import { useAuthMeQuery } from "@/lib/query/hooks";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -34,7 +33,6 @@ export default function AuthGate({ children }: Props) {
     }
 
     setUser(meQuery.data);
-    setStoredUser(meQuery.data);
   }, [meQuery.data, setUser]);
 
   useEffect(() => {

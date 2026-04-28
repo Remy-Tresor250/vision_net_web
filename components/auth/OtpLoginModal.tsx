@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button";
 import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
 import PhoneNumberInput from "@/components/ui/PhoneNumberInput";
 import { getApiErrorMessage } from "@/lib/api/client";
+import type { AuthTokenPayload } from "@/lib/api/types";
 import {
   useOtpLoginStartMutation,
   useOtpLoginVerifyMutation,
@@ -23,19 +24,7 @@ import {
 interface Props {
   initialPhone?: string;
   onClose: () => void;
-  onLoginSuccess: (session: {
-    accessToken: string;
-    expiresInSeconds: number;
-    tokenType: "Bearer";
-    user: {
-      id: string;
-      fullNames: string;
-      phone: string;
-      role: "ADMIN" | "AGENT" | "CLIENT";
-      language: "en" | "fr";
-      firstLoginCompleted: boolean;
-    };
-  }) => void;
+  onLoginSuccess: (session: AuthTokenPayload) => void;
   opened: boolean;
 }
 

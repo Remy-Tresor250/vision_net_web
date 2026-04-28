@@ -52,11 +52,16 @@ export interface UpdateLanguagePayload {
 }
 
 function normalizeAuthMeResponse(payload: AuthMeResponse): AuthUser {
+  const profile = payload.profile;
+
   return {
     ...payload.user,
-    adminId: payload.profile?.adminId,
-    adminRoleId: payload.profile?.roleId,
-    permissions: payload.profile?.permissions ?? [],
+    profile,
+    profileType: profile?.type ?? payload.user.profileType,
+    adminId: profile?.adminId ?? payload.user.adminId,
+    adminRoleId: profile?.roleId ?? payload.user.adminRoleId,
+    roleName: profile?.roleName ?? payload.user.roleName,
+    permissions: profile?.permissions ?? payload.user.permissions ?? [],
   };
 }
 
