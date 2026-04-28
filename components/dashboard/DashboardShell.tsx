@@ -179,6 +179,8 @@ export default function DashboardShell({ children }: Props) {
   const logout = useAuthStore((state) => state.logout);
   const permissions = useAuthStore((state) => state.user?.permissions);
   const user = useAuthStore((state) => state.user);
+  console.log(user);
+  
   const hydrateLanguage = useLanguageStore((state) => state.hydrate);
   const canViewDashboard = hasAnyPermission(permissions, ["dashboard.view"]);
   const shouldLoadDashboardSummary =
@@ -342,7 +344,7 @@ export default function DashboardShell({ children }: Props) {
                         {user?.fullNames ?? "Admin User"}
                       </p>
                       <p className="-mt-1 text-xs uppercase text-text-muted">
-                        {t("account.role")}
+                        {user?.role}
                       </p>
                     </div>
                     <div className="flex size-12 items-center justify-center rounded-xl bg-foreground text-white">

@@ -1,4 +1,4 @@
-export type UserRole = "ADMIN" | "AGENT" | "CLIENT";
+export type UserRole = "ADMIN" | "AGENT" | "CLIENT" | string;
 export type Language = "en" | "fr";
 export type SortDir = "asc" | "desc";
 export type ClientType = "NORMAL" | "POTENTIAL";

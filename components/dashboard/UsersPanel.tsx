@@ -1,6 +1,15 @@
 "use client";
 
-import { Checkbox, Menu, Modal, Select, TableTd, TableTr, TextInput, Textarea } from "@mantine/core";
+import {
+  Checkbox,
+  Menu,
+  Modal,
+  Select,
+  TableTd,
+  TableTr,
+  TextInput,
+  Textarea,
+} from "@mantine/core";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { HiEllipsisHorizontal, HiOutlineShieldCheck } from "react-icons/hi2";
@@ -16,12 +25,11 @@ import Button from "@/components/ui/Button";
 import PhoneNumberInput from "@/components/ui/PhoneNumberInput";
 import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
 import { hasAnyPermission } from "@/lib/auth/permissions";
-import { CANONICAL_PERMISSIONS, PERMISSION_RESOURCE_ORDER } from "@/lib/auth/rbac";
-import type {
-  AdminRole,
-  AdminUserListItem,
-  Language,
-} from "@/lib/api/types";
+import {
+  CANONICAL_PERMISSIONS,
+  PERMISSION_RESOURCE_ORDER,
+} from "@/lib/auth/rbac";
+import type { AdminRole, AdminUserListItem, Language } from "@/lib/api/types";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { formatDate, getPageCount } from "@/lib/format";
 import {
@@ -47,7 +55,9 @@ type RoleModalMode = "create" | "edit" | "view";
 const USERS_PAGE_SIZE = 8;
 const ROLES_PAGE_SIZE = 8;
 
-function normalizeRolesData(data: Awaited<ReturnType<typeof useAdminRolesQuery>>["data"]) {
+function normalizeRolesData(
+  data: Awaited<ReturnType<typeof useAdminRolesQuery>>["data"],
+) {
   if (!data) {
     return [] as AdminRole[];
   }
@@ -85,7 +95,11 @@ function UsersTabs({
             onClick={() => onChange(tabValue)}
             type="button"
           >
-            <p className="text-[14px] font-medium">{tabValue === "users" ? t("userManagement.usersTab") : t("userManagement.rolesTab")}</p>
+            <p className="text-[14px] font-medium">
+              {tabValue === "users"
+                ? t("userManagement.usersTab")
+                : t("userManagement.rolesTab")}
+            </p>
           </button>
         );
       })}
@@ -103,7 +117,10 @@ function PermissionSelector({
   selectedPermissions: string[];
 }) {
   const { t } = useTranslation();
-  const selectedSet = useMemo(() => new Set(selectedPermissions), [selectedPermissions]);
+  const selectedSet = useMemo(
+    () => new Set(selectedPermissions),
+    [selectedPermissions],
+  );
 
   function togglePermission(permission: string) {
     if (selectedSet.has(permission)) {
@@ -132,7 +149,10 @@ function PermissionSelector({
         }
 
         return (
-          <section className="rounded-sm border border-border bg-surface-muted p-4" key={resource}>
+          <section
+            className="rounded-sm border border-border bg-surface-muted p-4"
+            key={resource}
+          >
             <p className="text-[13px] font-semibold uppercase tracking-wider text-foreground">
               {t(`userManagement.permissionResources.${resource}`)}
             </p>
@@ -167,13 +187,12 @@ export default function UsersPanel() {
   const canDeleteRoles = hasAnyPermission(permissions, ["roles.delete"]);
 
   const availableTabs = (
-    [
-      canViewUsers ? "users" : null,
-      canViewRoles ? "roles" : null,
-    ] as const
+    [canViewUsers ? "users" : null, canViewRoles ? "roles" : null] as const
   ).filter((item): item is UsersTab => Boolean(item));
 
-  const [activeTab, setActiveTab] = useState<UsersTab>(availableTabs[0] ?? "users");
+  const [activeTab, setActiveTab] = useState<UsersTab>(
+    availableTabs[0] ?? "users",
+  );
   const resolvedActiveTab = availableTabs.includes(activeTab)
     ? activeTab
     : (availableTabs[0] ?? "users");
@@ -187,9 +206,13 @@ export default function UsersPanel() {
   const [rolesQuery, setRolesQuery] = useState("");
 
   const [selectedAdminId, setSelectedAdminId] = useState<string | null>(null);
-  const [userModalMode, setUserModalMode] = useState<UserModalMode | null>(null);
+  const [userModalMode, setUserModalMode] = useState<UserModalMode | null>(
+    null,
+  );
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
-  const [roleModalMode, setRoleModalMode] = useState<RoleModalMode | null>(null);
+  const [roleModalMode, setRoleModalMode] = useState<RoleModalMode | null>(
+    null,
+  );
 
   const usersParams = {
     isActive:
@@ -209,8 +232,12 @@ export default function UsersPanel() {
     skip: (rolesPage - 1) * ROLES_PAGE_SIZE,
   };
 
-  const usersQueryResult = useAdminUsersQuery(usersParams, { enabled: canViewUsers });
-  const rolesQueryResult = useAdminRolesQuery(rolesParams, { enabled: canViewRoles });
+  const usersQueryResult = useAdminUsersQuery(usersParams, {
+    enabled: canViewUsers,
+  });
+  const rolesQueryResult = useAdminRolesQuery(rolesParams, {
+    enabled: canViewRoles,
+  });
   const selectedUserQuery = useAdminUserQuery(selectedAdminId ?? "", {
     enabled: Boolean(selectedAdminId) && canViewUsers,
   });
@@ -219,17 +246,26 @@ export default function UsersPanel() {
   });
 
   const createAdminMutation = useCreateAdminMutation();
-  const updateAdminMutation = useUpdateAdminMutation(selectedAdminId ?? undefined);
+  const updateAdminMutation = useUpdateAdminMutation(
+    selectedAdminId ?? undefined,
+  );
   const updateAdminStatusMutation = useUpdateAdminStatusMutation();
-  const assignAdminRoleMutation = useAssignAdminRoleMutation(selectedAdminId ?? undefined);
+  const assignAdminRoleMutation = useAssignAdminRoleMutation(
+    selectedAdminId ?? undefined,
+  );
   const deleteAdminMutation = useDeleteAdminMutation();
 
   const createRoleMutation = useCreateAdminRoleMutation();
-  const updateRoleMutation = useUpdateAdminRoleMutation(selectedRoleId ?? undefined);
+  const updateRoleMutation = useUpdateAdminRoleMutation(
+    selectedRoleId ?? undefined,
+  );
   const deleteRoleMutation = useDeleteAdminRoleMutation();
 
   const users = usersQueryResult.data?.data ?? [];
-  const usersTotalPages = getPageCount(usersQueryResult.data?.total ?? 0, USERS_PAGE_SIZE);
+  const usersTotalPages = getPageCount(
+    usersQueryResult.data?.total ?? 0,
+    USERS_PAGE_SIZE,
+  );
   const roles = normalizeRolesData(rolesQueryResult.data);
   const rolesTotalItems = Array.isArray(rolesQueryResult.data)
     ? roles.length
@@ -292,11 +328,13 @@ export default function UsersPanel() {
 
   const usersToolbarTitle = (
     <div>
-      <p className="text-[27px] font-medium text-[#0A3B24]">
-        {t("nav.users")}
-      </p>
+      <p className="text-[27px] font-medium text-[#0A3B24]">{t("nav.users")}</p>
       <div className="mt-1">
-        <UsersTabs activeTab={resolvedActiveTab} onChange={setActiveTab} tabs={availableTabs} />
+        <UsersTabs
+          activeTab={resolvedActiveTab}
+          onChange={setActiveTab}
+          tabs={availableTabs}
+        />
       </div>
     </div>
   );
@@ -308,7 +346,9 @@ export default function UsersPanel() {
           <>
             <FilterToolbar
               className="items-start"
-              addLabel={canCreateUsers ? t("userManagement.addUser") : undefined}
+              addLabel={
+                canCreateUsers ? t("userManagement.addUser") : undefined
+              }
               filterFields={[
                 {
                   id: "isActive",
@@ -377,7 +417,13 @@ export default function UsersPanel() {
                       {admin.language}
                     </TableTd>
                     <TableTd className="px-8 py-6">
-                      <StatusBadge status={admin.isActive ? t("common.active") : t("common.inactive")} />
+                      <StatusBadge
+                        status={
+                          admin.isActive
+                            ? t("common.active")
+                            : t("common.inactive")
+                        }
+                      />
                     </TableTd>
                     <TableTd className="px-8 py-6">
                       <StatusBadge
@@ -403,11 +449,17 @@ export default function UsersPanel() {
                           </Button>
                         </Menu.Target>
                         <Menu.Dropdown>
-                          <Menu.Item onClick={() => openUserModal("view", admin.adminId)}>
+                          <Menu.Item
+                            onClick={() => openUserModal("view", admin.adminId)}
+                          >
                             {t("common.view")}
                           </Menu.Item>
                           {canEditUsers ? (
-                            <Menu.Item onClick={() => openUserModal("edit", admin.adminId)}>
+                            <Menu.Item
+                              onClick={() =>
+                                openUserModal("edit", admin.adminId)
+                              }
+                            >
                               {t("userManagement.editUser")}
                             </Menu.Item>
                           ) : null}
@@ -416,9 +468,13 @@ export default function UsersPanel() {
                               color={admin.isActive ? "red" : "green"}
                               onClick={() =>
                                 updateAdminStatusMutation.mutate(
-                                  { adminId: admin.adminId, isActive: !admin.isActive },
                                   {
-                                    onError: (error) => toast.error(getApiErrorMessage(error)),
+                                    adminId: admin.adminId,
+                                    isActive: !admin.isActive,
+                                  },
+                                  {
+                                    onError: (error) =>
+                                      toast.error(getApiErrorMessage(error)),
                                     onSuccess: () =>
                                       toast.success(
                                         admin.isActive
@@ -429,11 +485,16 @@ export default function UsersPanel() {
                                 )
                               }
                             >
-                              {admin.isActive ? t("tables.deactivate") : t("tables.activate")}
+                              {admin.isActive
+                                ? t("tables.deactivate")
+                                : t("tables.activate")}
                             </Menu.Item>
                           ) : null}
                           {canDeleteUsers ? (
-                            <Menu.Item color="red" onClick={() => handleDeleteAdmin(admin)}>
+                            <Menu.Item
+                              color="red"
+                              onClick={() => handleDeleteAdmin(admin)}
+                            >
                               {t("userManagement.deleteUser")}
                             </Menu.Item>
                           ) : null}
@@ -446,7 +507,10 @@ export default function UsersPanel() {
             </DashboardTableShell>
           </>
         ) : (
-          <NoDataCard message={t("permissions.limitedData")} title={t("userManagement.usersTab")} />
+          <NoDataCard
+            message={t("permissions.limitedData")}
+            title={t("userManagement.usersTab")}
+          />
         )
       ) : canViewRoles ? (
         <>
@@ -467,7 +531,6 @@ export default function UsersPanel() {
               t("userManagement.roleName"),
               t("userManagement.description"),
               t("userManagement.permissions"),
-              t("userManagement.systemRole"),
               t("common.date"),
               t("tables.action"),
             ]}
@@ -485,7 +548,10 @@ export default function UsersPanel() {
               />
             ) : (
               roles.map((role) => (
-                <TableTr className="border-b border-border last:border-b-0" key={role.id}>
+                <TableTr
+                  className="border-b border-border last:border-b-0"
+                  key={role.id}
+                >
                   <TableTd className="px-8 py-6 text-[14px] font-medium text-foreground">
                     {role.name}
                   </TableTd>
@@ -493,10 +559,9 @@ export default function UsersPanel() {
                     {role.description?.trim() || "-"}
                   </TableTd>
                   <TableTd className="px-8 py-6 text-[14px] text-text-muted">
-                    {t("userManagement.permissionsCount", { count: role.permissions.length })}
-                  </TableTd>
-                  <TableTd className="px-8 py-6">
-                    <StatusBadge status={role.isSystem ? t("common.yes") : t("common.no")} />
+                    {t("userManagement.permissionsCount", {
+                      count: role.permissions.length,
+                    })}
                   </TableTd>
                   <TableTd className="px-8 py-6 text-[14px] text-text-muted">
                     {formatDate(role.updatedAt)}
@@ -513,11 +578,15 @@ export default function UsersPanel() {
                         </Button>
                       </Menu.Target>
                       <Menu.Dropdown>
-                        <Menu.Item onClick={() => openRoleModal("view", role.id)}>
+                        <Menu.Item
+                          onClick={() => openRoleModal("view", role.id)}
+                        >
                           {t("common.view")}
                         </Menu.Item>
                         {canEditRoles ? (
-                          <Menu.Item onClick={() => openRoleModal("edit", role.id)}>
+                          <Menu.Item
+                            onClick={() => openRoleModal("edit", role.id)}
+                          >
                             {t("userManagement.editRole")}
                           </Menu.Item>
                         ) : null}
@@ -539,7 +608,10 @@ export default function UsersPanel() {
           </DashboardTableShell>
         </>
       ) : (
-        <NoDataCard message={t("permissions.limitedData")} title={t("userManagement.rolesTab")} />
+        <NoDataCard
+          message={t("permissions.limitedData")}
+          title={t("userManagement.rolesTab")}
+        />
       )}
 
       <UserModal
@@ -574,7 +646,8 @@ export default function UsersPanel() {
                   assignAdminRoleMutation.mutate(
                     { adminId: selectedAdminId, roleId: payload.roleId },
                     {
-                      onError: (error) => toast.error(getApiErrorMessage(error)),
+                      onError: (error) =>
+                        toast.error(getApiErrorMessage(error)),
                       onSuccess: () => {
                         toast.success(t("userManagement.userUpdated"));
                         closeUserModal();
@@ -592,7 +665,11 @@ export default function UsersPanel() {
         }}
         roleOptions={roleOptions}
         rolesLoading={rolesQueryResult.isLoading}
-        selectedUser={selectedUserQuery.data ?? users.find((item) => item.adminId === selectedAdminId) ?? null}
+        selectedUser={
+          selectedUserQuery.data ??
+          users.find((item) => item.adminId === selectedAdminId) ??
+          null
+        }
         submitting={
           createAdminMutation.isPending ||
           updateAdminMutation.isPending ||
@@ -625,8 +702,14 @@ export default function UsersPanel() {
             },
           )
         }
-        selectedRole={selectedRoleQuery.data ?? roles.find((item) => item.id === selectedRoleId) ?? null}
-        submitting={createRoleMutation.isPending || updateRoleMutation.isPending}
+        selectedRole={
+          selectedRoleQuery.data ??
+          roles.find((item) => item.id === selectedRoleId) ??
+          null
+        }
+        submitting={
+          createRoleMutation.isPending || updateRoleMutation.isPending
+        }
       />
     </div>
   );
@@ -646,8 +729,17 @@ function UserModal({
   canEditRoles: boolean;
   mode: UserModalMode | null;
   onClose: () => void;
-  onCreate: (payload: { fullNames: string; phone: string; language: Language; roleId?: string }) => void;
-  onUpdate: (payload: { fullNames: string; language: Language; roleId?: string }) => void;
+  onCreate: (payload: {
+    fullNames: string;
+    phone: string;
+    language: Language;
+    roleId?: string;
+  }) => void;
+  onUpdate: (payload: {
+    fullNames: string;
+    language: Language;
+    roleId?: string;
+  }) => void;
   roleOptions: Array<{ label: string; value: string }>;
   rolesLoading: boolean;
   selectedUser: AdminUserListItem | null;
@@ -659,7 +751,9 @@ function UserModal({
   const isCreate = mode === "create";
   const [fullNames, setFullNames] = useState(selectedUser?.fullNames ?? "");
   const [phone, setPhone] = useState(selectedUser?.phone ?? "");
-  const [language, setLanguage] = useState<Language>(selectedUser?.language ?? "fr");
+  const [language, setLanguage] = useState<Language>(
+    selectedUser?.language ?? "fr",
+  );
   const [roleId, setRoleId] = useState<string>(selectedUser?.role?.id ?? "");
 
   function handleSubmit() {
@@ -767,7 +861,9 @@ function UserModal({
             disabled
             label={t("common.status")}
             styles={appFieldStyles}
-            value={selectedUser.isActive ? t("common.active") : t("common.inactive")}
+            value={
+              selectedUser.isActive ? t("common.active") : t("common.inactive")
+            }
           />
           <TextInput
             classNames={appFieldClassNames}
@@ -810,8 +906,16 @@ function RoleModal({
 }: {
   mode: RoleModalMode | null;
   onClose: () => void;
-  onCreate: (payload: { name: string; description?: string; permissions: string[] }) => void;
-  onUpdate: (payload: { name: string; description?: string; permissions: string[] }) => void;
+  onCreate: (payload: {
+    name: string;
+    description?: string;
+    permissions: string[];
+  }) => void;
+  onUpdate: (payload: {
+    name: string;
+    description?: string;
+    permissions: string[];
+  }) => void;
   selectedRole: AdminRole | null;
   submitting: boolean;
 }) {
@@ -820,7 +924,9 @@ function RoleModal({
   const isView = mode === "view";
   const isCreate = mode === "create";
   const [name, setName] = useState(selectedRole?.name ?? "");
-  const [description, setDescription] = useState(selectedRole?.description ?? "");
+  const [description, setDescription] = useState(
+    selectedRole?.description ?? "",
+  );
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>(
     selectedRole?.permissions ?? [],
   );
@@ -864,9 +970,15 @@ function RoleModal({
     <Modal
       centered
       classNames={{
-        body: "px-6 pb-6 sm:px-8 sm:pb-8",
         content: "rounded-sm",
-        header: "px-6 pt-6 sm:px-8 sm:pt-8",
+      }}
+      styles={{
+        body: {
+          padding: "12px 50px",
+        },
+        header: {
+          padding: "10px 20px",
+        },
       }}
       onClose={onClose}
       opened={opened}
@@ -894,30 +1006,28 @@ function RoleModal({
             styles={appFieldStyles}
             value={name}
           />
-          <TextInput
-            classNames={appFieldClassNames}
-            disabled
-            label={t("userManagement.systemRole")}
-            styles={appFieldStyles}
-            value={selectedRole ? (selectedRole.isSystem ? t("common.yes") : t("common.no")) : "-"}
-          />
+
+          <div className="flex flex-col">
+            <Textarea
+              classNames={appFieldClassNames}
+              disabled={submitting || isView}
+              label={t("userManagement.description")}
+              maxLength={200}
+              description={t("userManagement.descriptionCount", {
+                count: description.length,
+                max: 200,
+              })}
+              placeholder={t("userManagement.descriptionPlaceholder")}
+              minRows={3}
+              onChange={(event) =>
+                setDescription(event.currentTarget.value.slice(0, 200))
+              }
+              styles={appFieldStyles}
+              value={description}
+            />
+          </div>
         </div>
-        <Textarea
-          classNames={appFieldClassNames}
-          disabled={submitting || isView}
-          label={t("userManagement.description")}
-          maxLength={200}
-          minRows={3}
-          onChange={(event) => setDescription(event.currentTarget.value.slice(0, 200))}
-          styles={appFieldStyles}
-          value={description}
-        />
-        <p className="text-right text-[12px] text-text-muted">
-          {t("userManagement.descriptionCount", {
-            count: description.length,
-            max: 200,
-          })}
-        </p>
+
         <div>
           <div className="mb-3 flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-md bg-brand/10 text-brand">
