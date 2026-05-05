@@ -87,7 +87,9 @@ export default function AgentsTable() {
         onError: (error) => toast.error(getApiErrorMessage(error)),
         onSuccess: () =>
           toast.success(
-            isActive ? t("tables.agentActivated") : t("tables.agentDeactivated"),
+            isActive
+              ? t("tables.agentActivated")
+              : t("tables.agentDeactivated"),
           ),
       },
     );
@@ -109,7 +111,11 @@ export default function AgentsTable() {
             ],
             type: "select",
           },
-          { id: "createdAtFrom", label: t("filters.createdAtFrom"), type: "date" },
+          {
+            id: "createdAtFrom",
+            label: t("filters.createdAtFrom"),
+            type: "date",
+          },
           { id: "createdAtTo", label: t("filters.createdAtTo"), type: "date" },
           {
             id: "minCurrentMonthCollected",
@@ -129,7 +135,10 @@ export default function AgentsTable() {
               { label: t("common.registeredDate"), value: "createdAt" },
               { label: t("common.fullNames"), value: "fullNames" },
               { label: t("common.phone"), value: "phone" },
-              { label: t("tables.performance"), value: "currentMonthCollected" },
+              {
+                label: t("tables.performance"),
+                value: "currentMonthCollected",
+              },
             ],
             type: "select",
           },
@@ -155,6 +164,7 @@ export default function AgentsTable() {
         headers={[
           t("common.fullNames"),
           t("common.phoneNumber"),
+          t("common.password"),
           t("common.registeredDate"),
           t("common.status"),
           t("tables.performance"),
@@ -164,71 +174,87 @@ export default function AgentsTable() {
         page={page}
         total={totalPages}
       >
-        {agentsQuery.isLoading || agentsQuery.isFetching
-          ? <TableSkeletonRows columns={6} rows={PAGE_SIZE} />
-          : agents.length === 0
-          ? (
-              <TableEmptyRow
-                colSpan={6}
-                message={t("tables.createAgentEmpty")}
-                title={t("tables.noAgentsFound")}
-              />
-            )
-          : agents.map((agent) => (
-              <TableTr
-                key={agent.agentId}
-                className="border-b border-border last:border-b-0"
-              >
-                <TableTd className="px-8 py-6 text-[14px] font-medium text-foreground">
-                  {agent.fullNames}
-                </TableTd>
-                <TableTd className="px-8 py-6 text-[14px] text-text-muted">
-                  {agent.phone}
-                </TableTd>
-                <TableTd className="px-8 py-6 text-[14px] text-text-muted">
-                  {formatDate(agent.createdAt)}
-                </TableTd>
-                <TableTd className="px-8 py-6">
-                  <StatusBadge
-                    status={agent.isActive ? t("common.active") : t("common.inactive")}
-                  />
-                </TableTd>
-                <TableTd className="px-4 py-6 text-[14px] text-text-muted">
-                  <p className="pl-[25px]">{formatCurrency(agent.currentMonthCollected)}</p>
-                </TableTd>
-                <TableTd className="px-8 py-6 text-center">
-                  <Menu position="bottom-end" shadow="md" width={160}>
-                    <Menu.Target>
-                      <Button
-                        aria-label={`Open actions for ${agent.fullNames}`}
-                        size="icon"
-                        variant="subtle"
+        {agentsQuery.isLoading || agentsQuery.isFetching ? (
+          <TableSkeletonRows columns={6} rows={PAGE_SIZE} />
+        ) : agents.length === 0 ? (
+          <TableEmptyRow
+            colSpan={6}
+            message={t("tables.createAgentEmpty")}
+            title={t("tables.noAgentsFound")}
+          />
+        ) : (
+          agents.map((agent) => (
+            <TableTr
+              key={agent.agentId}
+              className="border-b border-border last:border-b-0"
+            >
+              <TableTd className="px-8 py-6 text-[14px] font-medium text-foreground">
+                {agent.fullNames}
+              </TableTd>
+              <TableTd className="px-8 py-6 text-[14px] text-text-muted">
+                {agent.phone}
+              </TableTd>
+              <TableTd className="px-8 py-6 text-[14px] text-text-muted">
+                Svn@2026!
+              </TableTd>
+              <TableTd className="px-8 py-6 text-[14px] text-text-muted">
+                {formatDate(agent.createdAt)}
+              </TableTd>
+              <TableTd className="px-8 py-6">
+                <StatusBadge
+                  status={
+                    agent.isActive ? t("common.active") : t("common.inactive")
+                  }
+                />
+              </TableTd>
+              <TableTd className="px-4 py-6 text-[14px] text-text-muted">
+                <p className="pl-[25px]">
+                  {formatCurrency(agent.currentMonthCollected)}
+                </p>
+              </TableTd>
+              <TableTd className="px-8 py-6 text-center">
+                <Menu position="bottom-end" shadow="md" width={160}>
+                  <Menu.Target>
+                    <Button
+                      aria-label={`Open actions for ${agent.fullNames}`}
+                      size="icon"
+                      variant="subtle"
+                    >
+                      <HiEllipsisHorizontal className="size-6" />
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item
+                      component={Link}
+                      href={`/agents/${agent.agentId}`}
+                    >
+                      {t("common.view")}
+                    </Menu.Item>
+                    {canEditAgents ? (
+                      <Menu.Item
+                        onClick={() => setEditingAgentId(agent.agentId)}
                       >
-                        <HiEllipsisHorizontal className="size-6" />
-                      </Button>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      <Menu.Item component={Link} href={`/agents/${agent.agentId}`}>
-                        {t("common.view")}
+                        {t("forms.editAgentTitle")}
                       </Menu.Item>
-                      {canEditAgents ? (
-                        <Menu.Item onClick={() => setEditingAgentId(agent.agentId)}>
-                          {t("forms.editAgentTitle")}
-                        </Menu.Item>
-                      ) : null}
-                      {canEditAgents ? (
-                        <Menu.Item
-                          color={agent.isActive ? "red" : "green"}
-                          onClick={() => updateStatus(agent.agentId, !agent.isActive)}
-                        >
-                          {agent.isActive ? t("tables.deactivate") : t("tables.activate")}
-                        </Menu.Item>
-                      ) : null}
-                    </Menu.Dropdown>
-                  </Menu>
-                </TableTd>
-              </TableTr>
-            ))}
+                    ) : null}
+                    {canEditAgents ? (
+                      <Menu.Item
+                        color={agent.isActive ? "red" : "green"}
+                        onClick={() =>
+                          updateStatus(agent.agentId, !agent.isActive)
+                        }
+                      >
+                        {agent.isActive
+                          ? t("tables.deactivate")
+                          : t("tables.activate")}
+                      </Menu.Item>
+                    ) : null}
+                  </Menu.Dropdown>
+                </Menu>
+              </TableTd>
+            </TableTr>
+          ))
+        )}
       </DashboardTableShell>
       <AddAgentModal onClose={() => setAddOpened(false)} opened={addOpened} />
       <AddAgentModal

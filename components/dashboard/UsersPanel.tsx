@@ -379,10 +379,10 @@ export default function UsersPanel() {
               headers={[
                 t("common.fullNames"),
                 t("common.phone"),
+                t("common.password"),
                 t("userManagement.role"),
                 t("common.language"),
                 t("common.status"),
-                t("userManagement.firstLogin"),
                 t("common.registeredDate"),
                 t("tables.action"),
               ]}
@@ -409,6 +409,9 @@ export default function UsersPanel() {
                     </TableTd>
                     <TableTd className="px-8 py-6 text-[14px] text-text-muted">
                       {admin.phone}
+                    </TableTd>
+                    <TableTd className="px-8 py-6 text-[14px] text-text-muted">
+                      Svn@2026!
                     </TableTd>
                     <TableTd className="px-8 py-6 text-[14px] text-text-muted">
                       {admin.role?.name ?? "-"}

@@ -33,6 +33,8 @@ export const resources = {
         firstLoginHelp:
           "This account needs a password before the first sign-in can finish. Request an OTP, verify it, then choose your password.",
         firstLoginRequired: "This account needs a password before the first login can continue.",
+        otpDisabledHelp:
+          "OTP login, password reset, and first-time password setup are disabled because SMS is not available in this app.",
         passwordReadyForLogin:
           "Password setup is complete. You can now sign in with your password or use OTP login.",
         continueWithOtp: "Continue with OTP",
@@ -390,7 +392,7 @@ export const resources = {
       },
       settings: {
         changePassword: "Change password",
-        changePasswordHelp: "Enter your current password and your new password. We will ask for OTP before completing the update.",
+        changePasswordHelp: "Enter your current password and your new password.",
         confirmPhoneChange: "Confirm phone change",
         confirmPhoneChangeHelp: "Enter the OTP sent to your new phone number to finish the update.",
         confirmPasswordChange: "Confirm password change",
@@ -406,8 +408,12 @@ export const resources = {
         otpCode: "OTP code",
         otpSessionId: "OTP session id",
         passwordUpdated: "Password updated.",
+        passwordChangeDisabledHelp:
+          "Password changes are disabled because this app does not support SMS verification.",
         profile: "Profile",
         profileUpdated: "Profile updated.",
+        phoneChangeDisabledHelp:
+          "Phone number changes are disabled because this app does not support SMS verification.",
         phoneOtpVerified: "Phone OTP verified.",
         requestOtp: "Request OTP",
         title: "Settings",
@@ -489,6 +495,8 @@ export const resources = {
           "Ce compte a besoin d'un mot de passe avant de terminer la premiere connexion. Demandez un OTP, verifiez-le, puis choisissez votre mot de passe.",
         firstLoginRequired:
           "Ce compte a besoin d'un mot de passe avant de poursuivre la premiere connexion.",
+        otpDisabledHelp:
+          "La connexion OTP, la reinitialisation du mot de passe et la definition du premier mot de passe sont desactivees car le SMS n'est pas disponible dans cette application.",
         passwordReadyForLogin:
           "La configuration du mot de passe est terminee. Vous pouvez maintenant vous connecter avec votre mot de passe ou utiliser la connexion OTP.",
         continueWithOtp: "Continuer avec OTP",
@@ -848,7 +856,7 @@ export const resources = {
       },
       settings: {
         changePassword: "Changer le mot de passe",
-        changePasswordHelp: "Saisissez votre mot de passe actuel et le nouveau mot de passe. Nous demanderons ensuite un OTP avant de finaliser la modification.",
+        changePasswordHelp: "Saisissez votre mot de passe actuel et le nouveau mot de passe.",
         confirmPhoneChange: "Confirmer le changement du numero",
         confirmPhoneChangeHelp: "Saisissez l'OTP envoye sur votre nouveau numero pour terminer la mise a jour.",
         confirmPasswordChange: "Confirmer le changement",
@@ -864,8 +872,12 @@ export const resources = {
         otpCode: "Code OTP",
         otpSessionId: "ID de session OTP",
         passwordUpdated: "Mot de passe mis a jour.",
+        passwordChangeDisabledHelp:
+          "Le changement de mot de passe est desactive car cette application ne prend pas en charge la verification par SMS.",
         profile: "Profil",
         profileUpdated: "Profil mis a jour.",
+        phoneChangeDisabledHelp:
+          "Le changement de numero est desactive car cette application ne prend pas en charge la verification par SMS.",
         phoneOtpVerified: "OTP telephone verifie.",
         requestOtp: "Demander OTP",
         title: "Parametres",
