@@ -679,7 +679,7 @@ export default function ConfigurationsPanel() {
 
           {activeTab === "service" && canViewServices ? (
             <Button
-              className="h-12 min-w-[188px] rounded-[14px] px-3 text-[14px] font-medium"
+              className="h-12 min-w-[188px] rounded-[14px] px-3 text-[14px] font-medium sm:flex hidden"
               disabled={isSavingService || !canCreateService}
               onClick={resetServiceForm}
             >

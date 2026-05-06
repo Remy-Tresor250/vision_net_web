@@ -62,16 +62,20 @@ export default function ServiceConfigurationsSection({
   setServiceSubscription,
 }: Props) {
   const { t } = useTranslation();
-  const canSaveService = selectedServiceType ? canEditService : canCreateService;
+  const canSaveService = selectedServiceType
+    ? canEditService
+    : canCreateService;
   const isMobile = useMediaQuery("(max-width: 47.99em)");
 
   const serviceForm = (
     <div className="mx-auto max-w-[590px]">
-      <h2 className="text-center text-[20px] font-medium text-foreground sm:text-[24px] xl:text-[28px]">
-        {selectedServiceType
-          ? t("configurations.editService")
-          : t("configurations.addNewService")}
-      </h2>
+      {!isMobile && (
+        <h2 className="text-center text-[20px] font-medium text-foreground sm:text-[24px] xl:text-[28px]">
+          {selectedServiceType
+            ? t("configurations.editService")
+            : t("configurations.addNewService")}
+        </h2>
+      )}
 
       <div className="mt-5 space-y-4 sm:mt-8 sm:space-y-7">
         <TextInput
@@ -87,16 +91,20 @@ export default function ServiceConfigurationsSection({
           classNames={appFieldClassNames}
           disabled={isSaving || !canSaveService}
           label={t("configurations.subscription")}
-          onChange={(event) => setServiceSubscription(Number(event.currentTarget.value))}
+          onChange={(event) =>
+            setServiceSubscription(Number(event.currentTarget.value))
+          }
           placeholder="ex. 25"
           styles={appFieldStyles}
           value={serviceSubscription}
         />
 
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end items-center gap-1 sm:gap-3">
           {isMobile ? (
             <Button onClick={onResetServiceForm} variant="outline">
-              <p className="text-[13px] sm:text-[14px]">{t("actions.cancel")}</p>
+              <p className="text-[13px] sm:text-[14px]">
+                {t("actions.cancel")}
+              </p>
             </Button>
           ) : null}
           <Button
@@ -146,12 +154,17 @@ export default function ServiceConfigurationsSection({
                       </Menu.Target>
                       <Menu.Dropdown>
                         {canEditService ? (
-                          <Menu.Item onClick={() => onEditService(serviceType.id)}>
+                          <Menu.Item
+                            onClick={() => onEditService(serviceType.id)}
+                          >
                             {t("configurations.edit")}
                           </Menu.Item>
                         ) : null}
                         {canDeleteService ? (
-                          <Menu.Item color="red" onClick={() => onDeleteService(serviceType.id)}>
+                          <Menu.Item
+                            color="red"
+                            onClick={() => onDeleteService(serviceType.id)}
+                          >
                             {t("configurations.delete")}
                           </Menu.Item>
                         ) : null}
@@ -159,7 +172,10 @@ export default function ServiceConfigurationsSection({
                     </Menu>
                   }
                   items={[
-                    { label: t("configurations.type"), value: serviceType.name },
+                    {
+                      label: t("configurations.type"),
+                      value: serviceType.name,
+                    },
                     {
                       label: t("configurations.subscription"),
                       value: serviceType.subscriptionAmountMinor
@@ -176,16 +192,18 @@ export default function ServiceConfigurationsSection({
           <Table className="min-w-full">
             <TableThead className="bg-surface-muted">
               <TableTr>
-                {[t("configurations.type"), t("configurations.subscription"), t("tables.action")].map(
-                  (header) => (
-                    <TableTh
-                      className="px-8 py-5 font-semibold uppercase tracking-[0.08em] text-text-muted"
-                      key={header}
-                    >
-                      <p className="pl-[5px] text-center text-[14px]">{header}</p>
-                    </TableTh>
-                  ),
-                )}
+                {[
+                  t("configurations.type"),
+                  t("configurations.subscription"),
+                  t("tables.action"),
+                ].map((header) => (
+                  <TableTh
+                    className="px-8 py-5 font-semibold uppercase tracking-[0.08em] text-text-muted"
+                    key={header}
+                  >
+                    <p className="pl-[5px] text-center text-[14px]">{header}</p>
+                  </TableTh>
+                ))}
               </TableTr>
             </TableThead>
             <TableTbody>
@@ -222,12 +240,17 @@ export default function ServiceConfigurationsSection({
                         </Menu.Target>
                         <Menu.Dropdown>
                           {canEditService ? (
-                            <Menu.Item onClick={() => onEditService(serviceType.id)}>
+                            <Menu.Item
+                              onClick={() => onEditService(serviceType.id)}
+                            >
                               {t("configurations.edit")}
                             </Menu.Item>
                           ) : null}
                           {canDeleteService ? (
-                            <Menu.Item color="red" onClick={() => onDeleteService(serviceType.id)}>
+                            <Menu.Item
+                              color="red"
+                              onClick={() => onDeleteService(serviceType.id)}
+                            >
                               {t("configurations.delete")}
                             </Menu.Item>
                           ) : null}
