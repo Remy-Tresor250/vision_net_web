@@ -292,7 +292,7 @@ export default function AddClientModal({
       radius="sm"
       size="xl"
       title={
-        <span className="text-[28px] font-semibold text-foreground">
+        <span className="text-[20px] font-semibold text-foreground sm:text-[24px] xl:text-[28px]">
           {isEditing ? t("forms.editClientTitle") : t("modals.registerClients")}
         </span>
       }
@@ -307,7 +307,7 @@ export default function AddClientModal({
             />
             <div className="flex items-center gap-5">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-[13px] text-text-muted">
+              <span className="text-[12px] text-text-muted sm:text-[13px]">
                 {t("common.or")}
               </span>
               <div className="h-px flex-1 bg-border" />
@@ -473,14 +473,14 @@ export default function AddClientModal({
               onClick={onClose}
               type="button"
             >
-              <p className="text-[14px] text-black">{t("actions.cancel")}</p>
+              <p className="text-[12px] text-black sm:text-[14px]">{t("actions.cancel")}</p>
             </button>
             <button
               className="flex w-full flex-row items-center justify-center gap-[4px] rounded-[6px] bg-brand px-[12px] py-[10px] sm:w-auto sm:py-[6px]"
               disabled={createMutation.isPending || updateMutation.isPending}
               type="submit"
             >
-              <p className="text-[14px] text-white">
+              <p className="text-[12px] text-white sm:text-[14px]">
                 {createMutation.isPending || updateMutation.isPending
                   ? isEditing
                     ? t("forms.saving")

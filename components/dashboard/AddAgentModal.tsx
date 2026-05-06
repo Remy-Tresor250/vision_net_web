@@ -262,9 +262,9 @@ export default function AddAgentModal({ agent, onClose, opened }: Props) {
     <Modal
       centered
       classNames={{
-        body: "px-8 pb-8",
+        body: "px-4 pb-5 sm:px-8 sm:pb-8",
         content: "rounded-sm",
-        header: "px-8 pt-8",
+        header: "px-4 pt-4 sm:px-8 sm:pt-8",
         title: "w-full text-center",
       }}
       closeButtonProps={{
@@ -275,7 +275,7 @@ export default function AddAgentModal({ agent, onClose, opened }: Props) {
       radius="sm"
       size="xl"
       title={
-        <span className="text-[28px] font-semibold text-foreground">
+        <span className="text-[20px] font-semibold text-foreground sm:text-[24px] xl:text-[28px]">
           {isEditing ? t("forms.editAgentTitle") : t("modals.registerAgents")}
         </span>
       }
@@ -286,7 +286,7 @@ export default function AddAgentModal({ agent, onClose, opened }: Props) {
             <ImportUsersModal kind="agents" onImported={onClose} />
             <div className="flex items-center gap-5">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-[13px] text-text-muted">{t("common.or")}</span>
+              <span className="text-[12px] text-text-muted sm:text-[13px]">{t("common.or")}</span>
               <div className="h-px flex-1 bg-border" />
             </div>
           </>
@@ -417,14 +417,14 @@ export default function AddAgentModal({ agent, onClose, opened }: Props) {
               onClick={onClose}
               type="button"
             >
-              <p className="text-[14px] text-black">{t("actions.cancel")}</p>
+              <p className="text-[12px] text-black sm:text-[14px]">{t("actions.cancel")}</p>
             </button>
             <button
               className="flex flex-row items-center gap-[4px] rounded-[6px] bg-brand px-[12px] py-[6px]"
               disabled={isSaving}
               type="submit"
             >
-              <p className="text-[14px] text-white">
+              <p className="text-[12px] text-white sm:text-[14px]">
                 {isSaving
                   ? isEditing
                     ? t("forms.saving")

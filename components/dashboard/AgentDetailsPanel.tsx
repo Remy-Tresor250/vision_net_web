@@ -18,7 +18,10 @@ import {
   HiOutlineUser,
 } from "react-icons/hi2";
 
+import Button from "@/components/ui/Button";
 import ErrorState from "@/components/dashboard/ErrorState";
+import MobileInfiniteLoader from "@/components/dashboard/MobileInfiniteLoader";
+import MobileDataCard from "@/components/dashboard/MobileDataCard";
 import NoDataCard from "@/components/dashboard/NoDataCard";
 import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
@@ -31,8 +34,9 @@ import {
   formatMonths,
   getPageCount,
 } from "@/lib/format";
-import { getAdminPaymentId } from "@/lib/payment";
+import { getAdminPaymentId, getPaymentActorName } from "@/lib/payment";
 import { useAdminAgentQuery, useAdminPaymentsQuery } from "@/lib/query/hooks";
+import { useMobileAccumulatedList } from "@/lib/query/useMobileAccumulatedList";
 import type { AdminPaymentListItem } from "@/lib/api/types";
 import type { Payment } from "@/types";
 import { useTranslation } from "react-i18next";
@@ -64,7 +68,7 @@ function toReceiptPayment(payment: AdminPaymentListItem): Payment {
 
   return {
     agentId: payment.agentId ?? "admin",
-    agentName: payment.agentName ?? "Admin",
+    agentName: getPaymentActorName(payment),
     amount: formatCurrency(payment.amount),
     billingMonth: formatMonths(payment.months ?? payment.month),
     clientId: payment.clientId ?? "",
@@ -100,6 +104,13 @@ export default function AgentDetailsPanel({ agentId }: Props) {
   );
   const agent = agentQuery.data;
   const payments = paymentsQuery.data?.data ?? [];
+  const { mobileItems: mobilePayments } = useMobileAccumulatedList({
+    getKey: (payment) => getAdminPaymentId(payment) || payment.receiptId || payment.createdAt || "",
+    isPlaceholderData: paymentsQuery.isPlaceholderData,
+    items: payments,
+    page,
+    resetKey: agentId,
+  });
   const totalPages = getPageCount(paymentsQuery.data?.total ?? 0, PAGE_SIZE);
   const assignedAvenueLabels = useMemo(
     () =>
@@ -120,6 +131,8 @@ export default function AgentDetailsPanel({ agentId }: Props) {
     if (!agent?.assignedAvenues?.length) {
       return;
     }
+
+    const currentAgentId = agent.agentId;
 
     const missingAssignments = agent.assignedAvenues.filter(
       (assignedAvenue) =>
@@ -160,9 +173,9 @@ export default function AgentDetailsPanel({ agentId }: Props) {
 
       if (!cancelled) {
         setResolvedAssignedLabels((current) => ({
-          agentId: agent.agentId,
+          agentId: currentAgentId,
           labels:
-            current.agentId === agent.agentId
+            current.agentId === currentAgentId
               ? { ...current.labels, ...Object.fromEntries(nextEntries) }
               : Object.fromEntries(nextEntries),
         }));
@@ -175,6 +188,12 @@ export default function AgentDetailsPanel({ agentId }: Props) {
       cancelled = true;
     };
   }, [agent, currentResolvedAssignedLabels]);
+
+  function loadMore() {
+    if (page < totalPages && !paymentsQuery.isFetching) {
+      setPage((current) => current + 1);
+    }
+  }
 
   if (agentQuery.isError) {
     return (
@@ -292,7 +311,54 @@ export default function AgentDetailsPanel({ agentId }: Props) {
 
       {canViewPayments ? (
         <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
-        <TableScrollContainer minWidth={1080}>
+        <div className="grid gap-3 p-3 md:hidden">
+          {paymentsQuery.isLoading
+            ? Array.from({ length: 4 }, (_, index) => (
+                <div
+                  className="h-40 animate-pulse rounded-xl border border-border bg-surface-muted"
+                  key={index}
+                />
+              ))
+            : mobilePayments.map((payment) => (
+                <MobileDataCard
+                  actions={
+                    <Button
+                      className="h-9 px-3 text-xs"
+                      onClick={() => setSelectedPayment(payment)}
+                      variant="outline"
+                    >
+                      {t("common.view")}
+                    </Button>
+                  }
+                  items={[
+                    {
+                      label: t("tables.dateCollected"),
+                      value: formatDate(payment.paymentDate ?? payment.createdAt),
+                    },
+                    {
+                      label: t("common.month"),
+                      value: formatMonths(payment.months ?? payment.month),
+                    },
+                    {
+                      label: t("common.amount"),
+                      value: formatCurrency(payment.amount),
+                    },
+                    {
+                      label: t("common.receipt"),
+                      value: t("common.view"),
+                    },
+                  ]}
+                  key={getAdminPaymentId(payment) || payment.receiptId || payment.createdAt}
+                  title={payment.clientName ?? "-"}
+                />
+              ))}
+          <MobileInfiniteLoader
+            hasMore={mobilePayments.length < (paymentsQuery.data?.total ?? 0)}
+            isLoading={paymentsQuery.isFetching && page > 1}
+            onLoadMore={loadMore}
+          />
+        </div>
+        <TableScrollContainer className="hidden md:block" minWidth={1080}>
           <Table className="min-w-full">
             <TableThead className="bg-surface-muted">
               <TableTr>
@@ -314,7 +380,7 @@ export default function AgentDetailsPanel({ agentId }: Props) {
               </TableTr>
             </TableThead>
             <TableTbody>
-              {paymentsQuery.isLoading || paymentsQuery.isFetching ? (
+              {paymentsQuery.isLoading ? (
                 <TableSkeletonRows columns={5} rows={PAGE_SIZE} />
               ) : payments.length === 0 ? (
                 <TableEmptyRow
@@ -355,7 +421,7 @@ export default function AgentDetailsPanel({ agentId }: Props) {
             </TableTbody>
           </Table>
         </TableScrollContainer>
-        <div className="flex justify-center px-6 py-7">
+        <div className="hidden justify-center px-6 py-7 md:flex">
           <Pagination
             boundaries={1}
             color="brand"

@@ -10,6 +10,9 @@ import { useTranslation } from "react-i18next";
 import DashboardTableShell from "@/components/dashboard/DashboardTableShell";
 import FilterToolbar from "@/components/dashboard/FilterToolbar";
 import AddAgentModal from "@/components/dashboard/AddAgentModal";
+import MobileDataCard from "@/components/dashboard/MobileDataCard";
+import NoDataCard from "@/components/dashboard/NoDataCard";
+import PasswordCell from "@/components/dashboard/PasswordCell";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import Button from "@/components/ui/Button";
@@ -20,8 +23,10 @@ import { getApiErrorMessage } from "@/lib/api/client";
 import { formatCurrency, formatDate, getPageCount } from "@/lib/format";
 import {
   useAdminAgentsQuery,
+  useResetUserPasswordMutation,
   useUpdateAgentStatusMutation,
 } from "@/lib/query/hooks";
+import { useMobileAccumulatedList } from "@/lib/query/useMobileAccumulatedList";
 import { useAuthStore } from "@/stores/auth-store";
 
 const PAGE_SIZE = 8;
@@ -31,6 +36,7 @@ export default function AgentsTable() {
   const permissions = useAuthStore((state) => state.user?.permissions);
   const canCreateAgents = hasAnyPermission(permissions, ["agents.create"]);
   const canEditAgents = hasAnyPermission(permissions, ["agents.edit"]);
+  const canResetPasswords = hasAnyPermission(permissions, ["users.password_reset"]);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, string>>({
@@ -44,6 +50,7 @@ export default function AgentsTable() {
   });
   const [addOpened, setAddOpened] = useState(false);
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
+  const [resettingUserId, setResettingUserId] = useState<string | null>(null);
   const skip = (page - 1) * PAGE_SIZE;
   const agentParams: AdminAgentsParams = {
     createdAtFrom: filters.createdAtFrom || undefined,
@@ -64,15 +71,30 @@ export default function AgentsTable() {
   };
   const agentsQuery = useAdminAgentsQuery(agentParams);
   const statusMutation = useUpdateAgentStatusMutation();
+  const resetPasswordMutation = useResetUserPasswordMutation();
 
   const agents = agentsQuery.data?.data ?? [];
   const totalPages = getPageCount(agentsQuery.data?.total ?? 0, PAGE_SIZE);
+  const mobileResetKey = JSON.stringify({ filters, query });
+  const { mobileItems: mobileAgents } = useMobileAccumulatedList({
+    getKey: (agent) => agent.agentId,
+    isPlaceholderData: agentsQuery.isPlaceholderData,
+    items: agents,
+    page,
+    resetKey: mobileResetKey,
+  });
   const editingAgent =
     agents.find((agent) => agent.agentId === editingAgentId) ?? null;
 
   function handleQueryChange(value: string) {
     setQuery(value);
     setPage(1);
+  }
+
+  function loadMore() {
+    if (page < totalPages && !agentsQuery.isFetching) {
+      setPage((current) => current + 1);
+    }
   }
 
   function handleFiltersChange(value: Record<string, string>) {
@@ -93,6 +115,16 @@ export default function AgentsTable() {
           ),
       },
     );
+  }
+
+  function resetPassword(userId: string) {
+    setResettingUserId(userId);
+    resetPasswordMutation.mutate(userId, {
+      onError: (error) => toast.error(getApiErrorMessage(error)),
+      onSuccess: (response) =>
+        toast.success(response.message ?? t("common.passwordResetSuccess")),
+      onSettled: () => setResettingUserId(null),
+    });
   }
 
   return (
@@ -170,15 +202,111 @@ export default function AgentsTable() {
           t("tables.performance"),
           t("tables.action"),
         ]}
+        emptyMobileState={
+          <NoDataCard
+            className="min-h-52 border"
+            message={t("tables.createAgentEmpty")}
+            title={t("tables.noAgentsFound")}
+          />
+        }
+        hasMoreMobileItems={mobileAgents.length < (agentsQuery.data?.total ?? 0)}
+        isLoadingMore={agentsQuery.isFetching && page > 1}
+        mobileCards={
+          agentsQuery.isLoading
+            ? Array.from({ length: 4 }, (_, index) => (
+                <div
+                  className="h-40 animate-pulse rounded-xl border border-border bg-surface-muted"
+                  key={index}
+                />
+              ))
+            : mobileAgents.map((agent) => (
+                <MobileDataCard
+                  actions={
+                    <Menu position="bottom-end" shadow="md" width={160}>
+                      <Menu.Target>
+                        <Button
+                          aria-label={`Open actions for ${agent.fullNames}`}
+                          size="icon"
+                          variant="subtle"
+                        >
+                          <HiEllipsisHorizontal className="size-5" />
+                        </Button>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          component={Link}
+                          href={`/agents/${agent.agentId}`}
+                        >
+                          {t("common.view")}
+                        </Menu.Item>
+                        {canEditAgents ? (
+                          <Menu.Item
+                            onClick={() => setEditingAgentId(agent.agentId)}
+                          >
+                            {t("forms.editAgentTitle")}
+                          </Menu.Item>
+                        ) : null}
+                        {canEditAgents ? (
+                          <Menu.Item
+                            color={agent.isActive ? "red" : "green"}
+                            onClick={() =>
+                              updateStatus(agent.agentId, !agent.isActive)
+                            }
+                          >
+                            {agent.isActive
+                              ? t("tables.deactivate")
+                              : t("tables.activate")}
+                          </Menu.Item>
+                        ) : null}
+                      </Menu.Dropdown>
+                    </Menu>
+                  }
+                  items={[
+                    { label: t("common.phone"), value: agent.phone },
+                    {
+                      label: t("common.password"),
+                      value: (
+                        <PasswordCell
+                          canReset={canResetPasswords}
+                          isDefaultPass={agent.isDefaultPass}
+                          isResetting={resettingUserId === agent.userId}
+                          onReset={() => resetPassword(agent.userId)}
+                        />
+                      ),
+                    },
+                    {
+                      label: t("filters.createdAt"),
+                      value: formatDate(agent.createdAt),
+                    },
+                    {
+                      label: t("tables.performance"),
+                      value: formatCurrency(agent.currentMonthCollected),
+                    },
+                  ]}
+                  key={agent.agentId}
+                  status={
+                    <StatusBadge
+                      status={
+                        agent.isActive
+                          ? t("common.active")
+                          : t("common.inactive")
+                      }
+                    />
+                  }
+                  title={agent.fullNames}
+                />
+              ))
+        }
+        onLoadMore={loadMore}
         onPageChange={setPage}
         page={page}
         total={totalPages}
       >
-        {agentsQuery.isLoading || agentsQuery.isFetching ? (
-          <TableSkeletonRows columns={6} rows={PAGE_SIZE} />
+        {agentsQuery.isLoading ? (
+          <TableSkeletonRows columns={7} rows={PAGE_SIZE} />
         ) : agents.length === 0 ? (
           <TableEmptyRow
-            colSpan={6}
+            colSpan={7}
             message={t("tables.createAgentEmpty")}
             title={t("tables.noAgentsFound")}
           />
@@ -195,7 +323,12 @@ export default function AgentsTable() {
                 {agent.phone}
               </TableTd>
               <TableTd className="px-8 py-6 text-[14px] text-text-muted">
-                Svn@2026!
+                <PasswordCell
+                  canReset={canResetPasswords}
+                  isDefaultPass={agent.isDefaultPass}
+                  isResetting={resettingUserId === agent.userId}
+                  onReset={() => resetPassword(agent.userId)}
+                />
               </TableTd>
               <TableTd className="px-8 py-6 text-[14px] text-text-muted">
                 {formatDate(agent.createdAt)}

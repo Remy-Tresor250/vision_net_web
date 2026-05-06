@@ -32,6 +32,8 @@ export const endpoints = {
     admin: (adminId: string) => `/admin/users/admins/${adminId}`,
     adminStatus: (adminId: string) => `/admin/users/admins/${adminId}/status`,
     adminRole: (adminId: string) => `/admin/users/admins/${adminId}/role`,
+    resetUserPassword: (userId: string) =>
+      `/admin/users/${userId}/password/reset-default`,
     serviceTypes: "/admin/service-types",
     serviceType: (serviceTypeId: string) => `/admin/service-types/${serviceTypeId}`,
     commissionConfig: "/admin/commissions/config",

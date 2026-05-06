@@ -17,7 +17,9 @@ import { useTranslation } from "react-i18next";
 
 import DashboardTableShell from "@/components/dashboard/DashboardTableShell";
 import FilterToolbar from "@/components/dashboard/FilterToolbar";
+import MobileDataCard from "@/components/dashboard/MobileDataCard";
 import NoDataCard from "@/components/dashboard/NoDataCard";
+import PasswordCell from "@/components/dashboard/PasswordCell";
 import StatusBadge from "@/components/ui/StatusBadge";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
@@ -42,10 +44,12 @@ import {
   useCreateAdminRoleMutation,
   useDeleteAdminMutation,
   useDeleteAdminRoleMutation,
+  useResetUserPasswordMutation,
   useUpdateAdminMutation,
   useUpdateAdminRoleMutation,
   useUpdateAdminStatusMutation,
 } from "@/lib/query/hooks";
+import { useMobileAccumulatedList } from "@/lib/query/useMobileAccumulatedList";
 import { useAuthStore } from "@/stores/auth-store";
 
 type UsersTab = "users" | "roles";
@@ -181,6 +185,9 @@ export default function UsersPanel() {
   const canCreateUsers = hasAnyPermission(permissions, ["admin_users.create"]);
   const canEditUsers = hasAnyPermission(permissions, ["admin_users.edit"]);
   const canDeleteUsers = hasAnyPermission(permissions, ["admin_users.delete"]);
+  const canResetPasswords = hasAnyPermission(permissions, [
+    "users.password_reset",
+  ]);
   const canViewRoles = hasAnyPermission(permissions, ["roles.view"]);
   const canCreateRoles = hasAnyPermission(permissions, ["roles.create"]);
   const canEditRoles = hasAnyPermission(permissions, ["roles.edit"]);
@@ -209,6 +216,7 @@ export default function UsersPanel() {
   const [userModalMode, setUserModalMode] = useState<UserModalMode | null>(
     null,
   );
+  const [resettingUserId, setResettingUserId] = useState<string | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [roleModalMode, setRoleModalMode] = useState<RoleModalMode | null>(
     null,
@@ -254,6 +262,7 @@ export default function UsersPanel() {
     selectedAdminId ?? undefined,
   );
   const deleteAdminMutation = useDeleteAdminMutation();
+  const resetPasswordMutation = useResetUserPasswordMutation();
 
   const createRoleMutation = useCreateAdminRoleMutation();
   const updateRoleMutation = useUpdateAdminRoleMutation(
@@ -262,11 +271,25 @@ export default function UsersPanel() {
   const deleteRoleMutation = useDeleteAdminRoleMutation();
 
   const users = usersQueryResult.data?.data ?? [];
+  const { mobileItems: mobileUsers } = useMobileAccumulatedList({
+    getKey: (admin) => admin.adminId,
+    isPlaceholderData: usersQueryResult.isPlaceholderData,
+    items: users,
+    page: usersPage,
+    resetKey: JSON.stringify({ usersFilters, usersQuery }),
+  });
   const usersTotalPages = getPageCount(
     usersQueryResult.data?.total ?? 0,
     USERS_PAGE_SIZE,
   );
   const roles = normalizeRolesData(rolesQueryResult.data);
+  const { mobileItems: mobileRoles } = useMobileAccumulatedList({
+    getKey: (role) => role.id,
+    isPlaceholderData: rolesQueryResult.isPlaceholderData,
+    items: roles,
+    page: rolesPage,
+    resetKey: JSON.stringify({ rolesQuery }),
+  });
   const rolesTotalItems = Array.isArray(rolesQueryResult.data)
     ? roles.length
     : (rolesQueryResult.data?.total ?? roles.length);
@@ -281,9 +304,31 @@ export default function UsersPanel() {
     setUserModalMode(mode);
   }
 
+  function resetPassword(userId: string) {
+    setResettingUserId(userId);
+    resetPasswordMutation.mutate(userId, {
+      onError: (error) => toast.error(getApiErrorMessage(error)),
+      onSuccess: (response) =>
+        toast.success(response.message ?? t("common.passwordResetSuccess")),
+      onSettled: () => setResettingUserId(null),
+    });
+  }
+
   function closeUserModal() {
     setSelectedAdminId(null);
     setUserModalMode(null);
+  }
+
+  function loadMoreUsers() {
+    if (usersPage < usersTotalPages && !usersQueryResult.isFetching) {
+      setUsersPage((current) => current + 1);
+    }
+  }
+
+  function loadMoreRoles() {
+    if (rolesPage < rolesTotalPages && !rolesQueryResult.isFetching) {
+      setRolesPage((current) => current + 1);
+    }
   }
 
   function openRoleModal(mode: RoleModalMode, roleId?: string) {
@@ -376,21 +421,145 @@ export default function UsersPanel() {
               title={usersToolbarTitle}
             />
             <DashboardTableShell
+              emptyMobileState={
+                <NoDataCard
+                  className="min-h-52 border"
+                  message={t("userManagement.noUsersMessage")}
+                  title={t("userManagement.noUsersTitle")}
+                />
+              }
               headers={[
                 t("common.fullNames"),
                 t("common.phone"),
                 t("common.password"),
                 t("userManagement.role"),
-                t("common.language"),
                 t("common.status"),
-                t("common.registeredDate"),
+                t("userManagement.firstLogin"),
+                t("filters.createdAt"),
                 t("tables.action"),
               ]}
+              hasMoreMobileItems={mobileUsers.length < (usersQueryResult.data?.total ?? 0)}
+              isLoadingMore={usersQueryResult.isFetching && usersPage > 1}
+              mobileCards={
+                usersQueryResult.isLoading
+                  ? Array.from({ length: 4 }, (_, index) => (
+                      <div
+                        className="h-48 animate-pulse rounded-xl border border-border bg-surface-muted"
+                        key={index}
+                      />
+                    ))
+                  : mobileUsers.map((admin) => (
+                      <MobileDataCard
+                        actions={
+                          <Menu position="bottom-end" shadow="md" width={170}>
+                            <Menu.Target>
+                              <Button
+                                aria-label={`Open actions for ${admin.fullNames}`}
+                                size="icon"
+                                variant="subtle"
+                              >
+                                <HiEllipsisHorizontal className="size-5" />
+                              </Button>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item
+                                onClick={() => openUserModal("view", admin.adminId)}
+                              >
+                                {t("common.view")}
+                              </Menu.Item>
+                              {canEditUsers ? (
+                                <Menu.Item
+                                  onClick={() => openUserModal("edit", admin.adminId)}
+                                >
+                                  {t("userManagement.editUser")}
+                                </Menu.Item>
+                              ) : null}
+                              {canEditUsers ? (
+                                <Menu.Item
+                                  color={admin.isActive ? "red" : "green"}
+                                  onClick={() =>
+                                    updateAdminStatusMutation.mutate(
+                                      {
+                                        adminId: admin.adminId,
+                                        isActive: !admin.isActive,
+                                      },
+                                      {
+                                        onError: (error) =>
+                                          toast.error(getApiErrorMessage(error)),
+                                        onSuccess: () =>
+                                          toast.success(
+                                            admin.isActive
+                                              ? t("userManagement.userDeactivated")
+                                              : t("userManagement.userActivated"),
+                                          ),
+                                      },
+                                    )
+                                  }
+                                >
+                                  {admin.isActive
+                                    ? t("tables.deactivate")
+                                    : t("tables.activate")}
+                                </Menu.Item>
+                              ) : null}
+                              {canDeleteUsers ? (
+                                <Menu.Item
+                                  color="red"
+                                  onClick={() => handleDeleteAdmin(admin)}
+                                >
+                                  {t("userManagement.deleteUser")}
+                                </Menu.Item>
+                              ) : null}
+                            </Menu.Dropdown>
+                          </Menu>
+                        }
+                        items={[
+                          { label: t("common.phone"), value: admin.phone },
+                          {
+                            label: t("common.password"),
+                            value: (
+                              <PasswordCell
+                                canReset={canResetPasswords}
+                                isDefaultPass={admin.isDefaultPass}
+                                isResetting={resettingUserId === admin.userId}
+                                onReset={() => resetPassword(admin.userId)}
+                              />
+                            ),
+                          },
+                          {
+                            label: t("userManagement.role"),
+                            value: admin.role?.name ?? "-",
+                          },
+                          {
+                            label: t("userManagement.firstLogin"),
+                            value: admin.firstLoginCompleted
+                              ? t("userManagement.completed")
+                              : t("userManagement.pending"),
+                          },
+                          {
+                            label: t("filters.createdAt"),
+                            value: formatDate(admin.createdAt),
+                          },
+                        ]}
+                        key={admin.adminId}
+                        status={
+                          <StatusBadge
+                            status={
+                              admin.isActive
+                                ? t("common.active")
+                                : t("common.inactive")
+                            }
+                          />
+                        }
+                        title={admin.fullNames}
+                      />
+                    ))
+              }
+              onLoadMore={loadMoreUsers}
               onPageChange={setUsersPage}
               page={usersPage}
               total={usersTotalPages}
             >
-              {usersQueryResult.isLoading || usersQueryResult.isFetching ? (
+              {usersQueryResult.isLoading ? (
                 <TableSkeletonRows columns={8} rows={USERS_PAGE_SIZE} />
               ) : users.length === 0 ? (
                 <TableEmptyRow
@@ -411,13 +580,15 @@ export default function UsersPanel() {
                       {admin.phone}
                     </TableTd>
                     <TableTd className="px-8 py-6 text-[14px] text-text-muted">
-                      Svn@2026!
+                      <PasswordCell
+                        canReset={canResetPasswords}
+                        isDefaultPass={admin.isDefaultPass}
+                        isResetting={resettingUserId === admin.userId}
+                        onReset={() => resetPassword(admin.userId)}
+                      />
                     </TableTd>
                     <TableTd className="px-8 py-6 text-[14px] text-text-muted">
                       {admin.role?.name ?? "-"}
-                    </TableTd>
-                    <TableTd className="px-8 py-6 text-[14px] uppercase text-text-muted">
-                      {admin.language}
                     </TableTd>
                     <TableTd className="px-8 py-6">
                       <StatusBadge
@@ -429,13 +600,15 @@ export default function UsersPanel() {
                       />
                     </TableTd>
                     <TableTd className="px-8 py-6">
-                      <StatusBadge
-                        status={
-                          admin.firstLoginCompleted
-                            ? t("userManagement.completed")
-                            : t("userManagement.pending")
-                        }
-                      />
+                      <div className="w-full items-center justify-center flex">
+                        <StatusBadge
+                          status={
+                            admin.firstLoginCompleted
+                              ? t("userManagement.completed")
+                              : t("userManagement.pending")
+                          }
+                        />
+                      </div>
                     </TableTd>
                     <TableTd className="px-8 py-6 text-[14px] text-text-muted">
                       {formatDate(admin.createdAt)}
@@ -530,6 +703,13 @@ export default function UsersPanel() {
             title={usersToolbarTitle}
           />
           <DashboardTableShell
+            emptyMobileState={
+              <NoDataCard
+                className="min-h-52 border"
+                message={t("userManagement.noRolesMessage")}
+                title={t("userManagement.noRolesTitle")}
+              />
+            }
             headers={[
               t("userManagement.roleName"),
               t("userManagement.description"),
@@ -537,6 +717,76 @@ export default function UsersPanel() {
               t("common.date"),
               t("tables.action"),
             ]}
+            hasMoreMobileItems={mobileRoles.length < rolesTotalItems}
+            isLoadingMore={rolesQueryResult.isFetching && rolesPage > 1}
+            mobileCards={
+              rolesQueryResult.isLoading
+                ? Array.from({ length: 4 }, (_, index) => (
+                    <div
+                      className="h-40 animate-pulse rounded-xl border border-border bg-surface-muted"
+                      key={index}
+                    />
+                  ))
+                : mobileRoles.map((role) => (
+                    <MobileDataCard
+                      actions={
+                        <Menu position="bottom-end" shadow="md" width={170}>
+                          <Menu.Target>
+                            <Button
+                              aria-label={`Open actions for ${role.name}`}
+                              size="icon"
+                              variant="subtle"
+                            >
+                              <HiEllipsisHorizontal className="size-5" />
+                            </Button>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item
+                              onClick={() => openRoleModal("view", role.id)}
+                            >
+                              {t("common.view")}
+                            </Menu.Item>
+                            {canEditRoles ? (
+                              <Menu.Item
+                                onClick={() => openRoleModal("edit", role.id)}
+                              >
+                                {t("userManagement.editRole")}
+                              </Menu.Item>
+                            ) : null}
+                            {canDeleteRoles ? (
+                              <Menu.Item
+                                color="red"
+                                disabled={role.isSystem}
+                                onClick={() => handleDeleteRole(role)}
+                              >
+                                {t("userManagement.deleteRole")}
+                              </Menu.Item>
+                            ) : null}
+                          </Menu.Dropdown>
+                        </Menu>
+                      }
+                      items={[
+                        {
+                          label: t("userManagement.description"),
+                          value: role.description?.trim() || "-",
+                        },
+                        {
+                          label: t("userManagement.permissions"),
+                          value: t("userManagement.permissionsCount", {
+                            count: role.permissions.length,
+                          }),
+                        },
+                        {
+                          label: t("common.date"),
+                          value: formatDate(role.updatedAt),
+                        },
+                      ]}
+                      key={role.id}
+                      title={role.name}
+                    />
+                  ))
+            }
+            onLoadMore={loadMoreRoles}
             onPageChange={setRolesPage}
             page={rolesPage}
             total={rolesTotalPages}
@@ -791,16 +1041,16 @@ function UserModal({
     <Modal
       centered
       classNames={{
-        body: "px-6 pb-6 sm:px-8 sm:pb-8",
+        body: "px-4 pb-5 sm:px-8 sm:pb-8",
         content: "rounded-sm",
-        header: "px-6 pt-6 sm:px-8 sm:pt-8",
+        header: "px-4 pt-4 sm:px-8 sm:pt-8",
       }}
       onClose={onClose}
       opened={opened}
       radius="sm"
       size="lg"
       title={
-        <span className="text-[26px] font-semibold text-foreground">
+        <span className="text-[20px] font-semibold text-foreground sm:text-[24px] xl:text-[26px]">
           {isCreate
             ? t("userManagement.addUser")
             : isView
@@ -879,19 +1129,32 @@ function UserModal({
                 : t("userManagement.pending")
             }
           />
+          <TextInput
+            classNames={appFieldClassNames}
+            disabled
+            label={t("common.defaultPassword")}
+            styles={appFieldStyles}
+            value={
+              selectedUser.isDefaultPass
+                ? "Svn@2026!"
+                : t("common.passwordHidden")
+            }
+          />
         </div>
       ) : null}
       <div className="mt-6 flex justify-end gap-3">
         <Button onClick={onClose} variant="outline">
-          {t("actions.cancel")}
+          <p className="text-[12px] sm:text-[14px]">{t("actions.cancel")}</p>
         </Button>
         {!isView ? (
           <Button disabled={submitting} onClick={handleSubmit}>
-            {submitting
-              ? t("forms.saving")
-              : isCreate
-                ? t("userManagement.createUser")
-                : t("forms.saveChanges")}
+            <p className="text-[12px] sm:text-[14px]">
+              {submitting
+                ? t("forms.saving")
+                : isCreate
+                  ? t("userManagement.createUser")
+                  : t("forms.saveChanges")}
+            </p>
           </Button>
         ) : null}
       </div>
@@ -973,22 +1236,16 @@ function RoleModal({
     <Modal
       centered
       classNames={{
+        body: "px-4 pb-5 sm:px-8 sm:pb-8",
         content: "rounded-sm",
-      }}
-      styles={{
-        body: {
-          padding: "12px 50px",
-        },
-        header: {
-          padding: "10px 20px",
-        },
+        header: "px-4 pt-4 sm:px-8 sm:pt-8",
       }}
       onClose={onClose}
       opened={opened}
       radius="sm"
       size="xl"
       title={
-        <span className="text-[26px] font-semibold text-foreground">
+        <span className="text-[20px] font-semibold text-foreground sm:text-[24px] xl:text-[26px]">
           {isCreate
             ? t("userManagement.addRole")
             : isView
@@ -997,7 +1254,7 @@ function RoleModal({
         </span>
       }
     >
-      <div className="space-y-4">
+      <div className="space-y-4 sm:px-4">
         <div className="grid gap-4 md:grid-cols-2">
           <TextInput
             classNames={appFieldClassNames}
@@ -1037,10 +1294,10 @@ function RoleModal({
               <HiOutlineShieldCheck className="size-5" />
             </div>
             <div>
-              <p className="text-[15px] font-semibold text-foreground">
+              <p className="text-[14px] font-semibold text-foreground sm:text-[15px]">
                 {t("userManagement.permissions")}
               </p>
-              <p className="text-[13px] text-text-muted">
+              <p className="text-[12px] text-text-muted sm:text-[13px]">
                 {t("userManagement.permissionsHelp")}
               </p>
             </div>
@@ -1054,15 +1311,17 @@ function RoleModal({
       </div>
       <div className="mt-6 flex justify-end gap-3">
         <Button onClick={onClose} variant="outline">
-          {t("actions.cancel")}
+          <p className="text-[12px] sm:text-[14px]">{t("actions.cancel")}</p>
         </Button>
         {!isView ? (
           <Button disabled={submitting} onClick={handleSubmit}>
-            {submitting
-              ? t("forms.saving")
-              : isCreate
-                ? t("userManagement.createRole")
-                : t("forms.saveChanges")}
+            <p className="text-[12px] sm:text-[14px]">
+              {submitting
+                ? t("forms.saving")
+                : isCreate
+                  ? t("userManagement.createRole")
+                  : t("forms.saveChanges")}
+            </p>
           </Button>
         ) : null}
       </div>

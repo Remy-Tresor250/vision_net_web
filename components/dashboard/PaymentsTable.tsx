@@ -9,6 +9,8 @@ import { useTranslation } from "react-i18next";
 import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import DashboardTableShell from "@/components/dashboard/DashboardTableShell";
 import FilterToolbar from "@/components/dashboard/FilterToolbar";
+import MobileDataCard from "@/components/dashboard/MobileDataCard";
+import NoDataCard from "@/components/dashboard/NoDataCard";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import Button from "@/components/ui/Button";
@@ -16,8 +18,9 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import { hasAnyPermission } from "@/lib/auth/permissions";
 import type { AdminPaymentListItem, AdminPaymentsParams } from "@/lib/api/types";
 import { formatCurrency, formatDate, formatMonths, getPageCount } from "@/lib/format";
-import { getAdminPaymentId } from "@/lib/payment";
+import { getAdminPaymentId, getPaymentActorName } from "@/lib/payment";
 import { useAdminPaymentsQuery } from "@/lib/query/hooks";
+import { useMobileAccumulatedList } from "@/lib/query/useMobileAccumulatedList";
 import { useAuthStore } from "@/stores/auth-store";
 import type { Payment } from "@/types";
 
@@ -73,6 +76,13 @@ export default function PaymentsTable() {
 
     return rightDate - leftDate;
   });
+  const { mobileItems: mobilePayments } = useMobileAccumulatedList({
+    getKey: (payment) => getAdminPaymentId(payment) || payment.receiptId || payment.createdAt || "",
+    isPlaceholderData: paymentsQuery.isPlaceholderData,
+    items: payments,
+    page,
+    resetKey: JSON.stringify({ filters, query }),
+  });
   const totalPages = getPageCount(paymentsQuery.data?.total ?? 0, PAGE_SIZE);
 
   function handleQueryChange(value: string) {
@@ -90,7 +100,7 @@ export default function PaymentsTable() {
 
     return {
       agentId: payment.agentId ?? "admin",
-      agentName: payment.agentName ?? "Admin",
+      agentName: getPaymentActorName(payment),
       amount: formatCurrency(payment.amount),
       billingMonth: formatMonths(payment.months ?? payment.month),
       clientId: payment.clientId ?? "",
@@ -103,6 +113,12 @@ export default function PaymentsTable() {
       months: String(payment.months?.length ?? 1),
       status: payment.status === "DUE" ? "Overdue" : "Paid",
     };
+  }
+
+  function loadMore() {
+    if (page < totalPages && !paymentsQuery.isFetching) {
+      setPage((current) => current + 1);
+    }
   }
 
   return (
@@ -154,6 +170,13 @@ export default function PaymentsTable() {
         query={query}
       />
       <DashboardTableShell
+        emptyMobileState={
+          <NoDataCard
+            className="min-h-52 border"
+            message={t("tables.paymentsEmpty")}
+            title={t("tables.noPaymentsFound")}
+          />
+        }
         headers={[
           t("common.clientName"),
           t("common.agentName"),
@@ -163,6 +186,77 @@ export default function PaymentsTable() {
           t("common.status"),
           t("common.details"),
         ]}
+        hasMoreMobileItems={mobilePayments.length < (paymentsQuery.data?.total ?? 0)}
+        isLoadingMore={paymentsQuery.isFetching && page > 1}
+        mobileCards={
+          paymentsQuery.isLoading
+            ? Array.from({ length: 4 }, (_, index) => (
+                <div
+                  className="h-44 animate-pulse rounded-xl border border-border bg-surface-muted"
+                  key={index}
+                />
+              ))
+            : mobilePayments.map((payment) => (
+                <MobileDataCard
+                  actions={
+                    <Menu position="bottom-end" shadow="md" width={190}>
+                      <Menu.Target>
+                        <Button
+                          aria-label={`Open details for ${payment.clientName ?? "payment"}`}
+                          size="icon"
+                          variant="subtle"
+                        >
+                          <HiEllipsisHorizontal className="size-5" />
+                        </Button>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        {canViewClients && payment.clientId ? (
+                          <Menu.Item component={Link} href={`/clients/${payment.clientId}`}>
+                            {t("tables.viewClient")}
+                          </Menu.Item>
+                        ) : null}
+                        {canViewAgents && payment.agentId ? (
+                          <Menu.Item component={Link} href={`/agents/${payment.agentId}`}>
+                            {t("tables.viewAgent")}
+                          </Menu.Item>
+                        ) : null}
+                        {payment.status !== "DUE" ? (
+                          <Menu.Item onClick={() => setSelectedPayment(payment)}>
+                            {t("tables.viewReceipt")}
+                          </Menu.Item>
+                        ) : null}
+                      </Menu.Dropdown>
+                    </Menu>
+                  }
+                  items={[
+                    {
+                      label: t("common.agentName"),
+                      value: getPaymentActorName(payment),
+                    },
+                    {
+                      label: t("common.months"),
+                      value: formatMonths(payment.months ?? payment.month),
+                    },
+                    {
+                      label: t("common.date"),
+                      value: formatDate(payment.paymentDate ?? payment.createdAt),
+                    },
+                    {
+                      label: t("common.amount"),
+                      value: formatCurrency(payment.amount),
+                    },
+                  ]}
+                  key={getAdminPaymentId(payment) || payment.receiptId || payment.createdAt}
+                  status={
+                    <StatusBadge
+                      status={payment.status === "DUE" ? t("common.overdue") : t("common.paid")}
+                    />
+                  }
+                  title={payment.clientName ?? "-"}
+                />
+              ))
+        }
+        onLoadMore={loadMore}
         onPageChange={setPage}
         page={page}
         total={totalPages}
@@ -186,7 +280,7 @@ export default function PaymentsTable() {
                   {payment.clientName ?? "-"}
                 </TableTd>
                 <TableTd className="px-8 py-6 text-[14px] text-text-muted">
-                  {payment.agentName ?? "Admin"}
+                  {getPaymentActorName(payment)}
                 </TableTd>
                 <TableTd className="px-8 py-6 text-[14px] text-text-muted max-w-[200px]">
                   {formatMonths(payment.months ?? payment.month)}

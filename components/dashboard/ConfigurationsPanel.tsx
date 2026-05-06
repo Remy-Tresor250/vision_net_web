@@ -104,6 +104,7 @@ export default function ConfigurationsPanel() {
   const [serviceName, setServiceName] = useState("");
   const [serviceSubscription, setServiceSubscription] = useState(0);
   const [selectedServiceTypeId, setSelectedServiceTypeId] = useState<string | null>(null);
+  const [serviceModalOpened, setServiceModalOpened] = useState(false);
   const [commissionValue, setCommissionValue] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
   const [locationPage, setLocationPage] = useState(1);
@@ -264,6 +265,7 @@ export default function ConfigurationsPanel() {
     setSelectedServiceTypeId(null);
     setServiceName("");
     setServiceSubscription(0);
+    setServiceModalOpened(false);
   }
 
   function closeLocationModal() {
@@ -434,6 +436,7 @@ export default function ConfigurationsPanel() {
     setServiceSubscription(
       Number(((serviceType.subscriptionAmountMinor ?? 0) / 100).toFixed(0)) ?? 0,
     );
+    setServiceModalOpened(true);
   }
 
   function handleDeleteService(serviceTypeId: string) {
@@ -463,10 +466,10 @@ export default function ConfigurationsPanel() {
     if (selectedServiceType) {
       updateServiceTypeMutation.mutate(payload, {
         onError: (error) => toast.error(getApiErrorMessage(error)),
-        onSuccess: () => {
-          toast.success(t("configurations.serviceUpdated"));
-          resetServiceForm();
-        },
+              onSuccess: () => {
+                toast.success(t("configurations.serviceUpdated"));
+                resetServiceForm();
+              },
       });
 
       return;
@@ -720,8 +723,11 @@ export default function ConfigurationsPanel() {
             isSaving={isSavingService}
             onDeleteService={handleDeleteService}
             onEditService={handleEditService}
+            onOpenCreateService={() => setServiceModalOpened(true)}
+            onResetServiceForm={resetServiceForm}
             onSaveService={handleSaveService}
             selectedServiceType={selectedServiceType}
+            serviceModalOpened={serviceModalOpened}
             serviceName={serviceName}
             serviceSubscription={serviceSubscription}
             serviceTypes={serviceTypes}

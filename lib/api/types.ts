@@ -97,6 +97,7 @@ export interface AdminClientListItem {
   userId: string;
   fullNames: string;
   phone: string;
+  isDefaultPass?: boolean;
   language?: Language;
   code?: string | null;
   address?: string | null;
@@ -137,6 +138,7 @@ export interface AdminAgentListItem {
   userId: string;
   fullNames: string;
   phone: string;
+  isDefaultPass?: boolean;
   isActive: boolean;
   currentMonthCollected: string;
   totalAmountCollected?: string;
@@ -179,6 +181,7 @@ export interface AdminPaymentListItem {
   receiptId: string | null;
   receiptNumber: string | null;
   setByAdmin: boolean;
+  adminName?: string | null;
 }
 
 export interface AdminPaymentDetail extends AdminPaymentListItem {
@@ -194,6 +197,9 @@ export interface PaymentResponse {
   amount: string;
   months: string[];
   paymentDate: string;
+  setByAdmin?: boolean;
+  adminName?: string | null;
+  agentName?: string | null;
 }
 
 export interface DashboardResponse {
@@ -309,6 +315,7 @@ export interface AdminUserListItem {
   userId: string;
   fullNames: string;
   phone: string;
+  isDefaultPass?: boolean;
   language: Language;
   isActive: boolean;
   firstLoginCompleted: boolean;

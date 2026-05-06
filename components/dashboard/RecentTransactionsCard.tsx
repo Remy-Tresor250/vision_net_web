@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 import NoDataCard from "@/components/dashboard/NoDataCard";
+import MobileDataCard from "@/components/dashboard/MobileDataCard";
 import type { Transaction } from "@/types";
 import { useRouter } from "next/navigation";
 
@@ -43,7 +44,22 @@ export default function RecentTransactionsCard({
         </button>
       </div>
       {transactions.length ? (
-        <TableScrollContainer minWidth={760}>
+        <>
+          <div className="grid gap-3 p-3 md:hidden">
+            {transactions.map((transaction) => (
+              <MobileDataCard
+                items={[
+                  { label: t("common.date"), value: transaction.date },
+                  { label: t("common.agent"), value: transaction.agentName },
+                  { label: t("common.month"), value: transaction.billingCycle },
+                  { label: t("common.amount"), value: transaction.amount },
+                ]}
+                key={transaction.id}
+                title={transaction.clientName}
+              />
+            ))}
+          </div>
+          <TableScrollContainer className="hidden md:block" minWidth={760}>
           <Table className="min-w-full">
             <TableTbody>
               {transactions.map((transaction) => (
@@ -70,7 +86,8 @@ export default function RecentTransactionsCard({
               ))}
             </TableTbody>
           </Table>
-        </TableScrollContainer>
+          </TableScrollContainer>
+        </>
       ) : (
         <NoDataCard
           className="min-h-56 border-0"

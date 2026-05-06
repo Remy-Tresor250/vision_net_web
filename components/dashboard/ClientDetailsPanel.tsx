@@ -22,7 +22,9 @@ import {
 
 import Button from "@/components/ui/Button";
 import ErrorState from "@/components/dashboard/ErrorState";
+import MobileInfiniteLoader from "@/components/dashboard/MobileInfiniteLoader";
 import NoDataCard from "@/components/dashboard/NoDataCard";
+import MobileDataCard from "@/components/dashboard/MobileDataCard";
 import ReceiptModal from "@/components/dashboard/ReceiptModal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
@@ -30,12 +32,13 @@ import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
 import { hasAnyPermission } from "@/lib/auth/permissions";
 import { getApiErrorMessage } from "@/lib/api/client";
 import { formatCurrency, formatDate, formatMonths } from "@/lib/format";
-import { getAdminPaymentId } from "@/lib/payment";
+import { getAdminPaymentId, getPaymentActorName } from "@/lib/payment";
 import {
   useAdminClientPaymentsQuery,
   useAdminClientQuery,
   useMarkClientPaymentCompleteMutation,
 } from "@/lib/query/hooks";
+import { useMobileAccumulatedList } from "@/lib/query/useMobileAccumulatedList";
 import type { AdminPaymentListItem } from "@/lib/api/types";
 import { getPageCount } from "@/lib/format";
 import type { Payment } from "@/types";
@@ -67,7 +70,7 @@ function toReceiptPayment(
 
   return {
     agentId: payment.agentId ?? "admin",
-    agentName: payment.agentName ?? "Admin",
+    agentName: getPaymentActorName(payment),
     amount: formatCurrency(payment.amount),
     billingMonth: formatMonths(payment.months ?? payment.month),
     clientId: payment.clientId ?? client?.clientId ?? "",
@@ -105,6 +108,13 @@ export default function ClientDetailsPanel({ clientId }: Props) {
   const markCompleteMutation = useMarkClientPaymentCompleteMutation(clientId);
   const client = clientQuery.data;
   const payments = paymentsQuery.data?.data ?? [];
+  const { mobileItems: mobilePayments } = useMobileAccumulatedList({
+    getKey: (payment) => getAdminPaymentId(payment) || payment.receiptId || payment.createdAt || "",
+    isPlaceholderData: paymentsQuery.isPlaceholderData,
+    items: payments,
+    page,
+    resetKey: clientId,
+  });
   const totalPages = getPageCount(paymentsQuery.data?.total ?? 0, PAGE_SIZE);
 
   function openReceipt(payment: AdminPaymentListItem) {
@@ -126,6 +136,12 @@ export default function ClientDetailsPanel({ clientId }: Props) {
         onSuccess: () => toast.success(t("tables.paymentMarkedComplete")),
       },
     );
+  }
+
+  function loadMore() {
+    if (page < totalPages && !paymentsQuery.isFetching) {
+      setPage((current) => current + 1);
+    }
   }
 
   if (clientQuery.isError) {
@@ -196,7 +212,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
         </div>
       </section>
 
-      <section className="grid max-w-2xl gap-6 md:grid-cols-2">
+      <section className="grid max-w-2xl gap-4 md:grid-cols-2 md:gap-6">
         <article className="rounded-xl border border-border bg-surface p-5 shadow-card">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -232,7 +248,72 @@ export default function ClientDetailsPanel({ clientId }: Props) {
 
       {canViewPayments ? (
         <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-card">
-        <TableScrollContainer minWidth={1080}>
+        <div className="grid gap-3 p-3 md:hidden">
+          {paymentsQuery.isLoading
+            ? Array.from({ length: 4 }, (_, index) => (
+                <div
+                  className="h-44 animate-pulse rounded-xl border border-border bg-surface-muted"
+                  key={index}
+                />
+              ))
+            : mobilePayments.map((payment) => {
+                const paymentId = getAdminPaymentId(payment);
+                const isOverdue = payment.status === "DUE";
+
+                return (
+                  <MobileDataCard
+                    actions={
+                      isOverdue && canEditPayments ? (
+                        <Button
+                          className="h-9 px-3 text-xs"
+                          onClick={() => markComplete(payment)}
+                          variant="outline"
+                        >
+                          {t("tables.markAsPaid")}
+                        </Button>
+                      ) : !isOverdue ? (
+                        <Button
+                          className="h-9 px-3 text-xs"
+                          onClick={() => openReceipt(payment)}
+                          variant="outline"
+                        >
+                          {t("tables.viewReceipt")}
+                        </Button>
+                      ) : null
+                    }
+                    items={[
+                      {
+                        label: t("common.amount"),
+                        value: formatCurrency(payment.amount),
+                      },
+                      {
+                        label: t("common.agent"),
+                        value: isOverdue ? "-" : getPaymentActorName(payment),
+                      },
+                      {
+                        label: t("common.receipt"),
+                        value: isOverdue ? "-" : t("common.view"),
+                      },
+                    ]}
+                    key={paymentId || payment.receiptId || payment.createdAt}
+                    status={
+                      <StatusBadge
+                        status={
+                          isOverdue ? t("common.overdue") : t("common.paid")
+                        }
+                      />
+                    }
+                    title={formatMonths(payment.months ?? payment.month)}
+                  />
+                );
+              })}
+          <MobileInfiniteLoader
+            hasMore={mobilePayments.length < (paymentsQuery.data?.total ?? 0)}
+            isLoading={paymentsQuery.isFetching && page > 1}
+            onLoadMore={loadMore}
+          />
+        </div>
+        <TableScrollContainer className="hidden md:block" minWidth={1080}>
           <Table className="min-w-full">
             <TableThead className="bg-surface-muted">
               <TableTr>
@@ -255,7 +336,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
               </TableTr>
             </TableThead>
             <TableTbody>
-              {paymentsQuery.isLoading || paymentsQuery.isFetching ? (
+              {paymentsQuery.isLoading ? (
                 <TableSkeletonRows columns={6} rows={PAGE_SIZE} />
               ) : payments.length === 0 ? (
                 <TableEmptyRow
@@ -282,7 +363,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
                       <TableTd
                         className={`px-3 py-6 text-[14px] ${isOverdue ? "text-text-muted" : "text-foreground"}`}
                       >
-                        {isOverdue ? "-" : (payment.agentName ?? "Admin")}
+                        {isOverdue ? "-" : getPaymentActorName(payment)}
                       </TableTd>
                       <TableTd className="px-3 py-6 text-[14px]">
                         {isOverdue ? (
@@ -354,7 +435,7 @@ export default function ClientDetailsPanel({ clientId }: Props) {
             </TableTbody>
           </Table>
         </TableScrollContainer>
-        <div className="flex justify-center px-6 py-7">
+        <div className="hidden justify-center px-6 py-7 md:flex">
           <Pagination
             boundaries={1}
             color="brand"

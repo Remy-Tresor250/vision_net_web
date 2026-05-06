@@ -32,6 +32,9 @@ export default function LoginPageContent() {
           <p className="mt-2 text-[14px] leading-6 text-text-muted">
             {t("auth.subtitle")}
           </p>
+          <p className="mt-3 text-[13px] leading-6 text-text-muted">
+            {t("auth.firstLoginHelp")}
+          </p>
         </div>
         <LoginForm />
       </div>

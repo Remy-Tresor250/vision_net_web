@@ -15,14 +15,20 @@ import {
   type VerifyOtpPayload,
 } from "@/lib/api/auth";
 import type {
+  AdminAgentDetail,
+  AdminAgentListItem,
   AdminAgentsParams,
+  AdminClientDetail,
+  AdminClientListItem,
   AdminLocationsParams,
   AdminRoleListParams,
   AdminServiceTypesParams,
   AdminClientPaymentsParams,
   AdminClientsParams,
   AdminPaymentsParams,
+  AdminUserListItem,
   AdminUsersParams,
+  PageResponse,
   AssignAgentAvenuesPayload,
   CreateAvenuePayload,
   CreateAdminRolePayload,
@@ -62,6 +68,42 @@ import { useAuthStore } from "@/stores/auth-store";
 
 interface QueryConfig {
   enabled?: boolean;
+}
+
+function markDefaultPasswordInCacheItem<T extends { userId?: string; isDefaultPass?: boolean }>(
+  item: T,
+  userId: string,
+) {
+  if (item.userId !== userId) {
+    return item;
+  }
+
+  return {
+    ...item,
+    isDefaultPass: true,
+  };
+}
+
+function markDefaultPasswordInCacheData<
+  T extends { userId?: string; isDefaultPass?: boolean },
+>(
+  data: T | PageResponse<T> | undefined,
+  userId: string,
+) {
+  if (!data) {
+    return data;
+  }
+
+  if (Array.isArray((data as PageResponse<T>).data)) {
+    const page = data as PageResponse<T>;
+
+    return {
+      ...page,
+      data: page.data.map((item) => markDefaultPasswordInCacheItem(item, userId)),
+    };
+  }
+
+  return markDefaultPasswordInCacheItem(data as T, userId);
 }
 
 export function usePasswordLoginMutation() {
@@ -122,27 +164,9 @@ export function useForgotPasswordResetMutation() {
   });
 }
 
-export function useChangePasswordStartMutation() {
-  return useMutation({
-    mutationFn: (payload: PhonePayload) => authApi.changePasswordStart(payload),
-  });
-}
-
 export function useChangePasswordMutation() {
   return useMutation({
     mutationFn: (payload: ChangePasswordPayload) => authApi.changePassword(payload),
-  });
-}
-
-export function usePhoneChangeStartMutation() {
-  return useMutation({
-    mutationFn: (payload: PhonePayload) => authApi.phoneChangeStart(payload),
-  });
-}
-
-export function usePhoneChangeVerifyMutation() {
-  return useMutation({
-    mutationFn: (payload: VerifyOtpPayload) => authApi.phoneChangeVerify(payload),
   });
 }
 
@@ -468,6 +492,37 @@ export function useDeleteAdminMutation() {
   return useMutation({
     mutationFn: (adminId: string) => adminApi.deleteAdmin(adminId),
     onSuccess: () => invalidateAdminUsers(queryClient),
+  });
+}
+
+export function useResetUserPasswordMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => adminApi.resetUserPassword(userId),
+    onSuccess: async (_response, userId) => {
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.admin.users.all() },
+        (data: AdminUserListItem | PageResponse<AdminUserListItem> | undefined) =>
+          markDefaultPasswordInCacheData(data, userId),
+      );
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.admin.agents.all() },
+        (data: AdminAgentDetail | AdminAgentListItem | PageResponse<AdminAgentListItem> | undefined) =>
+          markDefaultPasswordInCacheData(data, userId),
+      );
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.admin.clients.all() },
+        (data: AdminClientDetail | AdminClientListItem | PageResponse<AdminClientListItem> | undefined) =>
+          markDefaultPasswordInCacheData(data, userId),
+      );
+
+      await Promise.all([
+        invalidateAdminUsers(queryClient),
+        invalidateAgents(queryClient),
+        invalidateClients(queryClient),
+      ]);
+    },
   });
 }
 

@@ -151,6 +151,10 @@ export const adminApi = {
     api
       .delete<ApiSuccess>(endpoints.admin.admin(adminId))
       .then((res) => res.data),
+  resetUserPassword: (userId: string) =>
+    api
+      .post<ApiSuccess>(endpoints.admin.resetUserPassword(userId))
+      .then((res) => res.data),
   serviceTypes: (params?: AdminServiceTypesParams, config?: RequestConfig) =>
     api
       .get<PageResponse<AdminServiceType>>(endpoints.admin.serviceTypes, {

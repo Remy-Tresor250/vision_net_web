@@ -16,7 +16,10 @@ import { useTranslation } from "react-i18next";
 
 import TableEmptyRow from "@/components/dashboard/TableEmptyRow";
 import TableSkeletonRows from "@/components/dashboard/TableSkeletonRows";
+import MobileDataCard from "@/components/dashboard/MobileDataCard";
+import MobileInfiniteLoader from "@/components/dashboard/MobileInfiniteLoader";
 import Button from "@/components/ui/Button";
+import { useMobileAccumulatedList } from "@/lib/query/useMobileAccumulatedList";
 
 export interface LocationTableAvenue {
   id: string;
@@ -69,10 +72,85 @@ export default function LocationGroupsTable({
   totalPages,
 }: Props) {
   const { t } = useTranslation();
+  const { mobileItems: mobileGroups } = useMobileAccumulatedList({
+    getKey: (group) => group.quartierId,
+    items: groups,
+    page,
+    resetKey: "locations",
+  });
+
+  function loadMore() {
+    if (page < totalPages && !disabled) {
+      onPageChange(page + 1);
+    }
+  }
 
   return (
     <section className="overflow-hidden rounded-sm border border-border bg-surface shadow-card">
-      <TableScrollContainer minWidth={980}>
+      <div className="grid gap-3 p-3 md:hidden">
+        {isLoading && page <= 1
+          ? Array.from({ length: 4 }, (_, index) => (
+              <div
+                className="h-44 animate-pulse rounded-xl border border-border bg-surface-muted"
+                key={index}
+              />
+            ))
+          : mobileGroups.map((group) => (
+              <MobileDataCard
+                actions={
+                  <Menu position="bottom-end" shadow="md" width={190}>
+                    <Menu.Target>
+                      <Button
+                        aria-label={`Open actions for ${group.quartierName}`}
+                        disabled={disabled}
+                        size="icon"
+                        variant="subtle"
+                      >
+                        <HiEllipsisHorizontal className="size-5" />
+                      </Button>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      {canCreateLocation ? (
+                        <Menu.Item disabled={disabled} onClick={() => onAddCell(group)}>
+                          {t("configurations.addCell")}
+                        </Menu.Item>
+                      ) : null}
+                      {canDeleteLocation ? (
+                        <Menu.Item
+                          color="red"
+                          disabled={disabled}
+                          onClick={() => onDeleteQuartier(group)}
+                        >
+                          {t("configurations.deleteQuartier")}
+                        </Menu.Item>
+                      ) : null}
+                    </Menu.Dropdown>
+                  </Menu>
+                }
+                items={[
+                  {
+                    label: t("configurations.cell"),
+                    value: `${group.rows.length} ${t("common.months").toLowerCase()}`,
+                  },
+                  {
+                    label: t("configurations.avenues"),
+                    value: group.rows
+                      .flatMap((row) => row.avenueItems.map((avenue) => avenue.name))
+                      .join(", ") || t("configurations.noAvenues"),
+                  },
+                ]}
+                key={group.quartierId}
+                subtitle={group.rows.map((row) => row.serineName).join(", ")}
+                title={group.quartierName}
+              />
+            ))}
+        <MobileInfiniteLoader
+          hasMore={page < totalPages}
+          isLoading={disabled || isLoading}
+          onLoadMore={loadMore}
+        />
+      </div>
+      <TableScrollContainer className="hidden md:block" minWidth={980}>
         <Table className="min-w-full">
           <TableThead className="bg-surface-muted">
             <TableTr>
@@ -204,7 +282,7 @@ export default function LocationGroupsTable({
         </Table>
       </TableScrollContainer>
 
-      <div className="flex justify-center px-6 py-7">
+      <div className="hidden justify-center px-6 py-7 md:flex">
         <Pagination
           boundaries={1}
           color="brand"

@@ -23,7 +23,7 @@ import {
   useAdminDashboardQuery,
   useAdminPaymentsQuery,
 } from "@/lib/query/hooks";
-import { getAdminPaymentId } from "@/lib/payment";
+import { getAdminPaymentId, getPaymentActorName } from "@/lib/payment";
 import type { MetricCard, RevenuePoint } from "@/types";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -248,7 +248,7 @@ export default function DashboardContent() {
     })) ?? [];
   const recentTransactions =
     paymentsQuery.data?.data.map((payment) => ({
-      agentName: payment.agentName ?? "Admin",
+      agentName: getPaymentActorName(payment),
       amount: formatCurrency(payment.amount),
       billingCycle: formatMonths(payment.months ?? payment.month),
       clientId: payment.clientId,

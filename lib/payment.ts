@@ -5,3 +5,13 @@ export function getAdminPaymentId(
 ) {
   return payment.paymentId || payment.id || "";
 }
+
+export function getPaymentActorName(
+  payment: Pick<AdminPaymentListItem, "adminName" | "agentName" | "setByAdmin">,
+) {
+  if (payment.setByAdmin) {
+    return payment.adminName ?? "Admin";
+  }
+
+  return payment.agentName ?? "-";
+}

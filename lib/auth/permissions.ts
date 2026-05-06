@@ -1,6 +1,11 @@
 "use client";
 
-export type PermissionAction = "view" | "create" | "edit" | "delete";
+export type PermissionAction =
+  | "view"
+  | "create"
+  | "edit"
+  | "delete"
+  | "password_reset";
 
 const VIEW_IMPLYING_ACTIONS = new Set<PermissionAction>(["create", "edit", "delete"]);
 

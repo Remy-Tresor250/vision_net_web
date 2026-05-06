@@ -88,16 +88,16 @@ export default function ReceiptModal({ opened, onClose, payment }: Props) {
       withCloseButton={false}
     >
       {resolvedPayment ? (
-        <div className="bg-surface px-8 py-8 text-foreground md:px-12 md:py-10">
+        <div className="bg-surface px-4 py-5 text-foreground sm:px-8 sm:py-8 md:px-12 md:py-10">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="flex size-11 items-center justify-center rounded-md border border-brand/20 bg-brand">
                 <Image alt="" className="size-6" src={leafLogo} />
               </div>
-              <p className="text-[22px] font-semibold">Societe Vision Net</p>
+              <p className="text-[18px] font-semibold sm:text-[22px]">Societe Vision Net</p>
             </div>
             <div className="sm:text-right">
-              <p className="text-[42px] font-semibold leading-none text-foreground">
+              <p className="text-[30px] font-semibold leading-none text-foreground sm:text-[42px]">
                 {t("modals.receipt")}
               </p>
               <div className="mt-7 text-[12px] leading-5 text-text-muted">

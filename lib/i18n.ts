@@ -31,12 +31,13 @@ export const resources = {
         adminOnly: "This dashboard is only available to administrators.",
         firstLoginCompleted: "Password set successfully.",
         firstLoginHelp:
-          "This account needs a password before the first sign-in can finish. Request an OTP, verify it, then choose your password.",
-        firstLoginRequired: "This account needs a password before the first login can continue.",
+          "Use the default password provided by your administrator, then change it after you sign in.",
+        firstLoginRequired:
+          "This account needs a valid password. Use the default password or ask an administrator to reset it.",
         otpDisabledHelp:
           "OTP login, password reset, and first-time password setup are disabled because SMS is not available in this app.",
         passwordReadyForLogin:
-          "Password setup is complete. You can now sign in with your password or use OTP login.",
+          "Password setup is complete. You can now sign in with your password.",
         continueWithOtp: "Continue with OTP",
         forgotPassword: "Forgot password?",
         loginWithOtp: "Login using OTP",
@@ -68,6 +69,7 @@ export const resources = {
         countryCode: "Code",
         date: "Date",
         debt: "Debt",
+        defaultPassword: "Default Password",
         details: "Details",
         drcCode: "DRC (+243)",
         fullNames: "Full Names",
@@ -81,9 +83,13 @@ export const resources = {
         or: "Or",
         overdue: "Overdue",
         paid: "Paid",
+        password: "Password",
+        passwordHidden: "******",
+        passwordResetSuccess: "Password reset to default password.",
         phone: "Phone",
         phoneNumber: "Phone Number",
         potential: "Potential",
+        resetPassword: "Reset password",
         receipt: "Receipt",
         registeredDate: "Registered Date",
         rwandaCode: "Rwanda (+250)",
@@ -104,6 +110,7 @@ export const resources = {
         amountMin: "Minimum amount",
         apply: "Apply filters",
         clear: "Clear filters",
+        createdAt: "Created At",
         createdAtFrom: "Created from",
         createdAtTo: "Created to",
         currentMonthCollectedMax: "Maximum collected",
@@ -302,6 +309,7 @@ export const resources = {
           create: "Create",
           delete: "Delete",
           edit: "Edit",
+          password_reset: "Password Reset",
           view: "View",
         },
         permissionResources: {
@@ -317,6 +325,7 @@ export const resources = {
           reports: "Reports",
           roles: "Roles",
           service_types: "Service Types",
+          users: "Users",
         },
         permissions: "Permissions",
         permissionsCount: "{{count}} permissions",
@@ -396,7 +405,7 @@ export const resources = {
         confirmPhoneChange: "Confirm phone change",
         confirmPhoneChangeHelp: "Enter the OTP sent to your new phone number to finish the update.",
         confirmPasswordChange: "Confirm password change",
-        confirmPasswordChangeHelp: "Enter the OTP you received to finish changing your password.",
+        confirmPasswordChangeHelp: "Enter your current password and your new password to finish the change.",
         currentPassword: "Current password",
         enterNewPhoneFirst: "Enter a new phone number first.",
         enterCurrentPassword: "Enter your current password first.",
@@ -408,10 +417,14 @@ export const resources = {
         otpCode: "OTP code",
         otpSessionId: "OTP session id",
         passwordUpdated: "Password updated.",
+        passwordChangeHelp:
+          "Change your password while signed in.",
         passwordChangeDisabledHelp:
           "Password changes are disabled because this app does not support SMS verification.",
         profile: "Profile",
         profileUpdated: "Profile updated.",
+        phoneChangeHelp:
+          "Update your phone number directly from your profile. Duplicate phone validation still applies.",
         phoneChangeDisabledHelp:
           "Phone number changes are disabled because this app does not support SMS verification.",
         phoneOtpVerified: "Phone OTP verified.",
@@ -492,13 +505,13 @@ export const resources = {
         firstLoginCompleted:
           "Mot de passe defini avec succes.",
         firstLoginHelp:
-          "Ce compte a besoin d'un mot de passe avant de terminer la premiere connexion. Demandez un OTP, verifiez-le, puis choisissez votre mot de passe.",
+          "Utilisez le mot de passe par defaut fourni par votre administrateur, puis changez-le apres connexion.",
         firstLoginRequired:
-          "Ce compte a besoin d'un mot de passe avant de poursuivre la premiere connexion.",
+          "Ce compte a besoin d'un mot de passe valide. Utilisez le mot de passe par defaut ou demandez une reinitialisation a un administrateur.",
         otpDisabledHelp:
           "La connexion OTP, la reinitialisation du mot de passe et la definition du premier mot de passe sont desactivees car le SMS n'est pas disponible dans cette application.",
         passwordReadyForLogin:
-          "La configuration du mot de passe est terminee. Vous pouvez maintenant vous connecter avec votre mot de passe ou utiliser la connexion OTP.",
+          "La configuration du mot de passe est terminee. Vous pouvez maintenant vous connecter avec votre mot de passe.",
         continueWithOtp: "Continuer avec OTP",
         forgotPassword: "Mot de passe oublie ?",
         loginWithOtp: "Connexion avec OTP",
@@ -530,6 +543,7 @@ export const resources = {
         countryCode: "Code",
         date: "Date",
         debt: "Dette",
+        defaultPassword: "Mot de passe par defaut",
         details: "Details",
         drcCode: "RDC (+243)",
         fullNames: "Noms complets",
@@ -543,9 +557,13 @@ export const resources = {
         or: "Ou",
         overdue: "En retard",
         paid: "Paye",
+        password: "Mot de passe",
+        passwordHidden: "******",
+        passwordResetSuccess: "Mot de passe reinitialise au mot de passe par defaut.",
         phone: "Telephone",
         phoneNumber: "Numero de telephone",
         potential: "Potentiel",
+        resetPassword: "Reinitialiser le mot de passe",
         receipt: "Recu",
         registeredDate: "Date d'inscription",
         rwandaCode: "Rwanda (+250)",
@@ -566,6 +584,7 @@ export const resources = {
         amountMin: "Montant minimum",
         apply: "Appliquer les filtres",
         clear: "Effacer les filtres",
+        createdAt: "Cree le",
         createdAtFrom: "Cree a partir du",
         createdAtTo: "Cree jusqu'au",
         currentMonthCollectedMax: "Collecte maximale",
@@ -765,6 +784,7 @@ export const resources = {
           create: "Creer",
           delete: "Supprimer",
           edit: "Modifier",
+          password_reset: "Reinitialisation du mot de passe",
           view: "Voir",
         },
         permissionResources: {
@@ -780,6 +800,7 @@ export const resources = {
           reports: "Rapports",
           roles: "Roles",
           service_types: "Types de service",
+          users: "Utilisateurs",
         },
         permissions: "Permissions",
         permissionsCount: "{{count}} permissions",
@@ -860,7 +881,7 @@ export const resources = {
         confirmPhoneChange: "Confirmer le changement du numero",
         confirmPhoneChangeHelp: "Saisissez l'OTP envoye sur votre nouveau numero pour terminer la mise a jour.",
         confirmPasswordChange: "Confirmer le changement",
-        confirmPasswordChangeHelp: "Saisissez l'OTP recu pour terminer le changement de mot de passe.",
+        confirmPasswordChangeHelp: "Saisissez votre mot de passe actuel et le nouveau mot de passe pour terminer le changement.",
         currentPassword: "Mot de passe actuel",
         enterNewPhoneFirst: "Saisissez d'abord un nouveau numero.",
         enterCurrentPassword: "Saisissez d'abord votre mot de passe actuel.",
@@ -872,10 +893,14 @@ export const resources = {
         otpCode: "Code OTP",
         otpSessionId: "ID de session OTP",
         passwordUpdated: "Mot de passe mis a jour.",
+        passwordChangeHelp:
+          "Changez votre mot de passe pendant que vous etes connecte.",
         passwordChangeDisabledHelp:
           "Le changement de mot de passe est desactive car cette application ne prend pas en charge la verification par SMS.",
         profile: "Profil",
         profileUpdated: "Profil mis a jour.",
+        phoneChangeHelp:
+          "Mettez a jour votre numero directement depuis votre profil. La validation des doublons s'applique toujours.",
         phoneChangeDisabledHelp:
           "Le changement de numero est desactive car cette application ne prend pas en charge la verification par SMS.",
         phoneOtpVerified: "OTP telephone verifie.",

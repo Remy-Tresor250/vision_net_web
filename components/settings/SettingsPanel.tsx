@@ -9,7 +9,10 @@ import PhoneNumberInput from "@/components/ui/PhoneNumberInput";
 import { appFieldClassNames, appFieldStyles } from "@/components/ui/formStyles";
 import Button from "@/components/ui/Button";
 import { getApiErrorMessage } from "@/lib/api/client";
-import { useUpdateMeMutation } from "@/lib/query/hooks";
+import {
+  useChangePasswordMutation,
+  useUpdateMeMutation,
+} from "@/lib/query/hooks";
 import { useAuthStore } from "@/stores/auth-store";
 
 export default function SettingsPanel() {
@@ -17,23 +20,57 @@ export default function SettingsPanel() {
   const user = useAuthStore((state) => state.user);
   const updateUser = useAuthStore((state) => state.updateUser);
   const [fullNames, setFullNames] = useState(user?.fullNames ?? "");
+  const [phone, setPhone] = useState(user?.phone ?? "");
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const updateMe = useUpdateMeMutation();
+  const changePassword = useChangePasswordMutation();
 
   function saveProfile() {
     updateMe.mutate(
       {
         fullNames,
-        phone: user?.phone,
+        phone,
       },
       {
         onError: (error) => toast.error(getApiErrorMessage(error)),
         onSuccess: () => {
-          updateUser({ fullNames, phone: user?.phone });
+          updateUser({ fullNames, phone });
           toast.success(t("settings.profileUpdated"));
         },
       },
     );
   }
+
+  function savePassword() {
+    if (!oldPassword.trim()) {
+      toast.error(t("settings.enterCurrentPassword"));
+      return;
+    }
+
+    if (newPassword.trim().length < 8) {
+      toast.error(t("settings.enterValidNewPassword"));
+      return;
+    }
+
+    changePassword.mutate(
+      {
+        oldPassword,
+        newPassword,
+      },
+      {
+        onError: (error) => toast.error(getApiErrorMessage(error)),
+        onSuccess: () => {
+          setOldPassword("");
+          setNewPassword("");
+          toast.success(t("settings.passwordUpdated"));
+        },
+      },
+    );
+  }
+
+  const isSavingProfile = updateMe.isPending;
+  const isSavingPassword = changePassword.isPending;
 
   return (
     <div className="space-y-5">
@@ -50,17 +87,16 @@ export default function SettingsPanel() {
             value={fullNames}
           />
           <PhoneNumberInput
-            disabled
             label={t("common.phone")}
-            onChange={() => undefined}
-            value={user?.phone ?? ""}
+            onChange={setPhone}
+            value={phone}
           />
         </div>
         <p className="mt-3 text-sm text-text-muted">
-          {t("settings.phoneChangeDisabledHelp")}
+          {t("settings.phoneChangeHelp")}
         </p>
         <div className="mt-5 flex gap-3">
-          <Button disabled={updateMe.isPending} onClick={saveProfile}>
+          <Button disabled={isSavingProfile} onClick={saveProfile}>
             {t("actions.save")}
           </Button>
         </div>
@@ -71,28 +107,26 @@ export default function SettingsPanel() {
           {t("settings.changePassword")}
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-text-muted">
-          {t("settings.passwordChangeDisabledHelp")}
+          {t("settings.passwordChangeHelp")}
         </p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <PasswordInput
             classNames={appFieldClassNames}
-            disabled
             label={t("settings.currentPassword")}
-            onChange={() => undefined}
+            onChange={(event) => setOldPassword(event.currentTarget.value)}
             styles={appFieldStyles}
-            value=""
+            value={oldPassword}
           />
           <PasswordInput
             classNames={appFieldClassNames}
-            disabled
             label={t("settings.newPassword")}
-            onChange={() => undefined}
+            onChange={(event) => setNewPassword(event.currentTarget.value)}
             styles={appFieldStyles}
-            value=""
+            value={newPassword}
           />
         </div>
         <div className="mt-5 flex gap-3">
-          <Button disabled>
+          <Button disabled={isSavingPassword} onClick={savePassword}>
             {t("settings.changePassword")}
           </Button>
         </div>

@@ -90,9 +90,9 @@ export default function LocationConfigurationModal({
     <Modal
       centered
       classNames={{
-        body: "px-8 pb-8",
+        body: "px-4 pb-5 sm:px-8 sm:pb-8",
         content: "rounded-sm",
-        header: "px-8 pt-8",
+        header: "px-4 pt-4 sm:px-8 sm:pt-8",
         title: "w-full text-center",
       }}
       closeButtonProps={{
@@ -103,12 +103,12 @@ export default function LocationConfigurationModal({
       radius="sm"
       size="xl"
       title={
-        <span className="text-[28px] font-semibold text-foreground">
+        <span className="text-[20px] font-semibold text-foreground sm:text-[24px] xl:text-[28px]">
           {title}
         </span>
       }
     >
-      <div className="space-y-5 lg:px-6">
+      <div className="space-y-4 lg:px-6">
         <TextInput
           classNames={appFieldClassNames}
           disabled={quartierLocked || isSaving}
@@ -127,7 +127,7 @@ export default function LocationConfigurationModal({
               onClick={onAddCell}
               type="button"
             >
-              <p className="text-[14px] font-medium text-brand">
+              <p className="text-[12px] font-medium text-brand sm:text-[14px]">
                 + {t("configurations.addAnotherCell")}
               </p>
             </button>
@@ -141,7 +141,7 @@ export default function LocationConfigurationModal({
               key={cell.id}
             >
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[15px] font-semibold text-foreground">
+                <p className="text-[13px] font-semibold text-foreground sm:text-[15px]">
                   {t("configurations.cell")} {cellIndex + 1}
                 </p>
                 <div className="flex flex-wrap items-center justify-end gap-3">
@@ -151,7 +151,7 @@ export default function LocationConfigurationModal({
                     onClick={() => onAddAvenue(cell.id)}
                     type="button"
                   >
-                    <p className="text-[14px] font-medium text-brand">
+                    <p className="text-[12px] font-medium text-brand sm:text-[14px]">
                       + {t("configurations.addAnotherAvenue")}
                     </p>
                   </button>
@@ -165,7 +165,7 @@ export default function LocationConfigurationModal({
                       onClick={() => onRemoveCell(cell.id)}
                       type="button"
                     >
-                      <p className="text-[13px] font-medium text-white px-3 py-2">{t("configurations.removeCell")}</p>
+                      <p className="px-3 py-2 text-[12px] font-medium text-white sm:text-[13px]">{t("configurations.removeCell")}</p>
                       
                     </button>
                   ) : null}
@@ -239,7 +239,7 @@ export default function LocationConfigurationModal({
             onClick={onClose}
             type="button"
           >
-            <p className="text-[14px] text-black">{t("actions.cancel")}</p>
+            <p className="text-[12px] text-black sm:text-[14px]">{t("actions.cancel")}</p>
           </button>
           <button
             className="flex flex-row items-center gap-[4px] rounded-[6px] bg-brand px-[12px] py-[6px]"
@@ -247,7 +247,7 @@ export default function LocationConfigurationModal({
             onClick={onSave}
             type="button"
           >
-            <p className="text-[14px] text-white">
+            <p className="text-[12px] text-white sm:text-[14px]">
               {isSaving ? t("forms.saving") : submitLabel}
             </p>
           </button>

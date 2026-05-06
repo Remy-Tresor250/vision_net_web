@@ -5,6 +5,7 @@ export const CANONICAL_PERMISSIONS = [
   "admin_users.create",
   "admin_users.edit",
   "admin_users.delete",
+  "users.password_reset",
   "roles.view",
   "roles.create",
   "roles.edit",
@@ -39,6 +40,7 @@ export const CANONICAL_PERMISSIONS = [
 
 export const PERMISSION_RESOURCE_ORDER = [
   "admin_users",
+  "users",
   "roles",
   "dashboard",
   "agents",

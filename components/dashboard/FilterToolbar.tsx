@@ -1,13 +1,13 @@
 "use client";
 
-import { Popover, Select, TextInput } from "@mantine/core";
+import { Modal, Popover, Select, TextInput } from "@mantine/core";
 import { DatePickerInput, MonthPickerInput } from "@mantine/dates";
-import { useDebouncedValue } from "@mantine/hooks";
+import { useDebouncedValue, useMediaQuery } from "@mantine/hooks";
 import type { ReactNode } from "react";
 import { useEffect, useEffectEvent, useState } from "react";
 import {
-  HiOutlineMagnifyingGlass,
   HiOutlineAdjustmentsHorizontal,
+  HiOutlineMagnifyingGlass,
 } from "react-icons/hi2";
 import { useTranslation } from "react-i18next";
 
@@ -28,16 +28,16 @@ export interface FilterField {
 }
 
 interface Props {
-  placeholder: string;
-  title: ReactNode;
-  query: string;
-  onQueryChange: (value: string) => void;
-  filters?: Record<string, string>;
-  onFiltersChange?: (value: Record<string, string>) => void;
-  filterFields?: FilterField[];
   addLabel?: string;
-  onAdd?: () => void;
   className?: string;
+  filterFields?: FilterField[];
+  filters?: Record<string, string>;
+  onAdd?: () => void;
+  onFiltersChange?: (value: Record<string, string>) => void;
+  onQueryChange: (value: string) => void;
+  placeholder: string;
+  query: string;
+  title: ReactNode;
 }
 
 const EMPTY_FILTERS: Record<string, string> = {};
@@ -70,11 +70,12 @@ export default function FilterToolbar({
 }: Props) {
   const { t, i18n } = useTranslation();
   const [searchValue, setSearchValue] = useState(query);
-  const [popoverOpened, setPopoverOpened] = useState(false);
+  const [filtersOpened, setFiltersOpened] = useState(false);
   const [draftFilters, setDraftFilters] =
     useState<Record<string, string>>(filters);
   const [debouncedQuery] = useDebouncedValue(searchValue, 400);
   const emitQueryChange = useEffectEvent(onQueryChange);
+  const isMobile = useMediaQuery("(max-width: 47.99em)");
 
   useEffect(() => {
     setSearchValue(query);
@@ -110,7 +111,7 @@ export default function FilterToolbar({
   }
 
   function applyFilters() {
-    setPopoverOpened(false);
+    setFiltersOpened(false);
   }
 
   function clearFilters() {
@@ -119,8 +120,141 @@ export default function FilterToolbar({
     );
     setDraftFilters(cleared);
     onFiltersChange?.(cleared);
-    setPopoverOpened(false);
+    setFiltersOpened(false);
   }
+
+  const filterContent = (
+    <>
+      <div className="grid gap-4 p-5 sm:grid-cols-2">
+        {filterFields.map((field) => {
+          if (field.type === "select") {
+            return (
+              <Select
+                classNames={appFieldClassNames}
+                clearable
+                data={field.options ?? []}
+                key={field.id}
+                label={field.label}
+                onChange={(value) => updateDraftFilter(field.id, value)}
+                placeholder={field.placeholder ?? field.label}
+                styles={appFieldStyles}
+                value={draftFilters[field.id] || null}
+              />
+            );
+          }
+
+          if (field.type === "date") {
+            return (
+              <DatePickerInput
+                classNames={appFieldClassNames}
+                clearable
+                key={field.id}
+                label={field.label}
+                locale={i18n.language}
+                onChange={(value) =>
+                  updateDraftFilter(
+                    field.id,
+                    (() => {
+                      const parts = toDateParts(value);
+
+                      return parts
+                        ? `${parts.year}-${parts.month}-${parts.day}`
+                        : "";
+                    })(),
+                  )
+                }
+                placeholder={field.placeholder ?? field.label}
+                styles={appFieldStyles}
+                value={
+                  draftFilters[field.id]
+                    ? new Date(draftFilters[field.id])
+                    : null
+                }
+                valueFormat="DD/MM/YYYY"
+              />
+            );
+          }
+
+          if (field.type === "month") {
+            return (
+              <MonthPickerInput
+                classNames={appFieldClassNames}
+                clearable
+                key={field.id}
+                label={field.label}
+                locale={i18n.language}
+                onChange={(value) =>
+                  updateDraftFilter(
+                    field.id,
+                    (() => {
+                      const parts = toDateParts(value);
+
+                      return parts ? `${parts.year}-${parts.month}` : "";
+                    })(),
+                  )
+                }
+                placeholder={field.placeholder ?? field.label}
+                styles={appFieldStyles}
+                value={
+                  draftFilters[field.id]
+                    ? new Date(`${draftFilters[field.id]}-01`)
+                    : null
+                }
+                valueFormat="MMMM YYYY"
+              />
+            );
+          }
+
+          return (
+            <TextInput
+              classNames={appFieldClassNames}
+              key={field.id}
+              label={field.label}
+              onChange={(event) =>
+                updateDraftFilter(field.id, event.currentTarget.value)
+              }
+              placeholder={field.placeholder ?? field.label}
+              styles={appFieldStyles}
+              type="number"
+              value={draftFilters[field.id] ?? ""}
+            />
+          );
+        })}
+      </div>
+      <div className="flex justify-end gap-3 border-t border-border px-5 py-4">
+        <button
+          className="rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
+          onClick={clearFilters}
+          type="button"
+        >
+          <p className="text-[14px]">{t("filters.clear")}</p>
+        </button>
+        <button
+          className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90"
+          onClick={applyFilters}
+          type="button"
+        >
+          <p className="text-[14px]">{t("filters.apply")}</p>
+        </button>
+      </div>
+    </>
+  );
+
+  const filterTrigger = (
+    <button
+      className="flex h-12 items-center gap-2 rounded-md border border-border bg-surface px-4 text-[14px] font-medium text-foreground shadow-card hover:bg-surface-muted"
+      onClick={() => setFiltersOpened((current) => !current)}
+      type="button"
+    >
+      <HiOutlineAdjustmentsHorizontal className="size-5 text-text-muted" />
+      <span>{t("actions.filter")}</span>
+      {activeFilterCount ? (
+        <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">
+          {activeFilterCount}
+        </span>
+      ) : null}
+    </button>
+  );
 
   return (
     <div
@@ -131,13 +265,15 @@ export default function FilterToolbar({
     >
       <div className="min-w-0">
         {typeof title === "string" ? (
-          <h2 className="text-[27px] font-medium text-[#0A3B24]">{title}</h2>
+          <h2 className="text-[22px] font-medium text-[#0A3B24] sm:text-[24px] lg:text-[27px]">
+            {title}
+          </h2>
         ) : (
           title
         )}
       </div>
       <div className="flex w-full flex-col gap-3 lg:flex-1 lg:flex-row lg:items-center lg:justify-end">
-        <div className="w-full sm:w-[30vw]">
+        <div className="w-full sm:max-w-sm lg:w-[30vw] lg:max-w-none">
           <TextInput
             aria-label={placeholder}
             classNames={{
@@ -162,149 +298,50 @@ export default function FilterToolbar({
           />
         </div>
 
-        <div className="flex items-stretch gap-2 lg:justify-end">
+        <div className="flex items-stretch gap-2 sm:justify-end lg:justify-end">
           {filterFields.length ? (
-            <Popover
-              onChange={setPopoverOpened}
-              opened={popoverOpened}
-              position="bottom-end"
-              shadow="md"
-              width={440}
-            >
-              <Popover.Target>
-                <button
-                  className="flex h-12 items-center gap-2 rounded-md border border-border bg-surface px-4 text-[14px] font-medium text-foreground shadow-card hover:bg-surface-muted"
-                  onClick={() => setPopoverOpened((current) => !current)}
-                  type="button"
+            isMobile ? (
+              <>
+                {filterTrigger}
+                <Modal
+                  centered
+                  classNames={{
+                    body: "px-4 pb-5 sm:px-6 sm:pb-6",
+                    content: "rounded-sm",
+                    title: "text-[18px] font-semibold sm:text-[22px]",
+                  }}
+                  styles={{
+                    title: {
+                      fontWeight: "bold",
+                      width: "100%",
+                      textAlign: "center",
+                      fontSize: 18
+                    }
+                  }}
+                  onClose={() => setFiltersOpened(false)}
+                  opened={filtersOpened}
+                  padding={0}
+                  radius="lg"
+                  size="calc(100vw - 1.5rem)"
+                  title={t("actions.filter")}
                 >
-                  <HiOutlineAdjustmentsHorizontal className="size-5 text-text-muted" />
-                  <span>{t("actions.filter")}</span>
-                  {activeFilterCount ? (
-                    <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">
-                      {activeFilterCount}
-                    </span>
-                  ) : null}
-                </button>
-              </Popover.Target>
-              <Popover.Dropdown className="overflow-hidden rounded-xl border border-border bg-surface p-0 shadow-panel">
-                <div className="grid gap-4 p-5 sm:grid-cols-2">
-                  {filterFields.map((field) => {
-                    if (field.type === "select") {
-                      return (
-                        <Select
-                          classNames={appFieldClassNames}
-                          clearable
-                          data={field.options ?? []}
-                          key={field.id}
-                          label={field.label}
-                          onChange={(value) =>
-                            updateDraftFilter(field.id, value)
-                          }
-                          placeholder={field.placeholder ?? field.label}
-                          styles={appFieldStyles}
-                          value={draftFilters[field.id] || null}
-                        />
-                      );
-                    }
-
-                    if (field.type === "date") {
-                      return (
-                        <DatePickerInput
-                          classNames={appFieldClassNames}
-                          clearable
-                          key={field.id}
-                          label={field.label}
-                          locale={i18n.language}
-                          onChange={(value) =>
-                            updateDraftFilter(
-                              field.id,
-                              (() => {
-                                const parts = toDateParts(value);
-
-                                return parts
-                                  ? `${parts.year}-${parts.month}-${parts.day}`
-                                  : "";
-                              })(),
-                            )
-                          }
-                          placeholder={field.placeholder ?? field.label}
-                          styles={appFieldStyles}
-                          value={
-                            draftFilters[field.id]
-                              ? new Date(draftFilters[field.id])
-                              : null
-                          }
-                          valueFormat="DD/MM/YYYY"
-                        />
-                      );
-                    }
-
-                    if (field.type === "month") {
-                      return (
-                        <MonthPickerInput
-                          classNames={appFieldClassNames}
-                          clearable
-                          key={field.id}
-                          label={field.label}
-                          locale={i18n.language}
-                          onChange={(value) =>
-                            updateDraftFilter(
-                              field.id,
-                              (() => {
-                                const parts = toDateParts(value);
-
-                                return parts
-                                  ? `${parts.year}-${parts.month}`
-                                  : "";
-                              })(),
-                            )
-                          }
-                          placeholder={field.placeholder ?? field.label}
-                          styles={appFieldStyles}
-                          value={
-                            draftFilters[field.id]
-                              ? new Date(`${draftFilters[field.id]}-01`)
-                              : null
-                          }
-                          valueFormat="MMMM YYYY"
-                        />
-                      );
-                    }
-
-                    return (
-                      <TextInput
-                        classNames={appFieldClassNames}
-                        key={field.id}
-                        label={field.label}
-                        onChange={(event) =>
-                          updateDraftFilter(field.id, event.currentTarget.value)
-                        }
-                        placeholder={field.placeholder ?? field.label}
-                        styles={appFieldStyles}
-                        type="number"
-                        value={draftFilters[field.id] ?? ""}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="flex justify-end gap-3 border-t border-border px-5 py-4">
-                  <button
-                    className="rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground hover:bg-background"
-                    onClick={clearFilters}
-                    type="button"
-                  >
-                    <p className="text-[14px]">{t("filters.clear")}</p>
-                  </button>
-                  <button
-                    className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90"
-                    onClick={applyFilters}
-                    type="button"
-                  >
-                    <p className="text-[14px]">{t("filters.apply")}</p>
-                  </button>
-                </div>
-              </Popover.Dropdown>
-            </Popover>
+                  {filterContent}
+                </Modal>
+              </>
+            ) : (
+              <Popover
+                onChange={setFiltersOpened}
+                opened={filtersOpened}
+                position="bottom-end"
+                shadow="md"
+                width={440}
+              >
+                <Popover.Target>{filterTrigger}</Popover.Target>
+                <Popover.Dropdown className="overflow-hidden rounded-xl border border-border bg-surface p-0 shadow-panel">
+                  {filterContent}
+                </Popover.Dropdown>
+              </Popover>
+            )
           ) : null}
           {addLabel ? (
             <button

@@ -1,8 +1,8 @@
 "use client";
 
-import { Select } from "@mantine/core";
+import { Modal, Select } from "@mantine/core";
 import { MonthPickerInput } from "@mantine/dates";
-import { useDebouncedValue } from "@mantine/hooks";
+import { useDebouncedValue, useMediaQuery } from "@mantine/hooks";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { HiOutlineDocumentChartBar } from "react-icons/hi2";
@@ -79,6 +79,8 @@ export default function ReportsPanel() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [debouncedAvenueSearch] = useDebouncedValue(avenueSearch, 350);
+  const [previewOpened, setPreviewOpened] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 47.99em)");
 
   const avenuesQuery = useAdminAvenuesQuery(
     {
@@ -133,6 +135,7 @@ export default function ReportsPanel() {
   const resolvedBillingMonth = toBillingMonthDate(billingMonth);
   const canGenerateReport =
     canCreateReports && canViewLocations && Boolean(selectedAvenueId && resolvedBillingMonth);
+  const showPreviewModal = Boolean(previewOpened || isGenerating || pdfUrl);
 
   useEffect(() => {
     if (!selectedAvenueId) {
@@ -223,6 +226,7 @@ export default function ReportsPanel() {
     }
 
     setReportId("");
+    setPreviewOpened(true);
     setPdfUrl((current) => {
       if (current) {
         URL.revokeObjectURL(current);
@@ -286,6 +290,14 @@ export default function ReportsPanel() {
     };
   }
 
+  function closePreviewModal() {
+    if (isGenerating) {
+      return;
+    }
+
+    setPreviewOpened(false);
+  }
+
   return (
     <div className="grid gap-6 px-2 py-3 xl:grid-cols-[0.9fr_1.1fr] xl:px-6">
       <section className="rounded-sm border border-border bg-surface p-6 shadow-card xl:p-8">
@@ -334,20 +346,22 @@ export default function ReportsPanel() {
           )}
 
           <Button
-            className="h-[54px] w-full rounded-sm text-[16px] font-medium"
+            className="h-[54px] w-full rounded-sm font-medium"
             disabled={isGenerating || !canGenerateReport}
             onClick={handleGeneratePreview}
           >
-            {generateReportMutation.isPending
-              ? t("reports.generating")
-              : isGenerating
-                ? t("reports.preparingPreview")
-                : t("reports.generatePreview")}
+            <p className="text-[13px] sm:text-[14px]">
+              {generateReportMutation.isPending
+                ? t("reports.generating")
+                : isGenerating
+                  ? t("reports.preparingPreview")
+                  : t("reports.generatePreview")}
+            </p>
           </Button>
         </div>
       </section>
 
-      <section className="h-[86vh] overflow-hidden rounded-sm border border-border bg-surface shadow-card">
+      <section className="hidden h-[86vh] overflow-hidden rounded-sm border border-border bg-surface shadow-card xl:block">
         {!reportId && !pdfUrl ? (
           <div className="relative flex h-full items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(18,161,94,0.16),_transparent_34%),linear-gradient(180deg,_rgba(251,253,251,1)_0%,_rgba(244,248,245,1)_100%)] p-8">
             <div className="pointer-events-none absolute inset-x-10 top-10 h-24 rounded-full bg-brand/10 blur-3xl" />
@@ -455,6 +469,67 @@ export default function ReportsPanel() {
           </div>
         )}
       </section>
+
+      <Modal
+        centered
+        classNames={{
+          body: "px-3 pb-3 sm:px-5 sm:pb-5",
+          content: "rounded-sm",
+          header: "px-4 pt-4 sm:px-5 sm:pt-5",
+          title: "w-full text-center text-[18px] font-semibold sm:text-[24px]",
+        }}
+        onClose={closePreviewModal}
+        opened={showPreviewModal}
+        radius="sm"
+        size={isMobile ? "calc(100vw - 1rem)" : "80rem"}
+        title={
+          <span className="text-[20px] font-semibold text-foreground sm:text-[24px]">
+            {isGenerating ? t("reports.reportGeneration") : `${previewTitle} report preview`}
+          </span>
+        }
+      >
+        <section className="h-[72vh] overflow-hidden rounded-sm border border-border bg-surface shadow-card">
+          {!reportId && !pdfUrl ? (
+            <div className="relative flex h-full items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(18,161,94,0.16),_transparent_34%),linear-gradient(180deg,_rgba(251,253,251,1)_0%,_rgba(244,248,245,1)_100%)] p-6 sm:p-8">
+              <div className="relative flex max-w-[28rem] flex-col items-center text-center">
+                <div className="flex size-16 items-center justify-center rounded-[22px] border border-brand/15 bg-white/90 text-brand shadow-card sm:size-18">
+                  <HiOutlineDocumentChartBar className="size-8 sm:size-9" />
+                </div>
+                <p className="mt-6 text-[20px] font-semibold tracking-tight text-foreground sm:text-[28px]">
+                  {t("reports.previewTitle")}
+                </p>
+                <p className="mt-3 max-w-md text-[13px] leading-6 text-text-muted sm:text-[14px]">
+                  {t("reports.previewWillAppearHere")}
+                </p>
+              </div>
+            </div>
+          ) : isGenerating ? (
+            <div className="flex h-full flex-col items-center justify-center gap-5 px-6 text-center">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-brand" />
+              <div>
+                <p className="text-[18px] font-semibold text-foreground sm:text-[22px]">
+                  {t("reports.preparingPreview")}
+                </p>
+                <p className="mt-2 text-[13px] text-text-muted sm:text-[14px]">
+                  {progressPercent}%
+                </p>
+              </div>
+            </div>
+          ) : previewSrc ? (
+            <div className="flex h-full flex-col">
+              <iframe className="h-full w-full" src={previewSrc} title={`${previewTitle} report preview`} />
+              <div className="flex justify-end gap-3 border-t border-border p-3 sm:p-4">
+                <Button onClick={handlePrintPdf} variant="outline">
+                  <p className="text-[13px] sm:text-[14px]">{t("reports.print")}</p>
+                </Button>
+                <Button onClick={handleDownloadPdf}>
+                  <p className="text-[13px] sm:text-[14px]">{t("reports.download")}</p>
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </section>
+      </Modal>
     </div>
   );
 }

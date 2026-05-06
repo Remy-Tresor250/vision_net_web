@@ -32,7 +32,6 @@ export interface PasswordLoginPayload extends PhonePayload {
 export type ForgotPasswordResetPayload = SetPasswordPayload;
 
 export interface ChangePasswordPayload {
-  otpSessionId: string;
   oldPassword: string;
   newPassword: string;
 }
@@ -40,7 +39,6 @@ export interface ChangePasswordPayload {
 export interface UpdateMePayload {
   fullNames?: string;
   phone?: string;
-  otpSessionId?: string;
 }
 
 export interface PushTokenPayload {
@@ -90,16 +88,8 @@ export const authApi = {
       .then((res) => res.data),
   forgotPasswordReset: (payload: ForgotPasswordResetPayload) =>
     api.post<ApiSuccess>(endpoints.auth.forgotPasswordReset, payload).then((res) => res.data),
-  changePasswordStart: (payload: PhonePayload) =>
-    api
-      .post<OtpStartResponse>(endpoints.auth.changePasswordStart, payload)
-      .then((res) => res.data),
   changePassword: (payload: ChangePasswordPayload) =>
     api.post<ApiSuccess>(endpoints.auth.changePassword, payload).then((res) => res.data),
-  phoneChangeStart: (payload: PhonePayload) =>
-    api.post<OtpStartResponse>(endpoints.me.phoneChangeStart, payload).then((res) => res.data),
-  phoneChangeVerify: (payload: VerifyOtpPayload) =>
-    api.post<OtpVerifyResponse>(endpoints.me.phoneChangeVerify, payload).then((res) => res.data),
   me: () =>
     api
       .get<AuthMeResponse>(endpoints.me.detail)

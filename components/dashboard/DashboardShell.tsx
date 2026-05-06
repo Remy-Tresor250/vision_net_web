@@ -119,14 +119,14 @@ function SidebarContent({
   }
 
   return (
-    <div className="flex lg:h-full min-h-[90vh] flex-col border-r border-border bg-surface">
-      <div className="flex items-center justify-between gap-4 px-4 py-6">
+      <div className="flex min-h-[90vh] flex-col border-r border-border bg-surface lg:h-full">
+      <div className="flex items-center justify-between gap-3 px-4 py-5 sm:gap-4 sm:py-6">
         <AppLogo />
         <div className="hidden size-11 items-center justify-center rounded-lg border border-border text-text-muted">
           <FiSidebar className="size-6" />
         </div>
       </div>
-      <nav className="flex-1 space-y-1 px-5 py-8">
+      <nav className="flex-1 space-y-1 px-4 py-6 sm:px-5 sm:py-8">
         {visibleNavigationItems.map((item, index) => {
           const isActive =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -135,15 +135,15 @@ function SidebarContent({
             <Link
               key={index}
               className={cn(
-                "flex items-center gap-4 rounded-sm px-5 py-4 text-lg font-medium text-text-muted transition-colors duration-200 ease-out hover:bg-surface-muted hover:text-foreground",
+                "flex items-center gap-3 rounded-sm px-4 py-3 text-base font-medium text-text-muted transition-colors duration-200 ease-out hover:bg-surface-muted hover:text-foreground sm:gap-4 sm:px-5 sm:py-4 lg:text-lg",
                 isActive &&
                   "bg-brand text-white hover:bg-brand hover:text-white",
               )}
               href={item.href}
               onClick={() => closeSidebar?.()}
             >
-              <item.icon className="size-6" />
-              <span className="text-[14px] ">{t(`nav.${item.labelKey}`)}</span>
+              <item.icon className="size-5 sm:size-6" />
+              <span className="text-[13px] sm:text-[14px]">{t(`nav.${item.labelKey}`)}</span>
             </Link>
           );
         })}
@@ -305,7 +305,7 @@ export default function DashboardShell({ children }: Props) {
           content: "bg-surface",
           header: "hidden",
         }}
-        onClose={close}
+        onClose={closeSidebar}
         opened={opened}
         padding={0}
         position="left"
@@ -318,23 +318,23 @@ export default function DashboardShell({ children }: Props) {
           <SidebarContent pathname={pathname} />
         </aside>
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-          <header className="xl:w-[77vw] xl:self-end border-b border-border bg-surface px-5 py-2 md:px-6 xl:px-8">
-            <div className="flex items-start justify-between gap-5">
-              <div className="flex items-center gap-4">
+          <header className="border-b border-border bg-surface px-3 py-2 sm:px-4 md:px-6 xl:w-[77vw] xl:self-end xl:px-8">
+            <div className="flex items-start justify-between gap-3 sm:gap-5">
+              <div className="flex min-w-0 items-start gap-2 sm:items-center sm:gap-4">
                 <Button
-                  className="xl:hidden"
+                  className="size-10 xl:hidden"
                   onClick={open}
                   size="icon"
                   variant="outline"
                 >
-                  <FiSidebar className="size-6" />
+                  <FiSidebar className="size-5" />
                 </Button>
-                <div>
-                  <p className="text-[27px] font-semibold text-foreground">
+                <div className="min-w-0">
+                  <p className="truncate text-[20px] font-semibold text-foreground sm:text-[24px] xl:text-[27px]">
                     {currentPage.title}
                   </p>
                   {currentPage.subtitle ? (
-                    <p className="-mt-[6px] text-[13px] text-[#6B7C72]">
+                    <p className="mt-0.5 line-clamp-2 text-[11px] text-[#6B7C72] sm:-mt-[4px] sm:text-[13px]">
                       {currentPage.subtitle}
                     </p>
                   ) : null}
@@ -343,19 +343,19 @@ export default function DashboardShell({ children }: Props) {
               <Menu position="bottom-end" shadow="md" width={220}>
                 <Menu.Target>
                   <button
-                    className="flex items-center gap-4 rounded-sm px-2 py-1 hover:bg-surface-muted"
+                    className="flex max-w-[58vw] items-center gap-2 rounded-sm px-1 py-1 hover:bg-surface-muted sm:max-w-none sm:gap-4 sm:px-2"
                     type="button"
                   >
-                    <div className="text-right">
-                      <p className="text-lg font-semibold text-foreground">
+                    <div className="min-w-0 text-right">
+                      <p className="truncate text-[13px] font-semibold text-foreground sm:text-base xl:text-lg">
                         {user?.fullNames ?? "Admin User"}
                       </p>
-                      <p className="-mt-1 text-xs uppercase text-text-muted">
+                      <p className="truncate text-[10px] uppercase text-text-muted sm:-mt-1 sm:text-xs">
                         {user?.roleName ?? user?.role}
                       </p>
                     </div>
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-foreground text-white">
-                      <HiOutlineUserCircle className="size-8" />
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-foreground text-white sm:size-11 xl:size-12">
+                      <HiOutlineUserCircle className="size-6 sm:size-7 xl:size-8" />
                     </div>
                   </button>
                 </Menu.Target>
