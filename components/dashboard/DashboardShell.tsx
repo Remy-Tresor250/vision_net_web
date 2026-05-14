@@ -268,14 +268,14 @@ export default function DashboardShell({ children }: Props) {
     if (pathname === "/configurations") {
       return {
         title,
-        subtitle: "System configurations",
+        subtitle: t("dashboard.configurationsSubtitle"),
       };
     }
 
     if (pathname === "/reports") {
       return {
         title,
-        subtitle: "Monthly billing reports",
+        subtitle: t("dashboard.reportsSubtitle"),
       };
     }
 

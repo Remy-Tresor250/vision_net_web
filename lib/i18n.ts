@@ -160,6 +160,8 @@ export const resources = {
         vsLastMonth: "{{value}} vs last month",
         agentsCount: "{{count}} registered agents",
         clientsCount: "{{count}} registered clients",
+        configurationsSubtitle: "System configurations",
+        reportsSubtitle: "Monthly billing reports",
       },
       configurations: {
         addNewService: "Add new Service",
@@ -358,6 +360,7 @@ export const resources = {
       reports: {
         awaitingGeneration: "Awaiting generation",
         avenueName: "Avenue Name",
+        billingMonthPlaceholder: "e.g. April 2026",
         clientsWithOutstandingPayments: "Clients With Outstanding Payments",
         current: "Current",
         download: "Download",
@@ -379,6 +382,7 @@ export const resources = {
         pending: "Pending",
         periodReport: "Period Report",
         preparingPreview: "Preparing preview...",
+        previewFrameTitle: "{{name}} report preview",
         previewReport: "Preview Report",
         previewTitle: "Report Preview",
         progress: "Progress",
@@ -634,6 +638,8 @@ export const resources = {
         vsLastMonth: "{{value}} vs mois dernier",
         agentsCount: "{{count}} agents enregistres",
         clientsCount: "{{count}} clients enregistres",
+        configurationsSubtitle: "Configurations du systeme",
+        reportsSubtitle: "Rapports mensuels de facturation",
       },
       configurations: {
         addNewService: "Ajouter un nouveau service",
@@ -833,6 +839,7 @@ export const resources = {
       reports: {
         awaitingGeneration: "En attente de generation",
         avenueName: "Nom de l'avenue",
+        billingMonthPlaceholder: "ex. avril 2026",
         clientsWithOutstandingPayments: "Clients avec des paiements en attente",
         current: "Actuel",
         download: "Telecharger",
@@ -855,6 +862,7 @@ export const resources = {
         pending: "En attente",
         periodReport: "Periode du rapport",
         preparingPreview: "Preparation de l'aperçu...",
+        previewFrameTitle: "Aperçu du rapport de {{name}}",
         previewReport: "Aperçu du rapport",
         previewTitle: "Aperçu du rapport",
         progress: "Progression",

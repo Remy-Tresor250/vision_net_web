@@ -135,7 +135,9 @@ export default function ReportsPanel() {
   const resolvedBillingMonth = toBillingMonthDate(billingMonth);
   const canGenerateReport =
     canCreateReports && canViewLocations && Boolean(selectedAvenueId && resolvedBillingMonth);
-  const showPreviewModal = Boolean(previewOpened || isGenerating || pdfUrl);
+  const showPreviewModal = isMobile && previewOpened;
+  const mobilePreviewAvailable = isMobile && Boolean(generateReportMutation.isPending || reportId || pdfUrl);
+  const previewFrameTitle = t("reports.previewFrameTitle", { name: previewTitle });
 
   useEffect(() => {
     if (!selectedAvenueId) {
@@ -290,11 +292,11 @@ export default function ReportsPanel() {
     };
   }
 
-  function closePreviewModal() {
-    if (isGenerating) {
-      return;
-    }
+  function openPreviewModal() {
+    setPreviewOpened(true);
+  }
 
+  function closePreviewModal() {
     setPreviewOpened(false);
   }
 
@@ -312,7 +314,7 @@ export default function ReportsPanel() {
             label={t("reports.selectBillingMonth")}
             maxDate={currentMonth}
             onChange={setBillingMonth}
-            placeholder="ex. April 2026"
+            placeholder={t("reports.billingMonthPlaceholder")}
             styles={appFieldStyles}
             value={billingMonth}
             valueFormat="MMMM YYYY"
@@ -358,6 +360,16 @@ export default function ReportsPanel() {
                   : t("reports.generatePreview")}
             </p>
           </Button>
+
+          {mobilePreviewAvailable ? (
+            <Button
+              className="h-[50px] w-full rounded-sm font-medium xl:hidden"
+              onClick={openPreviewModal}
+              variant="outline"
+            >
+              <p className="text-[13px] sm:text-[14px]">{t("reports.previewReport")}</p>
+            </Button>
+          ) : null}
         </div>
       </section>
 
@@ -407,7 +419,7 @@ export default function ReportsPanel() {
               <iframe
                 className="h-[78vh] w-full bg-white"
                 src={previewSrc ?? undefined}
-                title={`${previewTitle} report preview`}
+                title={previewFrameTitle}
               />
             </div>
           </div>
@@ -481,10 +493,11 @@ export default function ReportsPanel() {
         onClose={closePreviewModal}
         opened={showPreviewModal}
         radius="sm"
-        size={isMobile ? "calc(100vw - 1rem)" : "80rem"}
+        fullScreen={isMobile}
+        size={isMobile ? "100%" : "80rem"}
         title={
           <span className="text-[20px] font-semibold text-foreground sm:text-[24px]">
-            {isGenerating ? t("reports.reportGeneration") : `${previewTitle} report preview`}
+            {isGenerating ? t("reports.reportGeneration") : previewFrameTitle}
           </span>
         }
       >
@@ -517,7 +530,7 @@ export default function ReportsPanel() {
             </div>
           ) : previewSrc ? (
             <div className="flex h-full flex-col">
-              <iframe className="h-full w-full" src={previewSrc} title={`${previewTitle} report preview`} />
+              <iframe className="h-full w-full" src={previewSrc} title={previewFrameTitle} />
               <div className="flex justify-end gap-3 border-t border-border p-3 sm:p-4">
                 <Button onClick={handlePrintPdf} variant="outline">
                   <p className="text-[13px] sm:text-[14px]">{t("reports.print")}</p>
